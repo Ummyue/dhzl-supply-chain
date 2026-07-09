@@ -287,8 +287,8 @@ const Utils = {
     const p = window.location.pathname;
     const base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain' : '';
     const cleanPath = path.startsWith('/') ? path : '/' + path;
-    // 已含 /pages/ 或 /shared/：原样返回（已包含完整目录）
-    if (cleanPath.startsWith('/pages/') || cleanPath.startsWith('/shared/')) {
+    // 已含 /pages/ 或 /shared/ 或 /docs/：原样返回（这些是顶层目录，不是角色子目录）
+    if (cleanPath.startsWith('/pages/') || cleanPath.startsWith('/shared/') || cleanPath.startsWith('/docs/')) {
       return base + cleanPath;
     }
     // 根级页面：保持不变
@@ -296,9 +296,27 @@ const Utils = {
     if (rootPages.includes(cleanPath)) {
       return base + cleanPath;
     }
-    // 子目录页面（customer/platform/bank/warehouse/guarantor/docs）：自动补 /pages/
+    // 角色子目录页面（customer/platform/bank/warehouse/guarantor）：自动补 /pages/
     return base + '/pages' + cleanPath;
   },
 };
 
 window.Utils = Utils;
+
+// v1.7.7 全局拦截硬编码角色子目录链接（避免在 Cloudflare Pages 上 404 后回首页）
+// 适用范围：dashboard.html、docs/prd.html 等用硬编码 href="/customer/xxx" 的页面
+// 通过捕获阶段拦截，自动用 Utils.nav() 重写 URL
+// 注意：跳过非左键点击（middle-click/右键）和带修饰键的点击，让浏览器正常处理新标签页打开
+document.addEventListener('click', function(e) {
+  if (e.button !== 0) return; // 只处理左键
+  if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return; // 带修饰键的交给浏览器
+  const a = e.target.closest && e.target.closest('a[href]');
+  if (!a) return;
+  const href = a.getAttribute('href');
+  if (!href) return;
+  // 只拦截硬编码角色子目录链接（不带 /pages/ 前缀的）
+  if (/^\/(customer|platform|bank|warehouse|guarantor)(\/|$)/.test(href)) {
+    e.preventDefault();
+    window.location.href = Utils.nav(href);
+  }
+}, true);
