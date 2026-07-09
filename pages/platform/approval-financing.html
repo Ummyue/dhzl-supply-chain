@@ -10,72 +10,51 @@
 })();
 </script>
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>融资审核 - 大河智链</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
-<link rel="stylesheet" href="/shared/css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>融资审核 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
 </head>
 <body class="bg-slate-50">
 <div id="app"></div>
 <script src="/shared/js/utils.js"></script>
 <script src="/shared/js/mockData.js"></script>
 <script src="/shared/js/components.js"></script>
+<script src="/shared/js/financingList.js"></script>
 <script>
   Components.bindGlobalClose();
   document.getElementById('app').innerHTML = Components.pageShell({
     title: '融资审核工作台',
     currentPath: '/platform/approval-financing',
-    breadcrumb: [{ label: '融资管理', path: '/platform/approval-financing' }, '融资审核'],
+    breadcrumb: [{ label: '工作台', path: '/dashboard' }, { label: '融资审核', path: '/platform/approval-financing' }, '监管审核列表'],
+    extra: `<button onclick="window.__FinancingList.exportCSV()" class="px-3 py-2 border border-slate-300 hover:border-emerald-500 hover:text-emerald-600 text-slate-700 rounded-md text-sm font-medium flex items-center gap-1 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        导出
+      </button>`,
     content: `
       <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-xs text-blue-800">
         <span class="font-medium">v1.7 流程：</span>本页面是<strong>3 级审核的第 1 步</strong>（您 → 担保方 → 资金方）。审核通过后，货主方需在《质物清单》和《质押反担保合同》上盖章①。
       </div>
 
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        ${Components.statCard({ label: '待我审核', value: `${MockData.financingList.filter(f => f.status === 'pending_supervisor_eval' || f.status === 'pending_supervisor').length} 笔`, hint: '待我审核 = 当前状态为「监管评估」或「监管审核」且责任人为监管方的笔数', color: 'text-blue-600', gradient: true })}
-        ${Components.statCard({ label: '本月已审', value: `${MockData.financingList.filter(f => ['settled', 'released', 'rejected'].includes(f.status)).length} 笔`, hint: '本月已审 = 自然月内状态变更为「已放款 / 已结清 / 已驳回」且责任审核节点含本监管节点的笔数' })}
-        ${Components.statCard({ label: '通过率', value: '91.5%', hint: '通过率 = 监管通过的融资笔数 ÷ 监管审核总笔数 × 100%（已审结的笔数，不含在途）', color: 'text-emerald-600' })}
-        ${Components.statCard({ label: '平均审核时长', value: '2.3 小时', hint: '平均审核时长 = 监管评估开始时间到审核结论时间的差值求平均（仅含本自然月已审结的笔数）', color: 'text-violet-600' })}
-      </div>
-
-      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
-            <tr>
-              <th class="text-left px-4 py-3">融资编号</th>
-              <th class="text-left px-4 py-3">货主/货品</th>
-              <th class="text-right px-4 py-3">评估货值</th>
-              <th class="text-right px-4 py-3">质押率</th>
-              <th class="text-right px-4 py-3">申请金额</th>
-              <th class="text-center px-4 py-3">期限</th>
-              <th class="text-center px-4 py-3">状态</th>
-              <th class="text-center px-4 py-3">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${MockData.financingList.map(f => `
-              <tr class="border-t border-slate-100 hover:bg-slate-50">
-                <td class="px-4 py-3 font-mono text-xs">${f.bizNo}</td>
-                <td class="px-4 py-3">
-                  <div class="font-medium text-xs">${f.applicant}</div>
-                  <div class="text-xs text-slate-500">${f.products[0]?.name || '-'}</div>
-                </td>
-                <td class="px-4 py-3 text-right num-focus">${Utils.fmtMoney(f.evaluateValue)}</td>
-                <td class="px-4 py-3 text-right">${(f.pledgeRatio * 100).toFixed(0)}%</td>
-                <td class="px-4 py-3 text-right num-focus font-bold text-blue-600">${Utils.fmtMoney(f.applyAmount)}</td>
-                <td class="px-4 py-3 text-center">${f.duration}天</td>
-                <td class="px-4 py-3 text-center">${Components.badge(f.status)}</td>
-                <td class="px-4 py-3 text-center">
-                  <button onclick="Utils.toast('查看融资详情','info')" class="text-blue-600 hover:underline text-xs mr-2">查看</button>
-                  <button onclick="Utils.toast('已推送担保方','success')" class="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded">推送下一节点</button>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
+      ${FinancingList.render({
+        actionRenderer: (rec) => {
+          // 监管方专属：status 涉及监管审核时显示对应动作
+          const showEvaluate = rec.status === 'pending_supervisor_eval';
+          const showAudit = rec.status === 'pending_supervisor';
+          const showDetail = true;
+          return `
+            ${showDetail ? `<button onclick="alert('查看 ${rec.bizNo} 详情（待完善审批内容）')" class="text-blue-600 hover:underline text-xs font-medium">详情</button>` : ''}
+            ${showEvaluate ? `<button onclick="alert('即将对 ${rec.bizNo} 进行监管评估（待完善审批内容）')" class="text-amber-600 hover:underline text-xs font-medium">监管评估</button>` : ''}
+            ${showAudit ? `<button onclick="alert('即将对 ${rec.bizNo} 进行监管审核（待完善审批内容）')" class="text-blue-600 hover:underline text-xs font-medium">监管审核</button>` : ''}
+          `;
+        },
+        statusLabelMap: {
+          'pending_supervisor_eval': { text: '⏳ 监管评估中（您）', color: 'text-amber-600' },
+          'pending_supervisor': { text: '⏳ 监管审核中（您）', color: 'text-blue-600' },
+        },
+      })}
     `
   });
 </script>

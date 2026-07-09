@@ -10,73 +10,52 @@
 })();
 </script>
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>融资审核 - 大河智链</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
-<link rel="stylesheet" href="/shared/css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>融资审核 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
 </head>
 <body class="bg-slate-50">
 <div id="app"></div>
 <script src="/shared/js/utils.js"></script>
 <script src="/shared/js/mockData.js"></script>
 <script src="/shared/js/components.js"></script>
+<script src="/shared/js/financingList.js"></script>
 <script>
   Components.bindGlobalClose();
   document.getElementById('app').innerHTML = Components.pageShell({
     title: '融资审核 / 担保函出具',
     currentPath: '/guarantor/approval-financing',
-    breadcrumb: [{ label: '融资审核', path: '/guarantor/approval-financing' }, '担保审核'],
+    breadcrumb: [{ label: '工作台', path: '/dashboard' }, { label: '融资审核', path: '/guarantor/approval-financing' }, '担保审核列表'],
+    extra: `<button onclick="window.__FinancingList.exportCSV()" class="px-3 py-2 border border-slate-300 hover:border-emerald-500 hover:text-emerald-600 text-slate-700 rounded-md text-sm font-medium flex items-center gap-1 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        导出
+      </button>`,
     content: `
       <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-xs text-blue-800">
         <span class="font-medium">v1.7 流程：</span>本页面是<strong>3 级审核的第 2 步</strong>（监管方已通过 → <strong>您（担保方）</strong> → 资金方）。审核通过后，货主方需再次盖章②。
       </div>
 
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        ${Components.statCard({ label: '在保余额', value: '¥5.2亿', hint: '在保余额 = 已出具担保函且仍在担保期内的融资本金合计', color: 'text-amber-700' })}
-        ${Components.statCard({ label: '担保总额度', value: '¥8.5亿', hint: '担保总额度 = 担保公司与合作银行签订的年度担保授信上限（含已占用 + 可用）' })}
-        ${Components.statCard({ label: '敞口占用', value: '61.2%', hint: '敞口占用 = 在保余额 ÷ 担保总额度 × 100%（占用率越接近 80% 警戒线说明担保额度越紧）', color: 'text-orange-600' })}
-        ${Components.statCard({ label: '本月代偿率', value: '0.00%', hint: '本月代偿率 = 本月代偿金额 ÷ 本月新增担保额 × 100%（代偿 = 客户违约后担保公司替客户还的钱）', color: 'text-emerald-600' })}
-      </div>
-
-      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div class="px-5 py-3 border-b border-slate-200 flex items-center justify-between">
-          <h3 class="font-semibold text-slate-800">待审核融资申请</h3>
-          <div class="text-xs text-slate-500">共 ${MockData.financingList.length} 笔待审</div>
-        </div>
-        <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
-            <tr>
-              <th class="text-left px-4 py-3">融资编号</th>
-              <th class="text-left px-4 py-3">客户</th>
-              <th class="text-left px-4 py-3">货品</th>
-              <th class="text-right px-4 py-3">融资金额</th>
-              <th class="text-right px-4 py-3">担保金额</th>
-              <th class="text-right px-4 py-3">担保费率</th>
-              <th class="text-center px-4 py-3">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${MockData.financingList.map(f => `
-              <tr class="border-t border-slate-100 hover:bg-slate-50">
-                <td class="px-4 py-3 font-mono text-xs">${f.bizNo}</td>
-                <td class="px-4 py-3">${f.applicant}</td>
-                <td class="px-4 py-3">${f.products[0]?.name || '-'}</td>
-                <td class="px-4 py-3 text-right num-focus font-medium">${Utils.fmtMoney(f.applyAmount)}</td>
-                <td class="px-4 py-3 text-right num-focus font-bold text-amber-700">${Utils.fmtMoney(f.applyAmount * 1.2)}</td>
-                <td class="px-4 py-3 text-right">1.5%/年</td>
-                <td class="px-4 py-3 text-center">
-                  <button onclick="issueGuarantee('${f.id}')" class="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white text-xs rounded">出具担保函</button>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
+      ${FinancingList.render({
+        actionRenderer: (rec) => {
+          // 担保方专属：status === pending_guarantor 时显示「出具担保函」
+          const showIssue = rec.status === 'pending_guarantor';
+          const showDetail = true;
+          return `
+            ${showDetail ? `<button onclick="alert('查看 ${rec.bizNo} 详情（待完善审批内容）')" class="text-blue-600 hover:underline text-xs font-medium">详情</button>` : ''}
+            ${showIssue ? `<button onclick="issueGuarantee('${rec.id}')" class="text-amber-600 hover:underline text-xs font-medium">出具担保函</button>` : ''}
+          `;
+        },
+        statusLabelMap: {
+          'pending_guarantor': { text: '⏳ 担保审核中（您）', color: 'text-amber-600' },
+        },
+      })}
     `
   });
 
+  // ============ 担保方专属弹窗：出具担保函（v1.7.8 沿用原页面的 7 列字段展示）============
   function issueGuarantee(id) {
     const f = MockData.financingList.find(x => x.id === id) || MockData.financingList[0];
     const modal = document.createElement('div');
