@@ -96,7 +96,7 @@ const MockData = {
       userRole: 'operator',       // 操作人：仅可保存草稿
       sealPermission: false,      // 无电子签章权限
       sealScope: [],              // 可用印章列表（空）
-      company: '郑州军牧源贸易有限公司',
+      company: '郑州某冷链贸易有限公司',
       creditCode: '91XXXXXXXXMAXXXXXXXX',
       legalRep: '陈志强',
       phone: '138 0000 6688',
@@ -110,7 +110,7 @@ const MockData = {
       userRole: 'sealUser',       // 盖章人
       sealPermission: true,       // 有电子签章权限
       sealScope: ['company_seal', 'finance_seal', 'legal_seal'], // 可用印章
-      company: '郑州军牧源贸易有限公司',
+      company: '郑州某冷链贸易有限公司',
       creditCode: '91XXXXXXXXMAXXXXXXXX',
       legalRep: '陈志强',
       department: '财务部',
@@ -122,7 +122,7 @@ const MockData = {
       id: 'u_plat_001',
       name: '李雪',
       role: 'platform',
-      company: '大河智链物流（郑州）有限公司',
+      company: '大河智链物流股份有限公司',
       department: '风控运营部',
       title: '风控经理',
       phone: '139 0000 1234',
@@ -152,7 +152,7 @@ const MockData = {
 
   // ========== 印章库（图片盖章，PNG 模拟） ==========
   seals: [
-    { id: 'company_seal', name: '公司公章', color: 'red', preview: '郑州军牧源贸易有限公司' },
+    { id: 'company_seal', name: '公司公章', color: 'red', preview: '郑州某冷链贸易有限公司' },
     { id: 'finance_seal', name: '财务专用章', color: 'red', preview: '财务专用章' },
     { id: 'legal_seal', name: '法人章', color: 'blue', preview: '陈志强印' },
     { id: 'contract_seal', name: '合同专用章', color: 'red', preview: '合同专用章' },
@@ -278,7 +278,7 @@ const MockData = {
   bizList: [
     {
       bizNo: 'DHZL_JMY_2025120101',
-      customer: '郑州军牧源贸易有限公司',
+      customer: '郑州某冷链贸易有限公司',
       customerCode: 'JMY',
       productId: 'MNG_SNJ_3191397',
       productName: '熟牛腱',
@@ -304,7 +304,7 @@ const MockData = {
     },
     {
       bizNo: 'DHZL_JMY_2025120901',
-      customer: '郑州军牧源贸易有限公司',
+      customer: '郑州某冷链贸易有限公司',
       customerCode: 'JMY',
       productId: 'MNG_SZNRQq_3191397',
       productName: '水煮牛肉Qq',
@@ -329,7 +329,7 @@ const MockData = {
     },
     {
       bizNo: 'DHZL_JMY_2026012601',
-      customer: '郑州军牧源贸易有限公司',
+      customer: '郑州某冷链贸易有限公司',
       customerCode: 'JMY',
       productId: 'AU_QGNXG_1265',
       productName: '去骨牛心管',
@@ -354,7 +354,7 @@ const MockData = {
     },
     {
       bizNo: 'DHZL_JMY_2026052501',
-      customer: '郑州固联冷链有限公司',
+      customer: '郑州某冷链物流有限公司',
       customerCode: 'GL',
       productId: 'AUTO_MULTI',
       productName: '冷冻去骨牛7件套',
@@ -379,7 +379,7 @@ const MockData = {
     },
     {
       bizNo: 'DHZL_JMY_2026013101',
-      customer: '郑州军牧源贸易有限公司',
+      customer: '郑州某冷链贸易有限公司',
       customerCode: 'JMY',
       productId: 'AU_NJG_243',
       productName: '牛颈骨',
@@ -404,7 +404,7 @@ const MockData = {
     },
     {
       bizNo: 'DHZL_JMY_2026042701',
-      customer: '郑州军牧源贸易有限公司',
+      customer: '郑州某冷链贸易有限公司',
       customerCode: 'JMY',
       productId: 'MIX_Multi_Product',
       productName: '羔羊肉+牛心管+牛膝盖骨',
@@ -434,7 +434,7 @@ const MockData = {
     // ----- 草稿状态（操作人保存，未提交）-----
     {
       id: 'adm_004',
-      customer: '郑州军牧源贸易有限公司',
+      customer: '郑州某冷链贸易有限公司',
       customerCode: 'JMY',
       creditCode: '91XXXXXXXXMAXXXXXXXX',
       legalRep: '陈志强',
@@ -452,7 +452,7 @@ const MockData = {
     },
     {
       id: 'adm_005',
-      customer: '郑州军牧源贸易有限公司',
+      customer: '郑州某冷链贸易有限公司',
       customerCode: 'JMY',
       creditCode: '91XXXXXXXXMAXXXXXXXX',
       legalRep: '陈志强',
@@ -471,7 +471,7 @@ const MockData = {
     // ----- 待审核 -----
     {
       id: 'adm_001',
-      customer: '郑州固联冷链有限公司',
+      customer: '郑州某冷链物流有限公司',
       creditCode: '91XXXXXXXXMAXXXXXXXX',
       legalRep: '吴建波',
       registeredCap: '5000万元',
@@ -490,7 +490,7 @@ const MockData = {
     // ----- 审核中 -----
     {
       id: 'adm_002',
-      customer: '河南冰峰冷链股份有限公司',
+      customer: '河南某冷链股份有限公司',
       creditCode: '91XXXXXXXXMAXXXXXXXX',
       legalRep: '韩志远',
       registeredCap: '1亿元',
@@ -509,7 +509,7 @@ const MockData = {
     // ----- 已通过 -----
     {
       id: 'adm_003',
-      customer: '郑州军牧源贸易有限公司',
+      customer: '郑州某冷链贸易有限公司',
       creditCode: '91XXXXXXXXMAXXXXXXXX',
       legalRep: '陈志强',
       registeredCap: '3000万元',
@@ -553,7 +553,7 @@ const MockData = {
     {
       id: 'in_001',
       bizNo: 'IN_20260705001',
-      applicant: '郑州军牧源贸易有限公司',
+      applicant: '郑州某冷链贸易有限公司',
       customerCode: 'JMY',
       warehouse: '物流港二期大河智链监管库',
       vehicleNo: '豫A·F8829',
@@ -577,7 +577,7 @@ const MockData = {
     {
       id: 'in_002',
       bizNo: 'IN_20260702001',
-      applicant: '郑州固联冷链有限公司',
+      applicant: '郑州某冷链物流有限公司',
       customerCode: 'GL',
       warehouse: '物流港二期大河智链监管库',
       vehicleNo: '豫A·H5521',
@@ -601,7 +601,7 @@ const MockData = {
     {
       id: 'in_003',
       bizNo: 'IN_20260709001',
-      applicant: '郑州军牧源贸易有限公司',
+      applicant: '郑州某冷链贸易有限公司',
       customerCode: 'JMY',
       warehouse: '天津港国际冷链基地',
       vehicleNo: '豫A·K3318',
@@ -625,7 +625,7 @@ const MockData = {
     {
       id: 'in_004',
       bizNo: 'IN_20260708001',
-      applicant: '郑州军牧源贸易有限公司',
+      applicant: '郑州某冷链贸易有限公司',
       customerCode: 'JMY',
       warehouse: '物流港二期大河智链监管库',
       vehicleNo: '豫A·L9201',
@@ -649,7 +649,7 @@ const MockData = {
     {
       id: 'in_005',
       bizNo: 'IN_20260706001',
-      applicant: '郑州军牧源贸易有限公司',
+      applicant: '郑州某冷链贸易有限公司',
       customerCode: 'JMY',
       warehouse: '物流港二期大河智链监管库',
       vehicleNo: '豫A·M7152',
@@ -675,7 +675,7 @@ const MockData = {
     {
       id: 'in_006',
       bizNo: 'IN_20260705002',
-      applicant: '郑州军牧源贸易有限公司',
+      applicant: '郑州某冷链贸易有限公司',
       customerCode: 'JMY',
       warehouse: '郑州融万冷链库',
       vehicleNo: '豫A·N8846',
@@ -698,6 +698,55 @@ const MockData = {
       rejectReason: '随附单据不完整：缺少《入境货物检验检疫证明》，请补充后重新提交。',
       rejectTime: '2026-07-06 14:20',
     },
+    // ========== v1.7.5 新增：可质押货物（已入库待融资，inbound_completed） ==========
+    {
+      id: 'in_p_001', bizNo: 'IN_20231010001', applicant: '郑州某冷链贸易有限公司', customerCode: 'JMY',
+      warehouse: '大河物流园二期', warehouseCode: 'wh_001', storageLocation: '冻品一区-A 仓-01 货位',
+      vehicleNo: '豫A·H8821', driver: '张大伟', driverPhone: '138 0000 5678',
+      products: [{ id: 'MNG_SZSYR_BWS_001', name: '保乐肩-巴西-4490', pieces: 140, weight: 3000, evaluatePrice: 75, evaluateValue: 225000 }],
+      totalValue: 225000, applyDate: '2023-10-01', inboundDate: '2023-10-10 12:33:34',
+      status: 'inbound_completed', availablePieces: 140, availableWeight: 3000, pledgedPieces: 0, pledgedWeight: 0,
+    },
+    {
+      id: 'in_p_002', bizNo: 'IN_20231010002', applicant: '郑州某冷链贸易有限公司', customerCode: 'JMY',
+      warehouse: '大河物流园二期', warehouseCode: 'wh_001', storageLocation: '冻品一区-A 仓-02 货位',
+      vehicleNo: '豫A·H8821', driver: '张大伟', driverPhone: '138 0000 5678',
+      products: [{ id: 'MNG_SZSYR_BWS_002', name: '保乐肩-巴西-4490', pieces: 140, weight: 3000, evaluatePrice: 75, evaluateValue: 225000 }],
+      totalValue: 225000, applyDate: '2023-10-01', inboundDate: '2023-10-10 12:33:34',
+      status: 'inbound_completed', availablePieces: 140, availableWeight: 3000, pledgedPieces: 0, pledgedWeight: 0,
+    },
+    {
+      id: 'in_p_003', bizNo: 'IN_20231010003', applicant: '郑州某冷链贸易有限公司', customerCode: 'JMY',
+      warehouse: '大河物流园二期', warehouseCode: 'wh_001', storageLocation: '冻品一区-A 仓-03 货位',
+      vehicleNo: '豫A·H8821', driver: '张大伟', driverPhone: '138 0000 5678',
+      products: [{ id: 'MNG_SZSYR_BWS_003', name: '保乐肩-巴西-4490', pieces: 140, weight: 3000, evaluatePrice: 75, evaluateValue: 225000 }],
+      totalValue: 225000, applyDate: '2023-10-01', inboundDate: '2023-10-10 12:33:34',
+      status: 'inbound_completed', availablePieces: 140, availableWeight: 3000, pledgedPieces: 0, pledgedWeight: 0,
+    },
+    {
+      id: 'in_p_004', bizNo: 'IN_20231215001', applicant: '郑州某冷链贸易有限公司', customerCode: 'JMY',
+      warehouse: '大河物流园二期', warehouseCode: 'wh_001', storageLocation: '冻品二区-B 仓-05 货位',
+      vehicleNo: '豫A·L3318', driver: '李明', driverPhone: '138 0000 4321',
+      products: [{ id: 'MNG_QGNXG_001', name: '去骨牛心管', pieces: 280, weight: 6000, evaluatePrice: 74, evaluateValue: 444000 }],
+      totalValue: 444000, applyDate: '2023-12-15', inboundDate: '2023-12-18 09:15:00',
+      status: 'inbound_completed', availablePieces: 280, availableWeight: 6000, pledgedPieces: 0, pledgedWeight: 0,
+    },
+    {
+      id: 'in_p_005', bizNo: 'IN_20240110001', applicant: '郑州某冷链贸易有限公司', customerCode: 'JMY',
+      warehouse: '天津港国际冷链基地', warehouseCode: 'wh_003', storageLocation: '冻品三区-C 仓-12 货位',
+      vehicleNo: '豫A·K9201', driver: '王建国', driverPhone: '138 0000 7788',
+      products: [{ id: 'MNG_NJG_001', name: '牛颈骨', pieces: 100, weight: 2000, evaluatePrice: 24.5, evaluateValue: 49000 }],
+      totalValue: 49000, applyDate: '2024-01-10', inboundDate: '2024-01-15 14:20:00',
+      status: 'inbound_completed', availablePieces: 100, availableWeight: 2000, pledgedPieces: 0, pledgedWeight: 0,
+    },
+    {
+      id: 'in_p_006', bizNo: 'IN_20240320001', applicant: '郑州某冷链贸易有限公司', customerCode: 'JMY',
+      warehouse: '郑州融万冷链库', warehouseCode: 'wh_002', storageLocation: '冻品一区-A 仓-08 货位',
+      vehicleNo: '豫A·M7152', driver: '赵建斌', driverPhone: '138 0000 1234',
+      products: [{ id: 'MNG_GPYR_001', name: '羔羊肉', pieces: 200, weight: 4000, evaluatePrice: 56, evaluateValue: 224000 }],
+      totalValue: 224000, applyDate: '2024-03-20', inboundDate: '2024-03-22 10:00:00',
+      status: 'inbound_completed', availablePieces: 200, availableWeight: 4000, pledgedPieces: 0, pledgedWeight: 0,
+    },
   ],
 
   // ========== 融资申请 ==========
@@ -705,7 +754,7 @@ const MockData = {
     {
       id: 'fn_001',
       bizNo: 'FN_20260705001',
-      applicant: '郑州军牧源贸易有限公司',
+      applicant: '郑州某冷链贸易有限公司',
       inboundBizNo: 'IN_20260705001',
       pledgeBizNo: 'PLEDGE_20260708001',
       evaluateValue: 1499400,
@@ -727,7 +776,7 @@ const MockData = {
       id: 'pa_001',
       bizNo: 'DHZL_JMY_2026012601',
       productName: '去骨牛心管',
-      customer: '郑州军牧源贸易有限公司',
+      customer: '郑州某冷链贸易有限公司',
       priceChangeRate: 6.77,
       threshold: 5,
       level: 'warning',
@@ -739,7 +788,7 @@ const MockData = {
       id: 'pa_002',
       bizNo: 'DHZL_JMY_2026013101',
       productName: '牛颈骨',
-      customer: '郑州军牧源贸易有限公司',
+      customer: '郑州某冷链贸易有限公司',
       priceChangeRate: -3.14,
       threshold: 5,
       level: 'warning',
@@ -761,7 +810,7 @@ const MockData = {
   bills: [
     {
       id: 'bill_202605_jmy',
-      customer: '郑州军牧源贸易有限公司',
+      customer: '郑州某冷链贸易有限公司',
       period: '2026-05',
       supervisionFee: 18230.50,
       guaranteeFee: 14250.00,
@@ -797,39 +846,39 @@ const MockData = {
 
   // ========== 风险预警中心（监管方） ==========
   riskAlerts: [
-    { id: 'ra_001', bizNo: 'DHZL_JMY_2026012601', customer: '郑州军牧源', product: '去骨牛心管', warehouse: '天津港国际', level: 'warning', priceChange: 6.77, currentPrice: 74.74, evaluatePrice: 70, remainingDebt: 2030000, suggestedAction: '补充质押 ¥80,000 或提前还款', alertTime: '2026-07-08 09:30', status: 'pending', handler: null },
-    { id: 'ra_002', bizNo: 'DHZL_JMY_2026013101', customer: '郑州军牧源', product: '牛颈骨', warehouse: '天津港国际', level: 'warning', priceChange: -3.14, currentPrice: 23.73, evaluatePrice: 24.5, remainingDebt: 320000, suggestedAction: '持续关注价格走势', alertTime: '2026-07-08 09:30', status: 'pending', handler: null },
-    { id: 'ra_003', bizNo: 'DHZL_JMY_2026042701', customer: '郑州军牧源', product: '羔羊肉+牛心管+牛膝盖骨', warehouse: '天津港国际', level: 'danger', priceChange: -12.5, currentPrice: 28.00, evaluatePrice: 32.00, remainingDebt: 720000, suggestedAction: '熔断！客户须 3 个工作日内补货 ¥25万 或提前还款', alertTime: '2026-07-07 14:15', status: 'processing', handler: '李雪' },
+    { id: 'ra_001', bizNo: 'DHZL_JMY_2026012601', customer: '郑州某冷链', product: '去骨牛心管', warehouse: '天津港国际', level: 'warning', priceChange: 6.77, currentPrice: 74.74, evaluatePrice: 70, remainingDebt: 2030000, suggestedAction: '补充质押 ¥80,000 或提前还款', alertTime: '2026-07-08 09:30', status: 'pending', handler: null },
+    { id: 'ra_002', bizNo: 'DHZL_JMY_2026013101', customer: '郑州某冷链', product: '牛颈骨', warehouse: '天津港国际', level: 'warning', priceChange: -3.14, currentPrice: 23.73, evaluatePrice: 24.5, remainingDebt: 320000, suggestedAction: '持续关注价格走势', alertTime: '2026-07-08 09:30', status: 'pending', handler: null },
+    { id: 'ra_003', bizNo: 'DHZL_JMY_2026042701', customer: '郑州某冷链', product: '羔羊肉+牛心管+牛膝盖骨', warehouse: '天津港国际', level: 'danger', priceChange: -12.5, currentPrice: 28.00, evaluatePrice: 32.00, remainingDebt: 720000, suggestedAction: '熔断！客户须 3 个工作日内补货 ¥25万 或提前还款', alertTime: '2026-07-07 14:15', status: 'processing', handler: '李雪' },
     { id: 'ra_004', bizNo: 'DHZL_GL_2026052501', customer: '郑州固联', product: '冷冻去骨牛7件套', warehouse: '物流港二期大河智链监管库', level: 'warning', priceChange: 5.20, currentPrice: 58.40, evaluatePrice: 55.50, remainingDebt: 1760000, suggestedAction: '建议补保 ¥95,000', alertTime: '2026-07-06 10:00', status: 'resolved', handler: '王建国' },
   ],
 
   // ========== 追保记录（监管方） ==========
   supplementaryRecords: [
     { id: 'sp_001', bizNo: 'DHZL_GL_2026052501', customer: '郑州固联', product: '冷冻去骨牛7件套', triggerTime: '2026-07-06 10:00', triggerReason: '价格上涨 5.20% 触发预警', requiredAmount: 95000, status: 'completed', completeTime: '2026-07-06 18:30', method: '补充质押 8500kg 冷冻去骨牛7件套' },
-    { id: 'sp_002', bizNo: 'DHZL_JMY_2026012601', customer: '郑州军牧源', product: '去骨牛心管', triggerTime: '2026-07-08 09:30', triggerReason: '价格上涨 6.77% 触发预警', requiredAmount: 80000, status: 'notifying', method: '' },
-    { id: 'sp_003', bizNo: 'DHZL_JMY_2026042701', customer: '郑州军牧源', product: '羔羊肉+牛心管', triggerTime: '2026-07-07 14:15', triggerReason: '价格下跌 12.5% 触发熔断', requiredAmount: 250000, status: 'pending', method: '' },
+    { id: 'sp_002', bizNo: 'DHZL_JMY_2026012601', customer: '郑州某冷链', product: '去骨牛心管', triggerTime: '2026-07-08 09:30', triggerReason: '价格上涨 6.77% 触发预警', requiredAmount: 80000, status: 'notifying', method: '' },
+    { id: 'sp_003', bizNo: 'DHZL_JMY_2026042701', customer: '郑州某冷链', product: '羔羊肉+牛心管', triggerTime: '2026-07-07 14:15', triggerReason: '价格下跌 12.5% 触发熔断', requiredAmount: 250000, status: 'pending', method: '' },
   ],
 
   // ========== 资产包（数字资产 · 监管方） ==========
   assetPackages: [
-    { id: 'ap_001', bizNo: 'DHZL_JMY_2026050901', customer: '郑州军牧源', packageType: '仓单质押', totalValue: 1499400, loanAmount: 1190000, contractCount: 5, transportDoc: 3, inboundDoc: 2, inventoryDoc: 1, status: 'verified', verifyTime: '2026-07-02 16:00', verifier: '系统自动' },
-    { id: 'ap_002', bizNo: 'DHZL_JMY_2026012601', customer: '郑州军牧源', packageType: '仓单质押', totalValue: 4252000, loanAmount: 2030000, contractCount: 8, transportDoc: 5, inboundDoc: 3, inventoryDoc: 2, status: 'verified', verifyTime: '2026-06-15 11:30', verifier: '系统自动' },
+    { id: 'ap_001', bizNo: 'DHZL_JMY_2026050901', customer: '郑州某冷链', packageType: '仓单质押', totalValue: 1499400, loanAmount: 1190000, contractCount: 5, transportDoc: 3, inboundDoc: 2, inventoryDoc: 1, status: 'verified', verifyTime: '2026-07-02 16:00', verifier: '系统自动' },
+    { id: 'ap_002', bizNo: 'DHZL_JMY_2026012601', customer: '郑州某冷链', packageType: '仓单质押', totalValue: 4252000, loanAmount: 2030000, contractCount: 8, transportDoc: 5, inboundDoc: 3, inventoryDoc: 2, status: 'verified', verifyTime: '2026-06-15 11:30', verifier: '系统自动' },
     { id: 'ap_003', bizNo: 'DHZL_GL_2026052501', customer: '郑州固联', packageType: '仓单质押', totalValue: 2211895, loanAmount: 1760000, contractCount: 6, transportDoc: 4, inboundDoc: 2, inventoryDoc: 1, status: 'pending', verifyTime: null, verifier: null },
   ],
 
   // ========== 还款记录（监管方 + 资金方） ==========
   repaymentRecords: [
-    { id: 'rp_001', bizNo: 'DHZL_JMY_2026050901', customer: '郑州军牧源', loanNo: 'LN30XXXXXXXXXXXX', repayDate: '2026-05-28', repayType: '部分还款', repayAmount: 196560, remainingDebt: 993440, status: 'completed' },
-    { id: 'rp_002', bizNo: 'DHZL_JMY_2026012701', customer: '郑州军牧源', loanNo: 'LN30XXXXXXXXXXXX', repayDate: '2026-06-15', repayType: '部分还款', repayAmount: 32082, remainingDebt: 0, status: 'completed' },
-    { id: 'rp_003', bizNo: 'DHZL_JMY_2026042701', customer: '郑州军牧源', loanNo: 'LN30XXXXXXXXXXXX', repayDate: '2026-08-10', repayType: '到期还本付息', repayAmount: 738600, remainingDebt: 720000, status: 'pending', dueIn: 33 },
-    { id: 'rp_004', bizNo: 'DHZL_JMY_2025120101', customer: '郑州军牧源', loanNo: 'LN30XXXXXXXXXXXX', repayDate: '2026-07-15', repayType: '到期还本付息', repayAmount: 1163900, remainingDebt: 1130000, status: 'pending', dueIn: 7 },
+    { id: 'rp_001', bizNo: 'DHZL_JMY_2026050901', customer: '郑州某冷链', loanNo: 'LN30XXXXXXXXXXXX', repayDate: '2026-05-28', repayType: '部分还款', repayAmount: 196560, remainingDebt: 993440, status: 'completed' },
+    { id: 'rp_002', bizNo: 'DHZL_JMY_2026012701', customer: '郑州某冷链', loanNo: 'LN30XXXXXXXXXXXX', repayDate: '2026-06-15', repayType: '部分还款', repayAmount: 32082, remainingDebt: 0, status: 'completed' },
+    { id: 'rp_003', bizNo: 'DHZL_JMY_2026042701', customer: '郑州某冷链', loanNo: 'LN30XXXXXXXXXXXX', repayDate: '2026-08-10', repayType: '到期还本付息', repayAmount: 738600, remainingDebt: 720000, status: 'pending', dueIn: 33 },
+    { id: 'rp_004', bizNo: 'DHZL_JMY_2025120101', customer: '郑州某冷链', loanNo: 'LN30XXXXXXXXXXXX', repayDate: '2026-07-15', repayType: '到期还本付息', repayAmount: 1163900, remainingDebt: 1130000, status: 'pending', dueIn: 7 },
   ],
 
   // ========== 额度管理（资金方） ==========
   creditLimits: [
-    { id: 'cl_001', customer: '郑州军牧源贸易有限公司', creditCode: '91XXXXXXXXMAXXXXXXXX', totalLimit: 50000000, usedLimit: 42100000, availableLimit: 7900000, validFrom: '2025-11-16', validTo: '2026-11-15', interestRate: '4.35%', status: 'active', bizCount: 4 },
-    { id: 'cl_002', customer: '郑州固联冷链有限公司', creditCode: '91XXXXXXXXMAXXXXXXXX', totalLimit: 30000000, usedLimit: 17600000, availableLimit: 12400000, validFrom: '2026-03-20', validTo: '2027-03-19', interestRate: '4.55%', status: 'active', bizCount: 2 },
-    { id: 'cl_003', customer: '河南冰峰冷链股份有限公司', creditCode: '91XXXXXXXXMAXXXXXXXX', totalLimit: 20000000, usedLimit: 0, availableLimit: 20000000, validFrom: '2026-06-01', validTo: '2027-05-31', interestRate: '4.75%', status: 'active', bizCount: 0 },
+    { id: 'cl_001', customer: '郑州某冷链贸易有限公司', creditCode: '91XXXXXXXXMAXXXXXXXX', totalLimit: 50000000, usedLimit: 42100000, availableLimit: 7900000, validFrom: '2025-11-16', validTo: '2026-11-15', interestRate: '4.35%', status: 'active', bizCount: 4 },
+    { id: 'cl_002', customer: '郑州某冷链物流有限公司', creditCode: '91XXXXXXXXMAXXXXXXXX', totalLimit: 30000000, usedLimit: 17600000, availableLimit: 12400000, validFrom: '2026-03-20', validTo: '2027-03-19', interestRate: '4.55%', status: 'active', bizCount: 2 },
+    { id: 'cl_003', customer: '河南某冷链股份有限公司', creditCode: '91XXXXXXXXMAXXXXXXXX', totalLimit: 20000000, usedLimit: 0, availableLimit: 20000000, validFrom: '2026-06-01', validTo: '2027-05-31', interestRate: '4.75%', status: 'active', bizCount: 0 },
   ],
 
   // ========== 平台方（冻品在线交易平台）数据 ==========
@@ -845,33 +894,33 @@ const MockData = {
 
   // 商品列表（商城大厅）
   products_market: [
-    { id: 'PM001', title: '蒙古水煮牛肉Qq 优质货源 大量现货', category: '牛肉', country: '蒙古', productId: 'MNG_SZNRQq_3191397', weight: 5000, unitPrice: 78.50, totalPrice: 392500, pieces: 250, seller: '郑州军牧源贸易有限公司', sellerId: 'u_cust_001', images: 5, salesCount: 12, inventory: 25000, status: 'on_sale', publishDate: '2026-07-01', certType: '已检疫', deliveryMethod: '全国冷链配送', minOrder: 500 },
-    { id: 'PM002', title: '澳洲去骨牛心管 进口报关齐全', category: '牛肉', country: '澳洲', productId: 'AU_QGNXG_1265', weight: 3073.6, unitPrice: 75.00, totalPrice: 230520, pieces: 113, seller: '郑州固联冷链有限公司', sellerId: 'u_cust_002', images: 4, salesCount: 8, inventory: 3073.6, status: 'on_sale', publishDate: '2026-07-03', certType: '已检疫', deliveryMethod: '天津港直发', minOrder: 1000 },
-    { id: 'PM003', title: '新西兰羔羊肉鞍骨 高端餐饮渠道', category: '羊肉', country: '新西兰', productId: 'NZ_DGGYRAG_YJG_137', weight: 7139.4, unitPrice: 26.50, totalPrice: 189194, pieces: 379, seller: '郑州军牧源贸易有限公司', sellerId: 'u_cust_001', images: 6, salesCount: 5, inventory: 7139.4, status: 'on_sale', publishDate: '2026-07-05', certType: '已检疫', deliveryMethod: '冷链直送', minOrder: 500 },
-    { id: 'PM004', title: '蒙古熟牛腱 工厂直供 量大从优', category: '牛肉', country: '蒙古', productId: 'MNG_SNJ_3191397', weight: 22000, unitPrice: 75.00, totalPrice: 1650000, pieces: 1100, seller: '郑州军牧源贸易有限公司', sellerId: 'u_cust_001', images: 5, salesCount: 18, inventory: 22000, status: 'on_sale', publishDate: '2026-06-28', certType: '已检疫', deliveryMethod: '郑州本地配送', minOrder: 2000 },
-    { id: 'PM005', title: '蒙古水煮山羊肉 清真认证', category: '羊肉', country: '蒙古', productId: 'MNG_SZSYR_BWS', weight: 23800, unitPrice: 64.00, totalPrice: 1523200, pieces: 1190, seller: '郑州军牧源贸易有限公司', sellerId: 'u_cust_001', images: 4, salesCount: 9, inventory: 20800, status: 'on_sale', publishDate: '2026-06-30', certType: '已检疫', deliveryMethod: '冷链配送', minOrder: 1000 },
-    { id: 'PM006', title: '冷冻去骨牛7件套 大宗批发', category: '牛肉', country: '澳洲', productId: 'AUTO_MULTI', weight: 39854, unitPrice: 56.00, totalPrice: 2231824, pieces: 1716, seller: '郑州固联冷链有限公司', sellerId: 'u_cust_002', images: 8, salesCount: 3, inventory: 39854, status: 'on_sale', publishDate: '2026-07-02', certType: '已检疫', deliveryMethod: '全国配送', minOrder: 5000 },
-    { id: 'PM007', title: '澳洲牛颈骨 高品质低价', category: '牛肉', country: '澳洲', productId: 'AU_NJG_243', weight: 19031, unitPrice: 24.50, totalPrice: 466264, pieces: 1153, seller: '郑州军牧源贸易有限公司', sellerId: 'u_cust_001', images: 4, salesCount: 6, inventory: 19031, status: 'on_sale', publishDate: '2026-07-04', certType: '已检疫', deliveryMethod: '全国配送', minOrder: 1000 },
-    { id: 'PM008', title: '澳洲牛膝盖骨 工厂直销', category: '牛肉', country: '澳洲', productId: 'AU_NXGG_1265', weight: 7579.05, unitPrice: 26.50, totalPrice: 200845, pieces: 408, seller: '郑州固联冷链有限公司', sellerId: 'u_cust_002', images: 3, salesCount: 4, inventory: 7579, status: 'on_sale', publishDate: '2026-07-06', certType: '已检疫', deliveryMethod: '冷链配送', minOrder: 500 },
+    { id: 'PM001', title: '蒙古水煮牛肉Qq 优质货源 大量现货', category: '牛肉', country: '蒙古', productId: 'MNG_SZNRQq_3191397', weight: 5000, unitPrice: 78.50, totalPrice: 392500, pieces: 250, seller: '郑州某冷链贸易有限公司', sellerId: 'u_cust_001', images: 5, salesCount: 12, inventory: 25000, status: 'on_sale', publishDate: '2026-07-01', certType: '已检疫', deliveryMethod: '全国冷链配送', minOrder: 500 },
+    { id: 'PM002', title: '澳洲去骨牛心管 进口报关齐全', category: '牛肉', country: '澳洲', productId: 'AU_QGNXG_1265', weight: 3073.6, unitPrice: 75.00, totalPrice: 230520, pieces: 113, seller: '郑州某冷链物流有限公司', sellerId: 'u_cust_002', images: 4, salesCount: 8, inventory: 3073.6, status: 'on_sale', publishDate: '2026-07-03', certType: '已检疫', deliveryMethod: '天津港直发', minOrder: 1000 },
+    { id: 'PM003', title: '新西兰羔羊肉鞍骨 高端餐饮渠道', category: '羊肉', country: '新西兰', productId: 'NZ_DGGYRAG_YJG_137', weight: 7139.4, unitPrice: 26.50, totalPrice: 189194, pieces: 379, seller: '郑州某冷链贸易有限公司', sellerId: 'u_cust_001', images: 6, salesCount: 5, inventory: 7139.4, status: 'on_sale', publishDate: '2026-07-05', certType: '已检疫', deliveryMethod: '冷链直送', minOrder: 500 },
+    { id: 'PM004', title: '蒙古熟牛腱 工厂直供 量大从优', category: '牛肉', country: '蒙古', productId: 'MNG_SNJ_3191397', weight: 22000, unitPrice: 75.00, totalPrice: 1650000, pieces: 1100, seller: '郑州某冷链贸易有限公司', sellerId: 'u_cust_001', images: 5, salesCount: 18, inventory: 22000, status: 'on_sale', publishDate: '2026-06-28', certType: '已检疫', deliveryMethod: '郑州本地配送', minOrder: 2000 },
+    { id: 'PM005', title: '蒙古水煮山羊肉 清真认证', category: '羊肉', country: '蒙古', productId: 'MNG_SZSYR_BWS', weight: 23800, unitPrice: 64.00, totalPrice: 1523200, pieces: 1190, seller: '郑州某冷链贸易有限公司', sellerId: 'u_cust_001', images: 4, salesCount: 9, inventory: 20800, status: 'on_sale', publishDate: '2026-06-30', certType: '已检疫', deliveryMethod: '冷链配送', minOrder: 1000 },
+    { id: 'PM006', title: '冷冻去骨牛7件套 大宗批发', category: '牛肉', country: '澳洲', productId: 'AUTO_MULTI', weight: 39854, unitPrice: 56.00, totalPrice: 2231824, pieces: 1716, seller: '郑州某冷链物流有限公司', sellerId: 'u_cust_002', images: 8, salesCount: 3, inventory: 39854, status: 'on_sale', publishDate: '2026-07-02', certType: '已检疫', deliveryMethod: '全国配送', minOrder: 5000 },
+    { id: 'PM007', title: '澳洲牛颈骨 高品质低价', category: '牛肉', country: '澳洲', productId: 'AU_NJG_243', weight: 19031, unitPrice: 24.50, totalPrice: 466264, pieces: 1153, seller: '郑州某冷链贸易有限公司', sellerId: 'u_cust_001', images: 4, salesCount: 6, inventory: 19031, status: 'on_sale', publishDate: '2026-07-04', certType: '已检疫', deliveryMethod: '全国配送', minOrder: 1000 },
+    { id: 'PM008', title: '澳洲牛膝盖骨 工厂直销', category: '牛肉', country: '澳洲', productId: 'AU_NXGG_1265', weight: 7579.05, unitPrice: 26.50, totalPrice: 200845, pieces: 408, seller: '郑州某冷链物流有限公司', sellerId: 'u_cust_002', images: 3, salesCount: 4, inventory: 7579, status: 'on_sale', publishDate: '2026-07-06', certType: '已检疫', deliveryMethod: '冷链配送', minOrder: 500 },
   ],
 
   // 供求信息
   supplyDemands: [
-    { id: 'SD001', type: '集采', title: '【集采需求】5 吨熟牛腱（蒙古）', company: '河南冰峰冷链股份有限公司', productId: 'MNG_SNJ_3191397', quantity: 5000, maxPrice: 76.00, validTo: '2026-07-31', delivery: '郑州', paymentMethod: '货到付款', contact: '韩志远 138 0000 1111', status: 'recruiting', participantCount: 5, publishTime: '2026-07-06' },
+    { id: 'SD001', type: '集采', title: '【集采需求】5 吨熟牛腱（蒙古）', company: '河南某冷链股份有限公司', productId: 'MNG_SNJ_3191397', quantity: 5000, maxPrice: 76.00, validTo: '2026-07-31', delivery: '郑州', paymentMethod: '货到付款', contact: '韩志远 138 0000 1111', status: 'recruiting', participantCount: 5, publishTime: '2026-07-06' },
     { id: 'SD002', type: '求购', title: '【求购】澳洲去骨牛心管 2 吨', company: '洛阳冷联食品贸易有限公司', productId: 'AU_QGNXG_1265', quantity: 2000, maxPrice: 75.00, validTo: '2026-07-20', delivery: '洛阳', paymentMethod: '银行转账', contact: '张明远 137 0000 2222', status: 'active', publishTime: '2026-07-07' },
     { id: 'SD003', type: '集采', title: '【平台集采】羔羊肉+牛心管 8吨', company: '大河智链平台', productId: 'MIX_Multi', quantity: 8000, maxPrice: 32.00, validTo: '2026-07-25', delivery: '物流港二期', paymentMethod: '30 天账期', contact: '平台运营 - 王经理 139 0000 3333', status: 'recruiting', participantCount: 3, publishTime: '2026-07-05' },
-    { id: 'SD004', type: '寄售', title: '【寄售】蒙古水煮牛肉 Qq 3 吨', company: '郑州军牧源贸易有限公司', productId: 'MNG_SZNRQq_3191397', quantity: 3000, maxPrice: 78.00, validTo: '2026-08-15', delivery: '郑州', paymentMethod: '销售后结算', contact: '陈志强 138 0000 6688', status: 'active', publishTime: '2026-07-04' },
+    { id: 'SD004', type: '寄售', title: '【寄售】蒙古水煮牛肉 Qq 3 吨', company: '郑州某冷链贸易有限公司', productId: 'MNG_SZNRQq_3191397', quantity: 3000, maxPrice: 78.00, validTo: '2026-08-15', delivery: '郑州', paymentMethod: '销售后结算', contact: '陈志强 138 0000 6688', status: 'active', publishTime: '2026-07-04' },
     { id: 'SD005', type: '求购', title: '【紧急求购】新西兰羊排 1 吨', company: '郑州思念食品有限公司', productId: 'NZ_LDDGMYYJP_50', quantity: 1000, maxPrice: 47.00, validTo: '2026-07-15', delivery: '郑州', paymentMethod: '现款现货', contact: '王采购 136 0000 4444', status: 'urgent', publishTime: '2026-07-08' },
   ],
 
   // 订单
   tradeOrders: [
-    { id: 'TO001', orderNo: 'TO20260705001', productTitle: '蒙古水煮牛肉Qq 优质货源', buyer: '河南冰峰冷链股份有限公司', seller: '郑州军牧源贸易有限公司', productId: 'PM001', quantity: 1500, unitPrice: 78.50, totalAmount: 117750, status: 'paid', orderType: 'normal', tradeType: '一口价', createTime: '2026-07-05 14:30', payTime: '2026-07-05 15:00', deliveryTime: null },
-    { id: 'TO002', orderNo: 'TO20260704001', productTitle: '澳洲去骨牛心管 进口报关齐全', buyer: '洛阳冷联食品贸易有限公司', seller: '郑州固联冷链有限公司', productId: 'PM002', quantity: 2000, unitPrice: 75.00, totalAmount: 150000, status: 'shipping', orderType: 'normal', tradeType: '议价', createTime: '2026-07-04 10:15', payTime: '2026-07-04 11:00', deliveryTime: '2026-07-08' },
-    { id: 'TO003', orderNo: 'TO20260703001', productTitle: '蒙古熟牛腱 工厂直供', buyer: '郑州思念食品有限公司', seller: '郑州军牧源贸易有限公司', productId: 'PM004', quantity: 2000, unitPrice: 75.00, totalAmount: 150000, status: 'completed', orderType: 'normal', tradeType: '一口价', createTime: '2026-07-03 09:00', payTime: '2026-07-03 09:30', deliveryTime: '2026-07-04' },
-    { id: 'TO004', orderNo: 'TO20260702001', productTitle: '【平台集采】羔羊肉+牛心管 8吨', buyer: '大河智链平台', seller: '郑州军牧源贸易有限公司', productId: 'SD003', quantity: 3000, unitPrice: 32.00, totalAmount: 96000, status: 'pending', orderType: 'groupbuy', tradeType: '集采', createTime: '2026-07-02 11:00', payTime: null, deliveryTime: null },
-    { id: 'TO005', orderNo: 'TO20260701001', productTitle: '蒙古水煮山羊肉 清真认证', buyer: '郑州哈力牧业', seller: '郑州军牧源贸易有限公司', productId: 'PM005', quantity: 1000, unitPrice: 64.00, totalAmount: 64000, status: 'cancelled', orderType: 'normal', tradeType: '一口价', createTime: '2026-07-01 16:00', payTime: null, deliveryTime: null },
-    { id: 'TO006', orderNo: 'TO20260630001', productTitle: '新西兰羔羊肉鞍骨 高端餐饮', buyer: '上海鼎泰丰', seller: '郑州军牧源贸易有限公司', productId: 'PM003', quantity: 500, unitPrice: 26.50, totalAmount: 13250, status: 'completed', orderType: 'normal', tradeType: '一口价', createTime: '2026-06-30 13:00', payTime: '2026-06-30 14:00', deliveryTime: '2026-07-02' },
+    { id: 'TO001', orderNo: 'TO20260705001', productTitle: '蒙古水煮牛肉Qq 优质货源', buyer: '河南某冷链股份有限公司', seller: '郑州某冷链贸易有限公司', productId: 'PM001', quantity: 1500, unitPrice: 78.50, totalAmount: 117750, status: 'paid', orderType: 'normal', tradeType: '一口价', createTime: '2026-07-05 14:30', payTime: '2026-07-05 15:00', deliveryTime: null },
+    { id: 'TO002', orderNo: 'TO20260704001', productTitle: '澳洲去骨牛心管 进口报关齐全', buyer: '洛阳冷联食品贸易有限公司', seller: '郑州某冷链物流有限公司', productId: 'PM002', quantity: 2000, unitPrice: 75.00, totalAmount: 150000, status: 'shipping', orderType: 'normal', tradeType: '议价', createTime: '2026-07-04 10:15', payTime: '2026-07-04 11:00', deliveryTime: '2026-07-08' },
+    { id: 'TO003', orderNo: 'TO20260703001', productTitle: '蒙古熟牛腱 工厂直供', buyer: '郑州思念食品有限公司', seller: '郑州某冷链贸易有限公司', productId: 'PM004', quantity: 2000, unitPrice: 75.00, totalAmount: 150000, status: 'completed', orderType: 'normal', tradeType: '一口价', createTime: '2026-07-03 09:00', payTime: '2026-07-03 09:30', deliveryTime: '2026-07-04' },
+    { id: 'TO004', orderNo: 'TO20260702001', productTitle: '【平台集采】羔羊肉+牛心管 8吨', buyer: '大河智链平台', seller: '郑州某冷链贸易有限公司', productId: 'SD003', quantity: 3000, unitPrice: 32.00, totalAmount: 96000, status: 'pending', orderType: 'groupbuy', tradeType: '集采', createTime: '2026-07-02 11:00', payTime: null, deliveryTime: null },
+    { id: 'TO005', orderNo: 'TO20260701001', productTitle: '蒙古水煮山羊肉 清真认证', buyer: '郑州哈力牧业', seller: '郑州某冷链贸易有限公司', productId: 'PM005', quantity: 1000, unitPrice: 64.00, totalAmount: 64000, status: 'cancelled', orderType: 'normal', tradeType: '一口价', createTime: '2026-07-01 16:00', payTime: null, deliveryTime: null },
+    { id: 'TO006', orderNo: 'TO20260630001', productTitle: '新西兰羔羊肉鞍骨 高端餐饮', buyer: '上海鼎泰丰', seller: '郑州某冷链贸易有限公司', productId: 'PM003', quantity: 500, unitPrice: 26.50, totalAmount: 13250, status: 'completed', orderType: 'normal', tradeType: '一口价', createTime: '2026-06-30 13:00', payTime: '2026-06-30 14:00', deliveryTime: '2026-07-02' },
   ],
 
   // ========== 仓库方数据 ==========
@@ -886,39 +935,39 @@ const MockData = {
   },
 
   warehouseInboundList: [
-    { id: 'win_001', orderNo: 'IN_20260705001', applicant: '郑州军牧源', vehicleNo: '豫A·F8829', driver: '张大伟', product: '水煮山羊肉', pieces: 1190, weight: 23800, warehouse: '物流港二期大河智链监管库', plannedTime: '2026-07-06 09:00', actualTime: null, status: 'pending' },
+    { id: 'win_001', orderNo: 'IN_20260705001', applicant: '郑州某冷链', vehicleNo: '豫A·F8829', driver: '张大伟', product: '水煮山羊肉', pieces: 1190, weight: 23800, warehouse: '物流港二期大河智链监管库', plannedTime: '2026-07-06 09:00', actualTime: null, status: 'pending' },
     { id: 'win_002', orderNo: 'IN_20260703001', applicant: '郑州固联', vehicleNo: '豫A·H5521', driver: '李明', product: '冷冻去骨牛7件套', pieces: 1716, weight: 39854, warehouse: '物流港二期大河智链监管库', plannedTime: '2026-07-04 10:00', actualTime: '2026-07-04 10:25', status: 'completed' },
-    { id: 'win_003', orderNo: 'IN_20260702001', applicant: '郑州军牧源', vehicleNo: '豫A·J6688', driver: '王晓东', product: '水煮牛肉Qq', pieces: 425, weight: 8500, warehouse: '物流港二期大河智链监管库', plannedTime: '2026-07-02 14:00', actualTime: '2026-07-02 14:30', status: 'completed' },
+    { id: 'win_003', orderNo: 'IN_20260702001', applicant: '郑州某冷链', vehicleNo: '豫A·J6688', driver: '王晓东', product: '水煮牛肉Qq', pieces: 425, weight: 8500, warehouse: '物流港二期大河智链监管库', plannedTime: '2026-07-02 14:00', actualTime: '2026-07-02 14:30', status: 'completed' },
   ],
 
   warehouseOutboundList: [
-    { id: 'wout_001', orderNo: 'OUT_20260708001', applicant: '郑州军牧源', vehicleNo: '豫A·K7723', driver: '赵刚', product: '冷冻带骨绵羊腰脊排', pieces: 70, weight: 1073, warehouse: '天津港国际冷链基地', plannedTime: '2026-07-08 14:00', actualTime: null, status: 'pending', instruction: '已收到监管方出库指令，可放行' },
-    { id: 'wout_002', orderNo: 'OUT_20260528001', applicant: '郑州军牧源', vehicleNo: '豫A·B1122', driver: '刘强', product: '水煮山羊肉', pieces: 150, weight: 3000, warehouse: '物流港二期大河智链监管库', plannedTime: '2026-05-28 10:00', actualTime: '2026-05-28 10:45', status: 'completed' },
+    { id: 'wout_001', orderNo: 'OUT_20260708001', applicant: '郑州某冷链', vehicleNo: '豫A·K7723', driver: '赵刚', product: '冷冻带骨绵羊腰脊排', pieces: 70, weight: 1073, warehouse: '天津港国际冷链基地', plannedTime: '2026-07-08 14:00', actualTime: null, status: 'pending', instruction: '已收到监管方出库指令，可放行' },
+    { id: 'wout_002', orderNo: 'OUT_20260528001', applicant: '郑州某冷链', vehicleNo: '豫A·B1122', driver: '刘强', product: '水煮山羊肉', pieces: 150, weight: 3000, warehouse: '物流港二期大河智链监管库', plannedTime: '2026-05-28 10:00', actualTime: '2026-05-28 10:45', status: 'completed' },
   ],
 
   // ========== 到期预警（资金方） ==========
   dueAlerts: [
-    { id: 'da_001', bizNo: 'DHZL_JMY_2025120101', customer: '郑州军牧源', loanAmount: 1130000, dueDate: '2026-07-15', daysLeft: 7, status: 'urgent' },
-    { id: 'da_002', bizNo: 'DHZL_JMY_2026042701', customer: '郑州军牧源', loanAmount: 720000, dueDate: '2026-08-10', daysLeft: 33, status: 'warning' },
+    { id: 'da_001', bizNo: 'DHZL_JMY_2025120101', customer: '郑州某冷链', loanAmount: 1130000, dueDate: '2026-07-15', daysLeft: 7, status: 'urgent' },
+    { id: 'da_002', bizNo: 'DHZL_JMY_2026042701', customer: '郑州某冷链', loanAmount: 720000, dueDate: '2026-08-10', daysLeft: 33, status: 'warning' },
     { id: 'da_003', bizNo: 'DHZL_GL_2026052501', customer: '郑州固联', loanAmount: 1760000, dueDate: '2026-08-25', daysLeft: 48, status: 'normal' },
   ],
 
   // ========== 担保方 / 资金方视图专用：质押货物台账（统一数据源） ==========
   // 各角色根据自己的 bizList 渲染台账视图
   pledgeLedger: [
-    { bizNo: 'DHZL_JMY_2025120101', customer: '郑州军牧源', customerCode: 'JMY', product: '熟牛腱', productId: 'MNG_SNJ_3191397', warehouse: '郑州融万冷链库', warehouseId: 'wh_002', pieces: 1100, weight: 22000, evaluatePrice: 74, evaluateValue: 1628000, loanAmount: 1130000, repaidAmount: 0, remainingDebt: 1130000, currentPrice: 76.77, priceChangeRate: 3.74, pledgeRatio: 0.8, status: 'financing', dueDate: 46114, signStatus: 'completed', isOverdue: false },
-    { bizNo: 'DHZL_JMY_2025120901', customer: '郑州军牧源', customerCode: 'JMY', product: '水煮牛肉Qq+Qh', productId: 'MNG_SZNR_*', warehouse: '郑州融万冷链库', warehouseId: 'wh_002', pieces: 890, weight: 17800, evaluatePrice: 76, evaluateValue: 1352800, loanAmount: 940000, repaidAmount: 490000, remainingDebt: 450000, currentPrice: 78.79, priceChangeRate: 3.67, pledgeRatio: 0.8, status: 'financing', dueDate: 46124, signStatus: 'completed', isOverdue: false },
-    { bizNo: 'DHZL_JMY_2026012601', customer: '郑州军牧源', customerCode: 'JMY', product: '去骨牛心管', productId: 'AU_QGNXG_1265', warehouse: '天津港国际冷链基地', warehouseId: 'wh_003', pieces: 113, weight: 3073.6, evaluatePrice: 70, evaluateValue: 215152, loanAmount: 2030000, repaidAmount: 0, remainingDebt: 2030000, currentPrice: 74.74, priceChangeRate: 6.77, pledgeRatio: 0.8, status: 'warning', dueDate: 45804, signStatus: 'completed', isOverdue: true },
-    { bizNo: 'DHZL_JMY_2026013101', customer: '郑州军牧源', customerCode: 'JMY', product: '牛颈骨', productId: 'AU_NJG_243', warehouse: '天津港国际冷链基地', warehouseId: 'wh_003', pieces: 1153, weight: 19031, evaluatePrice: 24.5, evaluateValue: 466264, loanAmount: 320000, repaidAmount: 0, remainingDebt: 320000, currentPrice: 23.73, priceChangeRate: -3.14, pledgeRatio: 0.8, status: 'running', dueDate: 46176, signStatus: 'completed', isOverdue: false },
-    { bizNo: 'DHZL_JMY_2026042701', customer: '郑州军牧源', customerCode: 'JMY', product: '羔羊肉+牛心管+牛膝盖骨', productId: 'MIX_001', warehouse: '天津港国际冷链基地', warehouseId: 'wh_003', pieces: 1850, weight: 32400, evaluatePrice: 32, evaluateValue: 1100000, loanAmount: 720000, repaidAmount: 0, remainingDebt: 720000, currentPrice: 28.00, priceChangeRate: -12.5, pledgeRatio: 0.8, status: 'danger', dueDate: 46260, signStatus: 'completed', isOverdue: false },
-    { bizNo: 'DHZL_JMY_2026050901', customer: '郑州军牧源', customerCode: 'JMY', product: '水煮山羊肉', productId: 'MNG_SZSYR_BWS', warehouse: '物流港二期大河智链监管库', warehouseId: 'wh_001', pieces: 1040, weight: 20800, evaluatePrice: 63, evaluateValue: 1302840, loanAmount: 1190000, repaidAmount: 196560, remainingDebt: 993440, currentPrice: 63.00, priceChangeRate: 0, pledgeRatio: 0.8, status: 'partial', dueDate: 46273, signStatus: 'completed', isOverdue: false },
+    { bizNo: 'DHZL_JMY_2025120101', customer: '郑州某冷链', customerCode: 'JMY', product: '熟牛腱', productId: 'MNG_SNJ_3191397', warehouse: '郑州融万冷链库', warehouseId: 'wh_002', pieces: 1100, weight: 22000, evaluatePrice: 74, evaluateValue: 1628000, loanAmount: 1130000, repaidAmount: 0, remainingDebt: 1130000, currentPrice: 76.77, priceChangeRate: 3.74, pledgeRatio: 0.8, status: 'financing', dueDate: 46114, signStatus: 'completed', isOverdue: false },
+    { bizNo: 'DHZL_JMY_2025120901', customer: '郑州某冷链', customerCode: 'JMY', product: '水煮牛肉Qq+Qh', productId: 'MNG_SZNR_*', warehouse: '郑州融万冷链库', warehouseId: 'wh_002', pieces: 890, weight: 17800, evaluatePrice: 76, evaluateValue: 1352800, loanAmount: 940000, repaidAmount: 490000, remainingDebt: 450000, currentPrice: 78.79, priceChangeRate: 3.67, pledgeRatio: 0.8, status: 'financing', dueDate: 46124, signStatus: 'completed', isOverdue: false },
+    { bizNo: 'DHZL_JMY_2026012601', customer: '郑州某冷链', customerCode: 'JMY', product: '去骨牛心管', productId: 'AU_QGNXG_1265', warehouse: '天津港国际冷链基地', warehouseId: 'wh_003', pieces: 113, weight: 3073.6, evaluatePrice: 70, evaluateValue: 215152, loanAmount: 2030000, repaidAmount: 0, remainingDebt: 2030000, currentPrice: 74.74, priceChangeRate: 6.77, pledgeRatio: 0.8, status: 'warning', dueDate: 45804, signStatus: 'completed', isOverdue: true },
+    { bizNo: 'DHZL_JMY_2026013101', customer: '郑州某冷链', customerCode: 'JMY', product: '牛颈骨', productId: 'AU_NJG_243', warehouse: '天津港国际冷链基地', warehouseId: 'wh_003', pieces: 1153, weight: 19031, evaluatePrice: 24.5, evaluateValue: 466264, loanAmount: 320000, repaidAmount: 0, remainingDebt: 320000, currentPrice: 23.73, priceChangeRate: -3.14, pledgeRatio: 0.8, status: 'running', dueDate: 46176, signStatus: 'completed', isOverdue: false },
+    { bizNo: 'DHZL_JMY_2026042701', customer: '郑州某冷链', customerCode: 'JMY', product: '羔羊肉+牛心管+牛膝盖骨', productId: 'MIX_001', warehouse: '天津港国际冷链基地', warehouseId: 'wh_003', pieces: 1850, weight: 32400, evaluatePrice: 32, evaluateValue: 1100000, loanAmount: 720000, repaidAmount: 0, remainingDebt: 720000, currentPrice: 28.00, priceChangeRate: -12.5, pledgeRatio: 0.8, status: 'danger', dueDate: 46260, signStatus: 'completed', isOverdue: false },
+    { bizNo: 'DHZL_JMY_2026050901', customer: '郑州某冷链', customerCode: 'JMY', product: '水煮山羊肉', productId: 'MNG_SZSYR_BWS', warehouse: '物流港二期大河智链监管库', warehouseId: 'wh_001', pieces: 1040, weight: 20800, evaluatePrice: 63, evaluateValue: 1302840, loanAmount: 1190000, repaidAmount: 196560, remainingDebt: 993440, currentPrice: 63.00, priceChangeRate: 0, pledgeRatio: 0.8, status: 'partial', dueDate: 46273, signStatus: 'completed', isOverdue: false },
     { bizNo: 'DHZL_GL_2026052501', customer: '郑州固联', customerCode: 'GL', product: '冷冻去骨牛7件套', productId: 'AUTO_MULTI', warehouse: '物流港二期大河智链监管库', warehouseId: 'wh_001', pieces: 1716, weight: 39854, evaluatePrice: 55.5, evaluateValue: 2211895, loanAmount: 1760000, repaidAmount: 0, remainingDebt: 1760000, currentPrice: 58.40, priceChangeRate: 5.20, pledgeRatio: 0.8, status: 'released', dueDate: 46288, signStatus: 'completed', isOverdue: false },
   ],
 
   // ========== v1.7 新增：还款登记记录（货主上传电子回单） ==========
   repaymentRecords: [
-    { id: 'rr_001', bizNo: 'DHZL_JMY_2026012601', customer: '郑州军牧源', customerCode: 'JMY', product: '去骨牛心管', repayAmount: 215152, systemEstimate: 215152, offLineAmount: 215000, offLineMethod: '银行转账', payAccount: '6222 XXXX XXXX 1234 567', recvAccount: '中国民生银行 6225 XXXX XXXX 5678', repayDate: '2026-07-08', voucherCount: 2, voucherFiles: ['民生银行回单20260708.pdf', '电子签购单.png'], registeredBy: '陈志强', registeredAt: '2026-07-08 14:32', fundingConfirmed: true, confirmedBy: '王建国', confirmedAt: '2026-07-08 15:10', status: 'confirmed' },
-    { id: 'rr_002', bizNo: 'DHZL_JMY_2025120901', customer: '郑州军牧源', customerCode: 'JMY', product: '水煮牛肉Qq+Qh', repayAmount: 450000, systemEstimate: 450000, offLineAmount: 450000, offLineMethod: '银行转账', payAccount: '6222 XXXX XXXX 1234 567', recvAccount: '中国民生银行 6225 XXXX XXXX 5678', repayDate: '2026-06-25', voucherCount: 1, voucherFiles: ['还款回单20260625.pdf'], registeredBy: '陈志强', registeredAt: '2026-06-25 10:15', fundingConfirmed: true, confirmedBy: '王建国', confirmedAt: '2026-06-25 11:00', status: 'confirmed' },
+    { id: 'rr_001', bizNo: 'DHZL_JMY_2026012601', customer: '郑州某冷链', customerCode: 'JMY', product: '去骨牛心管', repayAmount: 215152, systemEstimate: 215152, offLineAmount: 215000, offLineMethod: '银行转账', payAccount: '6222 XXXX XXXX 1234 567', recvAccount: '中国民生银行 6225 XXXX XXXX 5678', repayDate: '2026-07-08', voucherCount: 2, voucherFiles: ['民生银行回单20260708.pdf', '电子签购单.png'], registeredBy: '陈志强', registeredAt: '2026-07-08 14:32', fundingConfirmed: true, confirmedBy: '王建国', confirmedAt: '2026-07-08 15:10', status: 'confirmed' },
+    { id: 'rr_002', bizNo: 'DHZL_JMY_2025120901', customer: '郑州某冷链', customerCode: 'JMY', product: '水煮牛肉Qq+Qh', repayAmount: 450000, systemEstimate: 450000, offLineAmount: 450000, offLineMethod: '银行转账', payAccount: '6222 XXXX XXXX 1234 567', recvAccount: '中国民生银行 6225 XXXX XXXX 5678', repayDate: '2026-06-25', voucherCount: 1, voucherFiles: ['还款回单20260625.pdf'], registeredBy: '陈志强', registeredAt: '2026-06-25 10:15', fundingConfirmed: true, confirmedBy: '王建国', confirmedAt: '2026-06-25 11:00', status: 'confirmed' },
     { id: 'rr_003', bizNo: 'DHZL_GL_2026052501', customer: '郑州固联', customerCode: 'GL', product: '冷冻去骨牛7件套', repayAmount: 1500000, systemEstimate: 1500000, offLineAmount: 1500000, offLineMethod: '银行转账', payAccount: '6217 XXXX XXXX 6666 999', recvAccount: '中国民生银行 6225 XXXX XXXX 9999', repayDate: '2026-07-05', voucherCount: 1, voucherFiles: ['固联还款回单.pdf'], registeredBy: '吴建波', registeredAt: '2026-07-05 16:20', fundingConfirmed: false, status: 'pending_confirm' },
   ],
 
@@ -944,6 +993,48 @@ const MockData = {
   loanVoucherRecords: [
     { id: 'lv_001', bizNo: 'DHZL_JMY_2026012601', loanAmount: 1624000, offLineMethod: '银行转账', payAccount: '民生银行 6225 XXXX XXXX 5678', recvAccount: '6222 XXXX XXXX 1234 567', loanDate: '2026-02-01', voucherCount: 2, voucherFiles: ['放款通知单.pdf', '电子回单.png'], uploadedBy: '王建国', uploadedAt: '2026-02-01 17:30', status: 'verified' },
     { id: 'lv_002', bizNo: 'DHZL_JMY_2026050901', loanAmount: 1190000, offLineMethod: '银行转账', payAccount: '民生银行 6225 XXXX XXXX 5678', recvAccount: '6222 XXXX XXXX 1234 567', loanDate: '2026-05-10', voucherCount: 2, voucherFiles: ['放款通知单.pdf', '电子回单.png'], uploadedBy: '王建国', uploadedAt: '2026-05-10 16:45', status: 'verified' },
+  ],
+
+  // ========== v1.7.5 新增：金融产品（决定利率/质押率/期限/监管方/担保方 5 个联动字段） ==========
+  financeProducts: [
+    { id: 'fp_001', name: '冷链现货质押融资', industry: '冷链/冻品', pledgeRatio: 0.70, interestRate: 0.023, duration: 180, supervisor: '大河智链物流股份有限公司（demo）', guarantor: '某省级农业担保股份有限公司', description: '针对进口冻品、肉类、水产的现货质押融资，监管仓位于天津港/郑州', active: true },
+    { id: 'fp_002', name: '粮食仓单质押融资', industry: '粮食/农资', pledgeRatio: 0.65, interestRate: 0.024, duration: 270, supervisor: '大河智链物流股份有限公司（demo）', guarantor: '某省级农业担保股份有限公司', description: '小麦/玉米/大豆等粮食仓单质押', active: true },
+    { id: 'fp_003', name: '钢铁库存质押融资', industry: '钢铁/有色金属', pledgeRatio: 0.65, interestRate: 0.030, duration: 180, supervisor: '国信仓单监管股份有限公司（demo）', guarantor: '某省级农业担保股份有限公司', description: '钢材、铝材、铜材等大宗工业品库存质押', active: true },
+    { id: 'fp_004', name: '煤炭监管仓融资', industry: '能源/煤炭', pledgeRatio: 0.60, interestRate: 0.032, duration: 150, supervisor: '国信仓单监管股份有限公司（demo）', guarantor: '中原信用担保股份有限公司', description: '动力煤、焦煤等煤炭监管仓质押融资', active: true },
+    { id: 'fp_005', name: '物流港口仓单质押', industry: '港口/物流', pledgeRatio: 0.70, interestRate: 0.026, duration: 240, supervisor: '大河智链物流股份有限公司（demo）', guarantor: '中原信用担保股份有限公司', description: '港口/物流园区货物仓单质押', active: true },
+    { id: 'fp_006', name: '标准化仓单质押（期货标准）', industry: '通用/期货', pledgeRatio: 0.75, interestRate: 0.024, duration: 360, supervisor: '国信仓单监管股份有限公司（demo）', guarantor: '某省级农业担保股份有限公司', description: '符合期货交割标准的仓单质押融资', active: true },
+    { id: 'fp_007', name: '农产品预售融资（订单）', industry: '农业/订单', pledgeRatio: 0.50, interestRate: 0.035, duration: 90, supervisor: '大河智链物流股份有限公司（demo）', guarantor: '某省级农业担保股份有限公司', description: '基于已签订单的农产品预售融资', active: true },
+    { id: 'fp_008', name: '应收账款保理（核心企业）', industry: '制造业/保理', pledgeRatio: 0.85, interestRate: 0.038, duration: 120, supervisor: '大河智链物流股份有限公司（demo）', guarantor: '中原信用担保股份有限公司', description: '核心企业确权的应收账款保理融资', active: true },
+    { id: 'fp_009', name: '设备动产质押融资', industry: '装备制造', pledgeRatio: 0.50, interestRate: 0.040, duration: 365, supervisor: '国信仓单监管股份有限公司（demo）', guarantor: '某省级农业担保股份有限公司', description: '机械设备、车辆等动产质押融资', active: true },
+    { id: 'fp_010', name: '电子仓单质押（标准仓）', industry: '通用/标准仓', pledgeRatio: 0.70, interestRate: 0.025, duration: 180, supervisor: '大河智链物流股份有限公司（demo）', guarantor: '某省级农业担保股份有限公司', description: '电子化标准仓单质押融资', active: true },
+    { id: 'fp_011', name: '进口冻品冷链质押', industry: '冷链/进口', pledgeRatio: 0.65, interestRate: 0.027, duration: 240, supervisor: '大河智链物流股份有限公司（demo）', guarantor: '某省级农业担保股份有限公司', description: '进口冻品的冷链仓单质押融资', active: true },
+    { id: 'fp_012', name: '化肥仓单质押融资', industry: '农资/化肥', pledgeRatio: 0.60, interestRate: 0.028, duration: 200, supervisor: '国信仓单监管股份有限公司（demo）', guarantor: '中原信用担保股份有限公司', description: '化肥、农药等农资仓单质押', active: true },
+    { id: 'fp_013', name: '木材仓单质押融资', industry: '建材/木材', pledgeRatio: 0.65, interestRate: 0.031, duration: 180, supervisor: '国信仓单监管股份有限公司（demo）', guarantor: '某省级农业担保股份有限公司', description: '原木、板材等木材仓单质押', active: true },
+    { id: 'fp_014', name: '化工原料质押融资', industry: '化工', pledgeRatio: 0.60, interestRate: 0.033, duration: 180, supervisor: '国信仓单监管股份有限公司（demo）', guarantor: '中原信用担保股份有限公司', description: 'PE、PVC 等化工原料仓单质押', active: true },
+    { id: 'fp_015', name: '综合仓单质押（普适）', industry: '通用', pledgeRatio: 0.65, interestRate: 0.029, duration: 240, supervisor: '大河智链物流股份有限公司（demo）', guarantor: '中原信用担保股份有限公司', description: '通用型仓单质押融资方案', active: true },
+  ],
+
+  // ========== v1.7.5 新增：借款用途预设（10 项） ==========
+  loanPurposes: [
+    { id: 'lp_001', name: '采购原材料', description: '用于采购生产所需的原材料、辅料' },
+    { id: 'lp_002', name: '支付货款', description: '支付上游供应商的货款' },
+    { id: 'lp_003', name: '经营周转', description: '日常经营性资金周转' },
+    { id: 'lp_004', name: '季节性储备', description: '应对季节性需求的存货储备' },
+    { id: 'lp_005', name: '扩大生产规模', description: '扩产所需设备/场地/人员投入' },
+    { id: 'lp_006', name: '偿还银行贷款', description: '置换/偿还他行贷款' },
+    { id: 'lp_007', name: '设备采购', description: '采购生产设备、检测设备、运输工具' },
+    { id: 'lp_008', name: '物流仓储费用', description: '支付物流运输费、仓储费、装卸费' },
+    { id: 'lp_009', name: '工资发放', description: '员工工资/社保发放' },
+    { id: 'lp_010', name: '其他', description: '其他合法经营用途（请在备注中说明）' },
+  ],
+
+  // ========== v1.7.5 新增：货主方公户信息（多账户，下拉选择） ==========
+  customerAccounts: [
+    { id: 'acc_001', customer: '郑州某冷链贸易有限公司', bankName: '民生银行郑州分行', branch: '郑州分行营业部', accountNo: '6222 XXXX XXXX 1234 567', accountAlias: '基本户', isDefault: true, verifiedAt: '2026-01-15', status: 'active' },
+    { id: 'acc_002', customer: '郑州某冷链贸易有限公司', bankName: '中信银行郑州分行', branch: '郑州花园路支行', accountNo: '6225 XXXX XXXX 5678', accountAlias: '一般户', isDefault: false, verifiedAt: '2026-03-20', status: 'active' },
+    { id: 'acc_003', customer: '郑州某冷链贸易有限公司', bankName: '工商银行郑州分行', branch: '郑州金水支行', accountNo: '6217 XXXX XXXX 6666 999', accountAlias: '结算户', isDefault: false, verifiedAt: '2026-05-10', status: 'active' },
+    { id: 'acc_004', customer: '河南某冷链股份有限公司', bankName: '建设银行郑州金水支行', branch: '郑州金水支行', accountNo: '6217 XXXX XXXX 8888 777', accountAlias: '基本户', isDefault: true, verifiedAt: '2026-02-01', status: 'active' },
+    { id: 'acc_005', customer: '河南某冷链股份有限公司', bankName: '招商银行郑州分行', branch: '郑州分行', accountNo: '6225 XXXX XXXX 3333 222', accountAlias: '一般户', isDefault: false, verifiedAt: '2026-04-15', status: 'active' },
   ],
 };
 

@@ -63,7 +63,7 @@
   function renderCustomer() {
     const s = MockData.customerStats;
     const usagePercent = (s.creditUsed / s.creditLimit * 100).toFixed(1);
-    const myBiz = MockData.bizList.filter(b => b.customer.includes('军牧源'));
+    const myBiz = MockData.bizList.filter(b => b.customer.includes('郑州某冷链'));
 
     return `
       <!-- 授信概览 -->
@@ -150,7 +150,7 @@
           价格盯市预警
         </h3>
         <div class="space-y-2">
-          ${MockData.priceAlerts.filter(a => a.customer.includes('军牧源')).map(a => `
+          ${MockData.priceAlerts.filter(a => a.customer.includes('郑州某冷链')).map(a => `
             <div class="flex items-center justify-between p-3 rounded-lg ${a.level === 'danger' ? 'bg-rose-50 border border-rose-200' : 'bg-amber-50 border border-amber-200'}">
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-full ${a.level === 'danger' ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600'} flex items-center justify-center font-bold">${a.priceChangeRate > 0 ? '↑' : '↓'}</div>
@@ -204,10 +204,10 @@
           <h3 class="font-semibold text-slate-800 mb-4">📋 待办审批</h3>
           <div class="space-y-3">
             ${[
-              { type: '准入审批', title: '郑州固联冷链有限公司准入申请', applicant: '业务一部', time: '2 小时前', urgent: true },
-              { type: '入库审批', title: 'IN_20260705001 水煮山羊肉入库', applicant: '军牧源', time: '1 小时前', urgent: true },
-              { type: '融资审核', title: 'FN_20260705001 融资申请 ¥1,190,000', applicant: '军牧源', time: '30 分钟前', urgent: false },
-              { type: '出库审批', title: 'OUT_20260708001 解押+出库 7500kg', applicant: '军牧源', time: '15 分钟前', urgent: false },
+              { type: '准入审批', title: '郑州某冷链物流有限公司准入申请', applicant: '业务一部', time: '2 小时前', urgent: true },
+              { type: '入库审批', title: 'IN_20260705001 水煮山羊肉入库', applicant: '郑州某冷链', time: '1 小时前', urgent: true },
+              { type: '融资审核', title: 'FN_20260705001 融资申请 ¥1,190,000', applicant: '郑州某冷链', time: '30 分钟前', urgent: false },
+              { type: '出库审批', title: 'OUT_20260708001 解押+出库 7500kg', applicant: '郑州某冷链', time: '15 分钟前', urgent: false },
             ].map(t => `
               <div class="flex items-center justify-between p-3 rounded-lg border ${t.urgent ? 'border-red-200 bg-red-50' : 'border-slate-200 hover:bg-slate-50'}">
                 <div class="flex-1">
@@ -356,7 +356,7 @@
               <tr><th class="text-left px-3 py-2">客户</th><th class="text-right px-3 py-2">金额</th><th class="text-center px-3 py-2">操作</th></tr>
             </thead>
             <tbody>
-              <tr class="border-t border-slate-100"><td class="px-3 py-3">郑州军牧源</td><td class="px-3 py-3 text-right num-focus">¥1,190,000</td><td class="px-3 py-3 text-center"><a href="/bank/approval-loan" class="text-blue-600 hover:underline">放款 →</a></td></tr>
+              <tr class="border-t border-slate-100"><td class="px-3 py-3">郑州某冷链</td><td class="px-3 py-3 text-right num-focus">¥1,190,000</td><td class="px-3 py-3 text-center"><a href="/bank/approval-loan" class="text-blue-600 hover:underline">放款 →</a></td></tr>
               <tr class="border-t border-slate-100"><td class="px-3 py-3">郑州固联</td><td class="px-3 py-3 text-right num-focus">¥1,760,000</td><td class="px-3 py-3 text-center"><a href="/bank/approval-loan" class="text-blue-600 hover:underline">放款 →</a></td></tr>
             </tbody>
           </table>
