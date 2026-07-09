@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>录入授信 - 大河智链</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+  const approvedCustomers = MockData.admissionList.filter(a => a.status === 'approved');
+
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '授信审批 · 录入授信结果',
+    currentPath: '/bank/approval-credit',
+    breadcrumb: [{ label: '放款管理', path: '/bank/approval-credit' }, '授信录入'],
+    content: `
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-800">
+        <div class="font-medium mb-1">💡 授信录入说明</div>
+        <div>客户准入通过监管方和担保方审核后，银行作为最后节点录入授信额度、期限、利率。录入完成后，客户方即可在授信额度内发起入库和融资申请。</div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="px-5 py-3 border-b border-slate-200">
+          <h3 class="font-semibold text-slate-800">待录入授信（已通过监管+担保审核）</h3>
+        </div>
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+            <tr>
+              <th class="text-left px-4 py-3">客户</th>
+              <th class="text-left px-4 py-3">统一社会信用代码</th>
+              <th class="text-left px-4 py-3">法定代表人</th>
+              <th class="text-right px-4 py-3">注册资本</th>
+              <th class="text-right px-4 py-3">监管方建议额度</th>
+              <th class="text-right px-4 py-3">担保方建议</th>
+              <th class="text-center px-4 py-3">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${approvedCustomers.map(c => `
+              <tr class="border-t border-slate-100 hover:bg-slate-50">
+                <td class="px-4 py-3 font-medium">${c.customer}</td>
+                <td class="px-4 py-3 font-mono text-xs">${c.creditCode}</td>
+                <td class="px-4 py-3">${c.legalRep}</td>
+                <td class="px-4 py-3 text-right num-focus">${c.registeredCap}</td>
+                <td class="px-4 py-3 text-right num-focus text-blue-600">¥5,000 万</td>
+                <td class="px-4 py-3 text-right num-focus text-amber-600">同意</td>
+                <td class="px-4 py-3 text-center">
+                  <button onclick="inputCredit('${c.id}')" class="px-3 py-1 bg-violet-600 hover:bg-violet-700 text-white text-xs rounded">录入授信</button>
+                </td>
+              </tr>
+            `).join('') || '<tr><td colspan="7" class="text-center text-slate-400 py-8">暂无待录入</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+
+      <div id="creditModal"></div>
+    `
+  });
+
+  function inputCredit(id) {
+    document.getElementById('creditModal').innerHTML = `
+      <div class="modal-backdrop" onclick="this.remove()">
+        <div class="bg-white rounded-xl w-[700px] shadow-2xl" onclick="event.stopPropagation()">
+          <div class="px-6 py-4 border-b border-slate-200">
+            <h3 class="font-bold text-slate-800 text-lg">录入授信信息</h3>
+          </div>
+          <div class="p-6 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div><label class="block text-xs text-slate-600 mb-1">客户名称</label><input type="text" value="郑州军牧源贸易有限公司" disabled class="w-full px-3 py-2 border border-slate-200 bg-slate-50 rounded text-sm text-slate-500"></div>
+              <div><label class="block text-xs text-slate-600 mb-1">统一社会信用代码</label><input type="text" value="91410100MA9F8X9T5X" disabled class="w-full px-3 py-2 border border-slate-200 bg-slate-50 rounded text-sm text-slate-500 font-mono"></div>
+            </div>
+            <div class="bg-violet-50 border border-violet-200 rounded-lg p-4">
+              <div class="text-sm font-semibold text-violet-900 mb-3">授信方案</div>
+              <div class="grid grid-cols-2 gap-3">
+                <div><label class="block text-xs text-slate-600 mb-1">授信总额度 <span class="text-red-500">*</span></label><input type="text" value="50,000,000" class="w-full px-3 py-2 border border-slate-300 rounded text-sm font-bold text-violet-700 num-focus"></div>
+                <div><label class="block text-xs text-slate-600 mb-1">授信期限 <span class="text-red-500">*</span></label>
+                  <select class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+                    <option>6 个月</option><option selected>12 个月</option><option>24 个月</option>
+                  </select>
+                </div>
+                <div><label class="block text-xs text-slate-600 mb-1">执行利率 <span class="text-red-500">*</span></label><input type="text" value="4.35%" class="w-full px-3 py-2 border border-slate-300 rounded text-sm num-focus"></div>
+                <div><label class="text-xs text-slate-600 mb-1">质押率上限</label><input type="text" value="80%" class="w-full px-3 py-2 border border-slate-300 rounded text-sm"></div>
+                <div><label class="text-xs text-slate-600 mb-1">单笔最长融资期限</label>
+                  <select class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+                    <option>60 天</option><option>90 天</option><option selected>120 天</option>
+                  </select>
+                </div>
+                <div><label class="text-xs text-slate-600 mb-1">还款方式</label>
+                  <select class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+                    <option>到期一次性还本付息</option><option>按月结息，到期还本</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="bg-amber-50 border border-amber-200 rounded p-3 text-xs text-amber-800">
+              ⚠ 授信录入后将通过站内信+短信通知客户。客户可在额度内发起融资申请。
+            </div>
+          </div>
+          <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-2">
+            <button onclick="this.closest('.modal-backdrop').remove()" class="px-4 py-2 border border-slate-300 rounded text-sm">取消</button>
+            <button onclick="Utils.toast('✓ 授信录入成功，已通知客户','success'); this.closest('.modal-backdrop').remove()" class="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded text-sm font-medium">确认录入</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>多次签章流程 - 大河智链</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+<style>
+  .seal-draggable { cursor: move; user-select: none; transition: transform 0.15s; }
+  .seal-draggable:hover { transform: scale(1.05); }
+  .seal-placed { position: absolute; pointer-events: none; }
+  .doc-preview { position: relative; background: #fff; min-height: 600px; padding: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+  .seal-zone { position: absolute; bottom: 80px; right: 60px; width: 140px; height: 140px; border: 2px dashed #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 12px; pointer-events: none; }
+</style>
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+  const user = Utils.getUser();
+
+  // 解析 URL 参数
+  const params = new URLSearchParams(window.location.search);
+  const bizNo = params.get('bizNo') || 'DHZL_JMY_2026012601';
+  const sealStep = parseInt(params.get('seal') || '1'); // 1/2/3
+
+  if (!user.sealPermission) {
+    Utils.toast('⚠ 您无电子签章权限', 'error');
+    setTimeout(() => window.location.href = '/customer/financing', 1000);
+  }
+
+  // 配置每一步盖章的单据
+  const sealConfig = {
+    1: {
+      title: '第 ① 次盖章（监管方审核通过后）',
+      desc: '请在《质物清单》和《质押反担保合同》上盖公章',
+      docType: '融资申请全套（质物清单+质押反担保合同）',
+      bgColor: 'amber',
+      afterApproval: '下一步：提交担保方审核'
+    },
+    2: {
+      title: '第 ② 次盖章（担保方审核通过后）',
+      desc: '请再次在《质物清单》和《质押反担保合同》上盖公章',
+      docType: '担保方已审核（质物清单+质押反担保合同）',
+      bgColor: 'blue',
+      afterApproval: '下一步：提交资金方审核'
+    },
+    3: {
+      title: '第 ③ 次盖章（资金方审核通过后）',
+      desc: '请最后一次在《质物清单》上盖公章',
+      docType: '资金方已审核（质物清单）',
+      bgColor: 'orange',
+      afterApproval: '下一步：进入放款阶段，货物冻结'
+    }
+  };
+
+  const cfg = sealConfig[sealStep];
+
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '🔖 电子签章流程（第 ' + sealStep + ' 次）',
+    currentPath: '/customer/financing',
+    breadcrumb: [{ label: '融资管理', path: '/customer/financing' }, '多次签章'],
+    content: `
+      <div class="bg-${cfg.bgColor}-50 border border-${cfg.bgColor}-200 rounded-lg p-4 mb-6 text-sm text-${cfg.bgColor}-800">
+        <div class="font-medium mb-1">${cfg.title}</div>
+        <div>${cfg.desc}</div>
+        <div class="text-xs mt-2 text-${cfg.bgColor}-700">业务编号：<span class="font-mono">${bizNo}</span> · 单据类型：<span class="font-medium">${cfg.docType}</span></div>
+      </div>
+
+      <!-- 3 步进度 -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5 mb-6">
+        <div class="grid grid-cols-3 gap-4 text-center">
+          ${[
+            {n: 1, label: '监管方审核通过后', icon: '⏳'},
+            {n: 2, label: '担保方审核通过后', icon: '⏳'},
+            {n: 3, label: '资金方审核通过后', icon: '⏳'}
+          ].map(s => `
+            <div class="border-2 rounded-lg p-3 ${s.n === sealStep ? 'border-amber-500 bg-amber-50' : s.n < sealStep ? 'border-emerald-300 bg-emerald-50/30' : 'border-slate-200'}">
+              <div class="text-2xl mb-1">${s.n < sealStep ? '✅' : s.n === sealStep ? '🔖' : '⏳'}</div>
+              <div class="text-xs font-medium">第 ${'①②③'[s.n-1]} 次盖章</div>
+              <div class="text-xs text-slate-500">${s.label}</div>
+              <div class="text-xs mt-1">${s.n === sealStep ? '<span class="text-amber-600 font-bold">当前步骤</span>' : s.n < sealStep ? '<span class="text-emerald-600">已完成</span>' : '<span class="text-slate-400">未开始</span>'}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-6">
+        <!-- 左侧：单据预览 -->
+        <div class="col-span-2 doc-preview">
+          <div class="text-center mb-4 pb-3 border-b-2 border-slate-800">
+            <h2 class="text-xl font-bold text-slate-800">${sealStep === 3 ? '质 物 清 单' : '质物清单 + 质押反担保合同'}</h2>
+            <p class="text-xs text-slate-500 mt-1">业务编号 ${bizNo} · 第 ${'①②③'[sealStep-1]} 次盖章</p>
+          </div>
+
+          <div class="space-y-3 text-sm">
+            <div class="grid grid-cols-2 gap-3">
+              <div><span class="text-slate-500">货主方：</span><span class="font-medium">郑州军牧源贸易有限公司</span></div>
+              <div><span class="text-slate-500">货品：</span><span class="font-medium">去骨牛心管（AU_QGNXG_1265）</span></div>
+              <div><span class="text-slate-500">入库重量：</span><span class="num-focus">3,073.6 kg</span></div>
+              <div><span class="text-slate-500">评估货值：</span><span class="num-focus">¥215,152.00</span></div>
+              <div><span class="text-slate-500">质押率：</span><span>80%</span></div>
+              <div><span class="text-slate-500">融资金额：</span><span class="font-bold text-blue-600 num-focus">¥2,030,000.00</span></div>
+            </div>
+
+            <div class="border-t border-slate-200 pt-3">
+              <h4 class="font-semibold text-slate-700 mb-2">${sealStep === 3 ? '资金方已审核通过（第三次盖章确认）' : sealStep === 2 ? '担保方已审核通过（第二次盖章）' : '监管方已审核通过（第一次盖章）'}</h4>
+              <div class="text-xs text-slate-500 space-y-1">
+                <div>✓ 监管方审核：${sealStep >= 1 ? '2026-01-27 15:30 王建国' : '待审核'}</div>
+                <div>${sealStep >= 2 ? '✓' : '○'} 担保方审核：${sealStep >= 2 ? '2026-01-29 11:20 中原担保' : '待审核'}</div>
+                <div>${sealStep >= 3 ? '✓' : '○'} 资金方审核：${sealStep >= 3 ? '2026-01-30 14:50 王建国' : '待审核'}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 盖章位置 -->
+          <div class="seal-zone">
+            <span>↑ 将印章拖到此处</span>
+          </div>
+        </div>
+
+        <!-- 右侧：操作面板 -->
+        <div class="space-y-4">
+          <div class="bg-blue-50 rounded-lg p-4 text-sm">
+            <div class="font-medium text-blue-800 mb-2">📌 当前盖章人</div>
+            <div class="text-slate-700">${user.name}（${user.role === 'customer' ? '货主方' : user.role}）</div>
+            <div class="text-xs text-blue-700 mt-1">${user.sealPermission ? '✓ 已实名，已授权盖章' : '⚠ 无盖章权限'}</div>
+          </div>
+
+          <div class="bg-white rounded-lg border border-slate-200 p-4">
+            <h4 class="font-semibold text-slate-700 mb-3 text-sm">① 选择印章</h4>
+            <div class="grid grid-cols-2 gap-2">
+              ${MockData.sealLibrary.map(s => `
+                <div class="seal-draggable border-2 border-${s.color === 'red' ? 'red' : 'blue'}-200 rounded p-2 text-center bg-${s.color === 'red' ? 'red' : 'blue'}-50" draggable="true" ondragstart="drag(event)" data-seal-id="${s.id}">
+                  <div class="w-12 h-12 mx-auto rounded-full border-2 border-${s.color === 'red' ? 'red' : 'blue'}-500 flex items-center justify-center text-${s.color === 'red' ? 'red' : 'blue'}-600 text-xs font-bold bg-white">${s.preview.slice(0, 2)}</div>
+                  <div class="text-xs mt-1">${s.name}</div>
+                </div>
+              `).join('')}
+            </div>
+            <button class="w-full mt-3 text-xs text-blue-600 hover:underline">+ 上传新印章</button>
+          </div>
+
+          <div class="bg-white rounded-lg border border-slate-200 p-4">
+            <h4 class="font-semibold text-slate-700 mb-3 text-sm">③ 法律声明</h4>
+            <label class="flex items-start gap-2 text-xs text-slate-600 mb-3">
+              <input type="checkbox" id="legalConfirm" class="mt-0.5">
+              <span>本人确认本签章具有法律效力，且已获得公司授权代表公司进行电子签章。</span>
+            </label>
+            <div class="space-y-2">
+              <button onclick="completeSeal()" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium">✅ 确认签章并提交</button>
+              <button onclick="window.history.back()" class="w-full py-2 border border-slate-300 rounded-md text-sm">取消</button>
+            </div>
+            <div class="text-xs text-slate-500 mt-3 border-t pt-2">${cfg.afterApproval}</div>
+          </div>
+        </div>
+      </div>
+    `
+  });
+
+  function drag(e) { e.dataTransfer.setData('seal', e.target.dataset.sealId); }
+  function completeSeal() {
+    if (!document.getElementById('legalConfirm').checked) {
+      Utils.toast('请勾选法律声明', 'warning');
+      return;
+    }
+    Utils.toast('✅ 第 ' + sealStep + ' 次签章完成！' + sealConfig[sealStep].afterApproval, 'success');
+    setTimeout(() => window.location.href = '/customer/financing-detail?bizNo=' + bizNo, 1500);
+  }
+</script>
+</body>
+</html>

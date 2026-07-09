@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>出库审批 - 大河智链</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '解押 / 出库审批',
+    currentPath: '/platform/approval-outbound',
+    breadcrumb: [{ label: '出库审批', path: '/platform/approval-outbound' }, '解押/出库审批'],
+    content: `
+      <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6 text-xs text-amber-800">
+        <span class="font-medium">⚠ v1.7 重大调整（按甲方 drawio）：</span><br>
+        阶段A：货主方<strong>线下还款 + 上传回单 + 资金方确认</strong>（货主方操作）<br>
+        阶段B：货主方<strong>新增解押申请 + 货主盖章① + 您（监管方）审核</strong> + 货主盖章② + 担保方审核 → <strong>您最终出具出库指令</strong> → 仓库放行
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
+          <h3 class="font-semibold text-slate-800 mb-4">待出库指令（客户已还款）</h3>
+          <div class="border border-slate-200 rounded-lg p-4">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <div class="font-medium">REL_20260708001 · 郑州军牧源</div>
+                <div class="text-xs text-slate-500">业务编号 DHZL_JMY_2026012701</div>
+              </div>
+              <span class="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded">✓ 已还款 ¥32,082.40</span>
+            </div>
+            <div class="grid grid-cols-3 gap-3 text-sm mb-3">
+              <div><span class="text-slate-500">货品：</span>冷冻带骨绵羊腰脊排</div>
+              <div><span class="text-slate-500">出库重量：</span><span class="num-focus">1,072.99 kg</span></div>
+              <div><span class="text-slate-500">出库仓库：</span>天津港国际</div>
+            </div>
+            <button onclick="Utils.toast('出库指令已下发至仓库','success')" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm">下发出库指令</button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <h3 class="font-semibold text-slate-800 mb-4">还款确认记录</h3>
+          <div class="space-y-2 text-sm">
+            <div class="p-2 bg-green-50 rounded">
+              <div class="font-medium">REL_20260708001</div>
+              <div class="text-xs text-slate-500">¥32,082.40 · 民生银行</div>
+              <div class="text-xs text-green-600 mt-1">✓ 已确认 09:30</div>
+            </div>
+            <div class="p-2 bg-slate-50 rounded">
+              <div class="font-medium">REL_20260528001</div>
+              <div class="text-xs text-slate-500">¥196,560.00 · 民生银行</div>
+              <div class="text-xs text-green-600 mt-1">✓ 已完成</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `
+  });
+</script>
+</body>
+</html>

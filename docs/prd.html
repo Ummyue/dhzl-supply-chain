@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRD - 大河智链供应链金融平台 v1.0</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] }, typography: { DEFAULT: { css: { maxWidth: 'none' } } } } } }</script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5.2.0/github-markdown.min.css">
+<style>
+  body { background: #f8fafc; }
+  .markdown-body { font-size: 14px; line-height: 1.75; }
+  .markdown-body h1 { font-size: 2em; border-bottom: 2px solid #1e40af; padding-bottom: 0.3em; }
+  .markdown-body h2 { font-size: 1.5em; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.3em; margin-top: 1.5em; color: #1e3a8a; }
+  .markdown-body h3 { font-size: 1.2em; color: #1e40af; margin-top: 1.5em; }
+  .markdown-body h4 { font-size: 1.05em; color: #2563eb; margin-top: 1.2em; }
+  .markdown-body table { font-size: 12.5px; border-collapse: collapse; }
+  .markdown-body table th { background: #eff6ff; color: #1e40af; font-weight: 600; padding: 8px 12px; }
+  .markdown-body table td { padding: 8px 12px; }
+  .markdown-body table tr { border-bottom: 1px solid #e5e7eb; }
+  .markdown-body table tr:hover { background: #f8fafc; }
+  .markdown-body code { background: #eff6ff; color: #1e40af; padding: 1px 6px; border-radius: 3px; font-size: 90%; }
+  .markdown-body blockquote { border-left: 4px solid #3b82f6; background: #eff6ff; padding: 8px 16px; color: #1e40af; }
+  .markdown-body hr { border-top: 1px solid #e5e7eb; margin: 2em 0; }
+  .markdown-body ul li, .markdown-body ol li { margin: 4px 0; }
+  .toc-link { color: #475569; display: block; padding: 4px 12px; border-left: 2px solid transparent; transition: all 0.2s; font-size: 13px; }
+  .toc-link:hover { color: #2563eb; border-left-color: #3b82f6; background: #f1f5f9; }
+  .toc-link.active { color: #1e40af; border-left-color: #1e40af; font-weight: 500; background: #eff6ff; }
+  .toc-h2 { padding-left: 16px; }
+  .toc-h3 { padding-left: 28px; font-size: 12px; color: #64748b; }
+</style>
+</head>
+<body>
+<div class="flex max-w-screen-2xl mx-auto">
+  <!-- 左侧目录 -->
+  <aside class="hidden lg:block w-64 sticky top-0 h-screen overflow-y-auto bg-white border-r border-slate-200 p-5">
+    <div class="font-bold text-slate-800 mb-3 text-sm">📋 文档目录</div>
+    <nav id="toc" class="text-sm"></nav>
+    <div class="mt-6 pt-6 border-t border-slate-200 text-xs text-slate-500">
+      <div class="mb-2">🔗 <a href="/dashboard" class="text-blue-600 hover:underline">返回原型</a></div>
+      <div>📄 <a href="/docs/PRD.md" class="text-blue-600 hover:underline">下载 Markdown</a></div>
+      <div class="mt-3 text-slate-400">PRD v1.0 · 2026-07-08</div>
+    </div>
+  </aside>
+
+  <!-- 主体内容 -->
+  <main class="flex-1 min-w-0">
+    <div class="bg-white border-b border-slate-200 px-8 py-6 sticky top-0 z-10">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-800">大河智链供应链金融平台</h1>
+          <p class="text-sm text-slate-500 mt-1">PRD v1.0 · 一期产品需求文档</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="window.print()" class="px-3 py-1.5 text-sm border border-slate-300 rounded-md hover:bg-slate-50">🖨️ 打印/导出 PDF</button>
+        </div>
+      </div>
+    </div>
+
+    <article id="content" class="markdown-body bg-white px-8 py-8 m-5 rounded-lg shadow-sm border border-slate-200">
+      <div class="text-center text-slate-400 py-12">加载中...</div>
+    </article>
+
+    <div class="text-center text-xs text-slate-400 py-8">
+      大河智链 · 配套原型：<a href="/dashboard" class="text-blue-600 hover:underline">https://dhzl-supply-chain.vercel.app</a>
+    </div>
+  </main>
+</div>
+
+<script>
+  fetch('/docs/PRD.md')
+    .then(r => r.text())
+    .then(md => {
+      // 配置 marked 渲染 mermaid 代码块
+      marked.use({
+        renderer: {
+          code(code, lang) {
+            if (lang === 'mermaid') {
+              return '<div class="mermaid">' + code + '</div>';
+            }
+            return '<pre><code class="language-' + (lang || '') + '">' + code + '</code></pre>';
+          }
+        }
+      });
+      document.getElementById('content').innerHTML = marked.parse(md);
+      // 初始化 mermaid 并渲染
+      mermaid.initialize({ startOnLoad: true, theme: 'default', flowchart: { htmlLabels: true, useMaxWidth: true } });
+      mermaid.run();
+      buildTOC();
+    })
+    .catch(err => {
+      document.getElementById('content').innerHTML = '<div class="text-red-500">PRD 加载失败：' + err.message + '</div>';
+    });
+
+  function buildTOC() {
+    const headings = document.querySelectorAll('#content h2, #content h3');
+    const toc = document.getElementById('toc');
+    headings.forEach(h => {
+      const a = document.createElement('a');
+      a.href = '#' + h.id;
+      a.textContent = h.textContent;
+      a.className = 'toc-link ' + (h.tagName === 'H2' ? 'toc-h2' : 'toc-h3');
+      toc.appendChild(a);
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>入库审批 - 大河智链</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '入库审批',
+    currentPath: '/platform/approval-inbound',
+    breadcrumb: [{ label: '货物管理', path: '/platform/approval-inbound' }, '入库审批'],
+    content: `
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-xs text-blue-800">
+        <span class="font-medium">v1.7 流程：</span>本页面是<strong>3 级审核的最后一步</strong>（货主方盖章① → 担保方审核 → <strong>您（监管方）审核</strong> → 仓库入库）。本节点负责货值评估和最终批准。
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+            <tr>
+              <th class="text-left px-4 py-3">入库单号</th>
+              <th class="text-left px-4 py-3">货主/货品</th>
+              <th class="text-right px-4 py-3">入库重量</th>
+              <th class="text-right px-4 py-3">建议单价</th>
+              <th class="text-right px-4 py-3">货值</th>
+              <th class="text-center px-4 py-3">市场价</th>
+              <th class="text-center px-4 py-3">状态</th>
+              <th class="text-center px-4 py-3">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${MockData.inboundList.filter(i => i.status === 'reviewing' || i.status === 'pending').map(i => `
+              <tr class="border-t border-slate-100 hover:bg-slate-50">
+                <td class="px-4 py-3 font-mono text-xs">${i.bizNo}</td>
+                <td class="px-4 py-3">
+                  <div class="font-medium text-xs">${i.applicant}</div>
+                  <div class="text-xs text-slate-500">${i.products[0].name}</div>
+                </td>
+                <td class="px-4 py-3 text-right num-focus">${Utils.fmtWithUnit(i.products[0].weight, ' kg')}</td>
+                <td class="px-4 py-3 text-right num-focus">¥${i.products[0].evaluatePrice.toFixed(2)}/kg</td>
+                <td class="px-4 py-3 text-right num-focus font-medium">${Utils.fmtMoney(i.totalValue)}</td>
+                <td class="px-4 py-3 text-center num-focus text-xs">¥${MockData.products.find(p => p.id === i.products[0].id)?.currentPrice.toFixed(2) || '63.00'}/kg</td>
+                <td class="px-4 py-3 text-center">${Components.badge(i.status)}</td>
+                <td class="px-4 py-3 text-center">
+                  <button onclick="reviewInbound('${i.id}')" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded">审批</button>
+                </td>
+              </tr>
+            `).join('') || '<tr><td colspan="8" class="text-center text-slate-400 py-8">暂无待审申请</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    `
+  });
+
+  function reviewInbound(id) {
+    const i = MockData.inboundList.find(x => x.id === id) || MockData.inboundList[0];
+    const p = MockData.products.find(x => x.id === i.products[0].id) || MockData.products[0];
+    const marketPrice = p.currentPrice;
+    const suggestedPrice = (marketPrice * 0.92).toFixed(2); // 下浮 8%
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-backdrop';
+    modal.innerHTML = `
+      <div class="bg-white rounded-xl w-[800px] max-h-[90vh] overflow-y-auto shadow-2xl" onclick="event.stopPropagation()">
+        <div class="px-6 py-4 border-b border-slate-200 sticky top-0 bg-white">
+          <h3 class="font-bold text-slate-800 text-lg">入库审批 - ${i.bizNo}</h3>
+        </div>
+        <div class="p-6 space-y-4">
+          <div>
+            <h4 class="text-sm font-semibold text-slate-700 mb-3 pb-2 border-b">📦 入库基本信息</h4>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+              <div><span class="text-slate-500">货主方：</span>${i.applicant}</div>
+              <div><span class="text-slate-500">入库仓库：</span>${i.warehouse}</div>
+              <div><span class="text-slate-500">车牌号：</span><span class="font-mono">${i.vehicleNo}</span></div>
+              <div><span class="text-slate-500">司机：</span>${i.driver} · ${i.driverPhone}</div>
+              <div><span class="text-slate-500">入库日期：</span>${i.inboundDate}</div>
+              <div><span class="text-slate-500">申请日期：</span>${i.applyDate}</div>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-semibold text-slate-700 mb-3 pb-2 border-b">💰 货值评估（系统自动核算）</h4>
+            <table class="w-full text-sm border border-slate-200">
+              <thead class="bg-slate-50 text-xs">
+                <tr><th class="text-left px-3 py-2">货品</th><th class="text-right px-3 py-2">件数</th><th class="text-right px-3 py-2">重量</th><th class="text-right px-3 py-2">市场价</th><th class="text-right px-3 py-2">建议评估单价</th><th class="text-right px-3 py-2">货值</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="px-3 py-2">${i.products[0].name}</td>
+                  <td class="px-3 py-2 text-right num-focus">${Utils.fmtNum(i.products[0].pieces)}</td>
+                  <td class="px-3 py-2 text-right num-focus">${Utils.fmtNum(i.products[0].weight)} kg</td>
+                  <td class="px-3 py-2 text-right num-focus">¥${marketPrice.toFixed(2)}</td>
+                  <td class="px-3 py-2 text-right"><input type="text" value="${suggestedPrice}" class="w-20 px-1 py-0.5 border border-slate-300 rounded text-right text-sm num-focus"> 元/kg</td>
+                  <td class="px-3 py-2 text-right num-focus font-medium">${Utils.fmtMoney(i.totalValue)}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="mt-2 text-xs text-slate-500">💡 评估单价取市场价下浮 5%-10%，当前下浮 8%</div>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-semibold text-slate-700 mb-3 pb-2 border-b">📎 入库单据</h4>
+            <div class="grid grid-cols-2 gap-2">
+              ${['报关单.pdf', '检验检疫证.pdf', '入境货物检验检疫证明.pdf', '货权转移单.pdf'].map(d => `
+                <div class="flex items-center gap-2 p-2 border border-slate-200 rounded text-xs">
+                  <svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>
+                  <span>${d}</span>
+                  <button class="ml-auto text-blue-600 hover:underline">预览</button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-2">审批意见</label>
+            <textarea rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" placeholder="请输入审批意见">货品质量符合入库标准，单据齐全，同意入库。</textarea>
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-2 sticky bottom-0 bg-white">
+          <button onclick="Utils.toast('已驳回','error'); this.closest('.modal-backdrop').remove()" class="px-4 py-2 border border-rose-300 text-rose-600 hover:bg-rose-50 rounded-md text-sm">驳回</button>
+          <button onclick="Utils.toast('入库审批通过，已生成质物清单','success'); this.closest('.modal-backdrop').remove(); setTimeout(()=>location.reload(),600)" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium">通过并生成质物清单</button>
+        </div>
+      </div>
+    `;
+    modal.onclick = () => modal.remove();
+    document.body.appendChild(modal);
+  }
+</script>
+</body>
+</html>

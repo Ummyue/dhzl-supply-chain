@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>追保管理 - 大河智链</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '追保管理',
+    currentPath: '/platform/supplementary',
+    breadcrumb: [{ label: '数据中心', path: '/platform/supplementary' }, '追保管理'],
+    content: `
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-800">
+        <div class="font-medium mb-1">💡 追保规则</div>
+        <div>当价格跌破预警线（±5%）或熔断线（±10%），系统自动计算补保金额 = 当前敞口 - 放款金额/质押率（80%），客户须在 3 个工作日内补货或提前还款。</div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3 mb-6">
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">已完成追保</div>
+          <div class="text-3xl font-bold text-emerald-600 mt-1">${MockData.supplementaryRecords.filter(r => r.status === 'completed').length}</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">通知中</div>
+          <div class="text-3xl font-bold text-blue-600 mt-1">${MockData.supplementaryRecords.filter(r => r.status === 'notifying').length}</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">待处理</div>
+          <div class="text-3xl font-bold text-rose-600 mt-1">${MockData.supplementaryRecords.filter(r => r.status === 'pending').length}</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="px-5 py-3 border-b border-slate-200">
+          <h3 class="font-semibold text-slate-800">追保记录</h3>
+        </div>
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+            <tr>
+              <th class="text-left px-4 py-3">业务编号</th>
+              <th class="text-left px-4 py-3">客户/货品</th>
+              <th class="text-left px-4 py-3">触发原因</th>
+              <th class="text-right px-4 py-3">应补保金额</th>
+              <th class="text-center px-4 py-3">状态</th>
+              <th class="text-center px-4 py-3">触发时间</th>
+              <th class="text-center px-4 py-3">完成时间</th>
+              <th class="text-left px-4 py-3">处理方式</th>
+              <th class="text-center px-4 py-3">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${MockData.supplementaryRecords.map(r => `
+              <tr class="border-t border-slate-100 hover:bg-slate-50">
+                <td class="px-4 py-3 font-mono text-xs">${r.bizNo}</td>
+                <td class="px-4 py-3">
+                  <div class="font-medium text-xs">${r.customer}</div>
+                  <div class="text-xs text-slate-500">${r.product}</div>
+                </td>
+                <td class="px-4 py-3 text-xs text-slate-600">${r.triggerReason}</td>
+                <td class="px-4 py-3 text-right num-focus font-bold text-rose-600">${Utils.fmtMoney(r.requiredAmount)}</td>
+                <td class="px-4 py-3 text-center">${r.status === 'completed' ? Components.badge('completed') : r.status === 'notifying' ? Components.badge('running') : Components.badge('danger')}</td>
+                <td class="px-4 py-3 text-center text-xs text-slate-500">${r.triggerTime}</td>
+                <td class="px-4 py-3 text-center text-xs text-slate-500">${r.completeTime || '—'}</td>
+                <td class="px-4 py-3 text-xs">${r.method || '—'}</td>
+                <td class="px-4 py-3 text-center">
+                  ${r.status === 'completed' ? `<button onclick="viewRecord('${r.id}')" class="text-blue-600 hover:underline text-xs">查看</button>` :
+                  r.status === 'notifying' ? `<button onclick="trackRecord('${r.id}')" class="text-blue-600 hover:underline text-xs mr-2">跟踪</button><button onclick="markCompleted('${r.id}')" class="text-emerald-600 hover:underline text-xs">标记完成</button>` :
+                  `<button onclick="notifyCustomer('${r.id}')" class="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white text-xs rounded">通知客户</button>`}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `
+  });
+
+  function viewRecord(id) { Utils.toast('查看追保详情', 'info'); }
+  function trackRecord(id) { Utils.toast('查看客户跟进进度', 'info'); }
+  function markCompleted(id) {
+    if (confirm('确认此追保已完成？需填写完成方式')) {
+      Utils.toast('✓ 已标记为完成', 'success');
+      setTimeout(() => location.reload(), 800);
+    }
+  }
+  function notifyCustomer(id) {
+    Utils.toast('✓ 已通过短信+站内信通知客户', 'success');
+    setTimeout(() => location.reload(), 800);
+  }
+</script>
+</body>
+</html>

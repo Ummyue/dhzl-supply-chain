@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>质物清单 - 大河智链</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '质物清单',
+    currentPath: '/customer/pledge-list',
+    breadcrumb: [{ label: '融资管理', path: '/customer/financing' }, '质物清单'],
+    content: `
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6 text-xs text-blue-800">
+        <span class="font-medium">说明（v1.7 按甲方 drawio 调整）：</span>质物清单由系统根据入库单自动生成，需经<strong>监管方 → 货主方 → 担保方 → 货主方 → 资金方</strong>五步确认+盖章（货主方盖章 2 次）。任一方驳回 → 重新出具。
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+            <tr>
+              <th class="text-left px-4 py-3">清单编号</th>
+              <th class="text-left px-4 py-3">关联融资</th>
+              <th class="text-left px-4 py-3">货品</th>
+              <th class="text-right px-4 py-3">入库日期</th>
+              <th class="text-right px-4 py-3">评估货值</th>
+              <th class="text-right px-3 py-3">质押金额</th>
+              <th class="text-center px-3 py-3">三方签章进度（v1.7）</th>
+              <th class="text-center px-3 py-3">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${MockData.bizList.slice(0, 4).map(b => `
+              <tr class="border-t border-slate-100 hover:bg-slate-50">
+                <td class="px-4 py-3 font-mono text-xs">PL_${b.bizNo.replace('DHZL_', '')}</td>
+                <td class="px-4 py-3 font-mono text-xs text-blue-600">${b.loanNo}</td>
+                <td class="px-4 py-3">
+                  <div class="font-medium">${b.productName}</div>
+                  <div class="text-xs text-slate-400">${b.weight.toLocaleString()} kg</div>
+                </td>
+                <td class="px-4 py-3 text-right text-slate-500">${Utils.fmtDate(b.inboundDate)}</td>
+                <td class="px-4 py-3 text-right num-focus font-medium">${Utils.fmtMoney(b.evaluateValue)}</td>
+                <td class="px-3 py-3 text-right num-focus text-blue-600 font-bold">${Utils.fmtMoney(b.loanAmount)}</td>
+                <td class="px-3 py-3 text-center">
+                  <div class="flex items-center justify-center gap-1 text-xs flex-wrap">
+                    <span class="px-1.5 py-0.5 rounded ${b.status === 'released' ? 'bg-emerald-100 text-emerald-700' : 'bg-purple-100 text-purple-700'}" title="监管方盖章">${b.status === 'released' ? '✓' : '⏳'}监管</span>
+                    <span class="px-1.5 py-0.5 rounded ${b.status === 'released' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}" title="货主方盖章①">${b.status === 'released' ? '✓' : '⏳'}货主①</span>
+                    <span class="px-1.5 py-0.5 rounded ${b.status === 'released' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}" title="担保方盖章">${b.status === 'released' ? '✓' : '⏳'}担保</span>
+                    <span class="px-1.5 py-0.5 rounded ${b.status === 'released' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}" title="货主方盖章②">${b.status === 'released' ? '✓' : '⏳'}货主②</span>
+                    <span class="px-1.5 py-0.5 rounded ${b.status === 'released' ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'}" title="资金方盖章">${b.status === 'released' ? '✓' : '⏳'}资金</span>
+                  </div>
+                </td>
+                <td class="px-3 py-3 text-center">
+                  <button onclick="viewPledge('${b.bizNo}')" class="text-blue-600 hover:underline text-xs">查看清单</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `
+  });
+
+  function viewPledge(bizNo) {
+    const b = MockData.bizList.find(x => x.bizNo === bizNo) || MockData.bizList[0];
+    const modal = document.createElement('div');
+    modal.className = 'modal-backdrop';
+    modal.innerHTML = `
+      <div class="bg-white rounded-xl w-[800px] max-h-[90vh] overflow-y-auto shadow-2xl" onclick="event.stopPropagation()">
+        <div class="px-6 py-4 border-b border-slate-200 sticky top-0 bg-white flex items-center justify-between">
+          <h3 class="font-bold text-slate-800 text-lg">质物清单</h3>
+          <button onclick="this.closest('.modal-backdrop').remove()" class="text-slate-400 hover:text-slate-600 text-2xl">×</button>
+        </div>
+        <div class="p-6">
+          <!-- 抬头 -->
+          <div class="text-center mb-6 pb-4 border-b-2 border-slate-800">
+            <h2 class="text-xl font-bold">质 物 清 单</h2>
+            <div class="text-xs text-slate-500 mt-1">Pledge Inventory List</div>
+          </div>
+
+          <!-- 基础信息 -->
+          <div class="grid grid-cols-2 gap-3 text-sm mb-6">
+            <div><span class="text-slate-500">清单编号：</span><span class="font-mono">PL_${b.bizNo.replace('DHZL_', '')}</span></div>
+            <div><span class="text-slate-500">入库日期：</span>${Utils.fmtDate(b.inboundDate)}</div>
+            <div><span class="text-slate-500">货主方：</span>${b.customer}</div>
+            <div><span class="text-slate-500">银行借据号：</span><span class="font-mono text-xs">${b.loanNo}</span></div>
+            <div><span class="text-slate-500">监管仓库：</span>${b.warehouse}</div>
+            <div><span class="text-slate-500">评估日期：</span>${Utils.fmtDate(b.loanDate)}</div>
+          </div>
+
+          <!-- 货品明细 -->
+          <table class="w-full text-sm border border-slate-300 mb-6">
+            <thead class="bg-slate-100">
+              <tr>
+                <th class="border border-slate-300 px-2 py-2">序号</th>
+                <th class="border border-slate-300 px-2 py-2 text-left">货物名称</th>
+                <th class="border border-slate-300 px-2 py-2">生产日期</th>
+                <th class="border border-slate-300 px-2 py-2">批次号</th>
+                <th class="border border-slate-300 px-2 py-2">件数</th>
+                <th class="border border-slate-300 px-2 py-2">入库重量(kg)</th>
+                <th class="border border-slate-300 px-2 py-2">评估单价(¥/kg)</th>
+                <th class="border border-slate-300 px-2 py-2">评估货值</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="border border-slate-300 px-2 py-2 text-center">1</td>
+                <td class="border border-slate-300 px-2 py-2 font-medium">${b.productName}</td>
+                <td class="border border-slate-300 px-2 py-2 text-center">${Utils.fmtDate(b.produceDate)}</td>
+                <td class="border border-slate-300 px-2 py-2 font-mono text-xs text-center">${b.batchNo.substring(0, 10)}</td>
+                <td class="border border-slate-300 px-2 py-2 text-center num-focus">${Utils.fmtNum(b.pieces)}</td>
+                <td class="border border-slate-300 px-2 py-2 text-center num-focus">${Utils.fmtNum(b.weight)}</td>
+                <td class="border border-slate-300 px-2 py-2 text-center num-focus">${b.evaluatePrice.toFixed(2)}</td>
+                <td class="border border-slate-300 px-2 py-2 text-right num-focus font-medium">${Utils.fmtMoney(b.evaluateValue)}</td>
+              </tr>
+              <tr class="bg-slate-50 font-bold">
+                <td colspan="7" class="border border-slate-300 px-2 py-2 text-right">合计评估货值（大写）：</td>
+                <td class="border border-slate-300 px-2 py-2 text-right num-focus text-blue-700">${Utils.fmtMoney(b.evaluateValue)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- 关键金额 -->
+          <div class="grid grid-cols-3 gap-3 mb-6">
+            <div class="bg-blue-50 rounded p-3 text-center">
+              <div class="text-xs text-slate-500">评估货值</div>
+              <div class="text-lg font-bold text-blue-700 num-focus">${Utils.fmtMoney(b.evaluateValue)}</div>
+            </div>
+            <div class="bg-violet-50 rounded p-3 text-center">
+              <div class="text-xs text-slate-500">质押率</div>
+              <div class="text-lg font-bold text-violet-700">${(b.pledgeRatio * 100).toFixed(0)}%</div>
+            </div>
+            <div class="bg-emerald-50 rounded p-3 text-center">
+              <div class="text-xs text-slate-500">放款金额</div>
+              <div class="text-lg font-bold text-emerald-700 num-focus">${Utils.fmtMoney(b.loanAmount)}</div>
+            </div>
+          </div>
+
+          <!-- 三方签章 -->
+          <div class="grid grid-cols-3 gap-4 mb-4">
+            ${['出质人（客户）', '监管方（大河智链）', '担保方'].map(p => `
+              <div class="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center">
+                <div class="text-xs text-slate-500 mb-2">${p}</div>
+                <div class="w-20 h-20 mx-auto rounded-full border-2 border-green-400 flex items-center justify-center text-green-600 text-3xl mb-2">✓</div>
+                <div class="text-xs text-slate-400">电子签章完成</div>
+                <div class="text-[10px] text-slate-400 mt-1">${Utils.fmtDate(b.loanDate)}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-2 sticky bottom-0 bg-white">
+          <button onclick="Utils.toast('正在下载 PDF...','info')" class="px-4 py-2 border border-slate-300 rounded-md text-sm hover:bg-slate-50">下载 PDF</button>
+          <button onclick="Utils.toast('正在发送电子签章链接...','success')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm">发送签章</button>
+        </div>
+      </div>
+    `;
+    modal.onclick = () => modal.remove();
+    document.body.appendChild(modal);
+  }
+</script>
+</body>
+</html>

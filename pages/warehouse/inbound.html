@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>入库执行 - 大河智链</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '入库执行',
+    currentPath: '/warehouse/inbound',
+    breadcrumb: [{ label: '入库作业', path: '/warehouse/inbound' }, '入库执行'],
+    content: `
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-800">
+        <div class="font-medium mb-1">💡 仓库入库流程（v1.7 按甲方 drawio）</div>
+        <div>① 接收货主方入库申请（已通过监管方审核）→ ② 车辆到达、卸货验货 → ③ 录入入库数据（车牌、重量、件数、批次号）→ ④ 系统回传入库结果给监管方 → ⑤ 触发质物清单生成</div>
+        <div class="text-xs text-amber-700 mt-2">⚠ v1.7 新增：仓库方需<strong>定期巡库 + 上传盘库记录</strong>（v1.7 §4.4 主线 A）</div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3 mb-6">
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">待入库</div>
+          <div class="text-3xl font-bold text-orange-600 mt-1">${MockData.warehouseInboundList.filter(i => i.status === 'pending').length}</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">本月已入库</div>
+          <div class="text-3xl font-bold text-emerald-600 mt-1">${MockData.warehouseInboundList.filter(i => i.status === 'completed').length}</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">日均处理件数</div>
+          <div class="text-3xl font-bold text-slate-800 mt-1 num-focus">${MockData.warehouseStats.dailyHandling}</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="px-5 py-3 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="font-semibold text-slate-800">入库任务清单</h3>
+          <div class="flex gap-2 text-xs">
+            <button class="px-3 py-1 bg-blue-100 text-blue-700 rounded">全部</button>
+            <button class="px-3 py-1 text-slate-600 hover:bg-slate-100 rounded">待入库</button>
+            <button class="px-3 py-1 text-slate-600 hover:bg-slate-100 rounded">已完成</button>
+          </div>
+        </div>
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+            <tr>
+              <th class="text-left px-4 py-3">入库单号</th>
+              <th class="text-left px-4 py-3">货主/货品</th>
+              <th class="text-left px-4 py-3">车辆/司机</th>
+              <th class="text-right px-3 py-3">件数</th>
+              <th class="text-right px-3 py-3">重量(kg)</th>
+              <th class="text-left px-3 py-3">仓库</th>
+              <th class="text-center px-3 py-3">计划时间</th>
+              <th class="text-center px-3 py-3">实际时间</th>
+              <th class="text-center px-3 py-3">状态</th>
+              <th class="text-center px-3 py-3">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${MockData.warehouseInboundList.map(i => `
+              <tr class="border-t border-slate-100 hover:bg-slate-50">
+                <td class="px-4 py-3 font-mono text-xs">${i.orderNo}</td>
+                <td class="px-4 py-3">
+                  <div class="font-medium text-xs">${i.applicant}</div>
+                  <div class="text-xs text-slate-500">${i.product}</div>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="font-mono text-xs">${i.vehicleNo}</div>
+                  <div class="text-xs text-slate-500">${i.driver}</div>
+                </td>
+                <td class="px-3 py-3 text-right num-focus">${Utils.fmtNum(i.pieces)}</td>
+                <td class="px-3 py-3 text-right num-focus">${Utils.fmtNum(i.weight)}</td>
+                <td class="px-3 py-3 text-xs">${i.warehouse}</td>
+                <td class="px-3 py-3 text-center text-xs">${i.plannedTime}</td>
+                <td class="px-3 py-3 text-center text-xs">${i.actualTime || '—'}</td>
+                <td class="px-3 py-3 text-center">${Components.badge(i.status)}</td>
+                <td class="px-3 py-3 text-center">
+                  ${i.status === 'pending' ? `<button onclick="executeInbound('${i.id}')" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded">执行入库</button>` : `<button onclick="viewRecord('${i.id}')" class="text-blue-600 hover:underline text-xs">查看</button>`}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- v1.7 新增：盘库记录（定期巡库） -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5 mb-6 mt-6">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+            <svg class="w-5 h-5 text-purple-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>
+            定期盘库记录（v1.7 新增）
+          </h3>
+          <button onclick="Utils.toast('请前往 PDA 端或移动端完成盘库（演示版）','info')" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded">📱 新建盘库记录</button>
+        </div>
+        <div class="text-xs text-slate-500 mb-3">每周至少一次，巡库后上传实际重量+差异说明</div>
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-xs text-slate-600">
+            <tr>
+              <th class="text-left px-3 py-2">盘库时间</th>
+              <th class="text-left px-3 py-2">业务编号</th>
+              <th class="text-right px-3 py-2">系统应存</th>
+              <th class="text-right px-3 py-2">实际盘存</th>
+              <th class="text-right px-3 py-2">差异(kg)</th>
+              <th class="text-center px-3 py-2">结果</th>
+              <th class="text-left px-3 py-2">巡库人</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${MockData.inventoryCheckRecords.map(c => `
+              <tr class="border-t border-slate-100">
+                <td class="px-3 py-2 text-xs text-slate-500">${c.checkTime}</td>
+                <td class="px-3 py-2 font-mono text-xs text-blue-600">${c.bizNo}</td>
+                <td class="px-3 py-2 text-right num-focus">${Utils.fmtWithUnit(c.expectedWeight, ' kg')}</td>
+                <td class="px-3 py-2 text-right num-focus">${Utils.fmtWithUnit(c.actualWeight, ' kg')}</td>
+                <td class="px-3 py-2 text-right num-focus ${c.weightDiff === 0 ? '' : 'text-rose-600 font-bold'}">${c.weightDiff > 0 ? '+' : ''}${c.weightDiff}</td>
+                <td class="px-3 py-2 text-center">${c.status === 'normal' ? '<span class="text-xs text-emerald-600">✓ 正常</span>' : '<span class="text-xs text-rose-600 font-bold">🔴 异常</span>'}</td>
+                <td class="px-3 py-2 text-xs">${c.checker}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <div id="inboundModal"></div>
+    `
+  });
+
+  function executeInbound(id) {
+    const i = MockData.warehouseInboundList.find(x => x.id === id);
+    if (!i) return;
+    document.getElementById('inboundModal').innerHTML = `
+      <div class="modal-backdrop" onclick="this.remove()">
+        <div class="bg-white rounded-xl w-[700px] shadow-2xl" onclick="event.stopPropagation()">
+          <div class="px-6 py-4 border-b border-slate-200">
+            <h3 class="font-bold text-slate-800 text-lg">执行入库 - ${i.orderNo}</h3>
+          </div>
+          <div class="p-6 space-y-4">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+              <div class="grid grid-cols-2 gap-3">
+                <div><span class="text-slate-500">货主：</span>${i.applicant}</div>
+                <div><span class="text-slate-500">车牌：</span><span class="font-mono">${i.vehicleNo}</span></div>
+                <div><span class="text-slate-500">司机：</span>${i.driver}</div>
+                <div><span class="text-slate-500">计划入库：</span>${i.plannedTime}</div>
+                <div><span class="text-slate-500">计划件数：</span>${Utils.fmtNum(i.pieces)}</div>
+                <div><span class="text-slate-500">计划重量：</span>${Utils.fmtNum(i.weight)} kg</div>
+              </div>
+            </div>
+
+            <h4 class="text-sm font-semibold text-slate-700 border-b pb-1">实际入库数据</h4>
+            <div class="grid grid-cols-2 gap-3">
+              <div><label class="block text-xs text-slate-600 mb-1">实际入库时间</label><input type="datetime-local" value="2026-07-08T10:30" class="w-full px-3 py-2 border border-slate-300 rounded text-sm"></div>
+              <div><label class="text-xs text-slate-600 mb-1">实际件数</label><input type="number" value="${i.pieces}" class="w-full px-3 py-2 border border-slate-300 rounded text-sm num-focus"></div>
+              <div><label class="text-xs text-slate-600 mb-1">实际重量 (kg)</label><input type="number" value="${i.weight}" class="w-full px-3 py-2 border border-slate-300 rounded text-sm num-focus"></div>
+              <div><label class="text-xs text-slate-600 mb-1">批次号/柜号</label><input type="text" value="ZXT${new Date().getFullYear()}${(new Date().getMonth()+1).toString().padStart(2,'0')}${new Date().getDate().toString().padStart(2,'0')}001" class="w-full px-3 py-2 border border-slate-300 rounded text-sm font-mono text-xs"></div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div><label class="block text-xs text-slate-600 mb-1">装卸费（按 70元/吨）</label><input type="text" value="${(i.weight / 1000 * 70).toFixed(2)}" disabled class="w-full px-3 py-2 border border-slate-200 bg-slate-50 rounded text-sm text-slate-500 num-focus"></div>
+              <div><label class="block text-xs text-slate-600 mb-1">仓房/货位</label>
+                <select class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+                  <option>A1 区 1-001 冷藏库</option><option>A1 区 1-002 冷藏库</option><option>B 区 2-003 冷冻库</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs text-slate-600 mb-1">备注</label>
+              <textarea rows="2" class="w-full px-3 py-2 border border-slate-300 rounded text-sm" placeholder="如：货品外包装完好，无破损">货品外包装完好，单据齐全，已完成卸货验货。</textarea>
+            </div>
+
+            <div class="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center">
+              <div class="text-sm text-slate-600">📷 入库照片上传（自动采集车牌 / 货物外观 / 批次号）</div>
+              <div class="text-xs text-slate-400 mt-1">支持 PDA 扫码录入或拍照上传</div>
+            </div>
+          </div>
+          <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-2">
+            <button onclick="this.closest('.modal-backdrop').remove()" class="px-4 py-2 border border-slate-300 rounded text-sm">取消</button>
+            <button onclick="Utils.toast('✓ 入库执行完成，已回传给监管方','success'); this.closest('.modal-backdrop').remove(); setTimeout(()=>location.reload(),800)" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">确认入库并回传</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function viewRecord(id) { Utils.toast('查看入库记录', 'info'); }
+</script>
+</body>
+</html>

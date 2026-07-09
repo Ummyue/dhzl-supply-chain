@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/dashboard", "destination": "/dashboard.html" },
+    { "source": "/customer/:path*", "destination": "/pages/customer/:path*" },
+    { "source": "/platform/:path*", "destination": "/pages/platform/:path*" },
+    { "source": "/guarantor/:path*", "destination": "/pages/guarantor/:path*" },
+    { "source": "/bank/:path*", "destination": "/pages/bank/:path*" },
+    { "source": "/warehouse/:path*", "destination": "/pages/warehouse/:path*" }
+  ]
+}

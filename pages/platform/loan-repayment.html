@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>还款管理 - 大河智链</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '还款管理',
+    currentPath: '/platform/loan-repayment',
+    breadcrumb: [{ label: '数据中心', path: '/platform/loan-repayment' }, '还款管理'],
+    content: `
+      <div class="grid grid-cols-4 gap-3 mb-6">
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">本月已还款</div>
+          <div class="text-2xl font-bold text-emerald-600 mt-1 num-focus">¥22.9 万</div>
+          <div class="text-xs text-slate-400 mt-1">2 笔</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">待还款</div>
+          <div class="text-2xl font-bold text-orange-600 mt-1 num-focus">¥262.3 万</div>
+          <div class="text-xs text-slate-400 mt-1">2 笔</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">7天内到期</div>
+          <div class="text-2xl font-bold text-rose-600 mt-1 num-focus">¥116.4 万</div>
+          <div class="text-xs text-rose-600 mt-1">⚠ 紧急</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">逾期</div>
+          <div class="text-2xl font-bold text-rose-700 mt-1 num-focus">¥203.0 万</div>
+          <div class="text-xs text-rose-600 mt-1">需处置</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="px-5 py-3 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="font-semibold text-slate-800">还款记录</h3>
+          <div class="flex gap-2 text-xs">
+            <button class="px-3 py-1 bg-blue-100 text-blue-700 rounded">全部</button>
+            <button class="px-3 py-1 text-slate-600 hover:bg-slate-100 rounded">已完成</button>
+            <button class="px-3 py-1 text-slate-600 hover:bg-slate-100 rounded">待还款</button>
+            <button class="px-3 py-1 text-slate-600 hover:bg-slate-100 rounded">已逾期</button>
+          </div>
+        </div>
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+            <tr>
+              <th class="text-left px-4 py-3">业务编号</th>
+              <th class="text-left px-4 py-3">客户</th>
+              <th class="text-left px-4 py-3">借据号</th>
+              <th class="text-left px-4 py-3">还款类型</th>
+              <th class="text-right px-4 py-3">还款金额</th>
+              <th class="text-right px-4 py-3">剩余债权</th>
+              <th class="text-center px-4 py-3">应还款日</th>
+              <th class="text-center px-4 py-3">剩余天数</th>
+              <th class="text-center px-4 py-3">状态</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${MockData.repaymentRecords.map(r => `
+              <tr class="border-t border-slate-100 hover:bg-slate-50">
+                <td class="px-4 py-3 font-mono text-xs">${r.bizNo}</td>
+                <td class="px-4 py-3">${r.customer}</td>
+                <td class="px-4 py-3 font-mono text-xs">${r.loanNo}</td>
+                <td class="px-4 py-3 text-xs">${r.repayType}</td>
+                <td class="px-4 py-3 text-right num-focus font-medium">${Utils.fmtMoney(r.repayAmount)}</td>
+                <td class="px-4 py-3 text-right num-focus ${r.remainingDebt > 0 ? 'text-orange-600' : 'text-emerald-600'}">${Utils.fmtMoney(r.remainingDebt)}</td>
+                <td class="px-4 py-3 text-center text-xs">${r.repayDate}</td>
+                <td class="px-4 py-3 text-center text-xs font-bold ${r.dueIn !== undefined && r.dueIn <= 7 ? 'text-rose-600' : 'text-slate-500'}">${r.status === 'completed' ? '已完成' : (r.dueIn !== undefined ? r.dueIn + ' 天' : '已逾期')}</td>
+                <td class="px-4 py-3 text-center">${Components.badge(r.status === 'completed' ? 'completed' : r.dueIn !== undefined && r.dueIn <= 7 ? 'warning' : 'pending')}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `
+  });
+</script>
+</body>
+</html>

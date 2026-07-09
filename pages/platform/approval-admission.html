@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>准入审批 - 大河智链</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '准入审批工作台',
+    currentPath: '/platform/approval-admission',
+    breadcrumb: [{ label: '准入审批', path: '/platform/approval-admission' }, '准入申请审批'],
+    content: `
+      <div class="grid grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-slate-500 text-xs">待我审核</div>
+          <div class="text-3xl font-bold text-orange-600 mt-1">2</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-slate-500 text-xs">本月已审批</div>
+          <div class="text-3xl font-bold text-green-600 mt-1">8</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-slate-500 text-xs">本月通过率</div>
+          <div class="text-3xl font-bold text-blue-600 mt-1 num-focus">75%</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+            <tr>
+              <th class="text-left px-4 py-3">申请编号</th>
+              <th class="text-left px-4 py-3">企业名称</th>
+              <th class="text-left px-4 py-3">法定代表人</th>
+              <th class="text-right px-4 py-3">注册资本</th>
+              <th class="text-center px-4 py-3">征信评级</th>
+              <th class="text-center px-4 py-3">材料完整度</th>
+              <th class="text-center px-4 py-3">申请时间</th>
+              <th class="text-center px-4 py-3">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${MockData.admissionList.filter(a => a.status === 'pending' || a.status === 'reviewing').map(a => `
+              <tr class="border-t border-slate-100 hover:bg-slate-50">
+                <td class="px-4 py-3 font-mono text-xs">${a.id.toUpperCase()}</td>
+                <td class="px-4 py-3 font-medium">${a.customer}</td>
+                <td class="px-4 py-3">${a.legalRep}</td>
+                <td class="px-4 py-3 text-right num-focus">${a.registeredCap}</td>
+                <td class="px-4 py-3 text-center">
+                  <span class="px-2 py-0.5 rounded text-xs ${Math.random() > 0.5 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">${Math.random() > 0.5 ? 'AAA' : 'AA'}</span>
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <div class="flex items-center justify-center gap-1">
+                    ${[1,2,3,4].map(i => `<div class="w-2 h-2 rounded-full ${i <= a.attachments.length ? 'bg-green-500' : 'bg-slate-200'}"></div>`).join('')}
+                    <span class="text-xs text-slate-500 ml-1">${a.attachments.length}/4</span>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-center text-slate-500">${Utils.relativeTime(a.applyDate)}</td>
+                <td class="px-4 py-3 text-center">
+                  <button onclick="reviewAdmission('${a.id}')" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded">审核</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `
+  });
+
+  function reviewAdmission(id) {
+    const a = MockData.admissionList.find(x => x.id === id) || MockData.admissionList[0];
+    const modal = document.createElement('div');
+    modal.className = 'modal-backdrop';
+    modal.innerHTML = `
+      <div class="bg-white rounded-xl w-[900px] max-h-[90vh] overflow-y-auto shadow-2xl" onclick="event.stopPropagation()">
+        <div class="px-6 py-4 border-b border-slate-200 sticky top-0 bg-white flex items-center justify-between">
+          <h3 class="font-bold text-slate-800 text-lg">准入申请审核 - ${a.customer}</h3>
+          <button onclick="this.closest('.modal-backdrop').remove()" class="text-slate-400 hover:text-slate-600 text-2xl">×</button>
+        </div>
+        <div class="p-6 space-y-5">
+          <div>
+            <h4 class="text-sm font-semibold text-slate-700 mb-3 pb-2 border-b">企业基本信息</h4>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div><span class="text-slate-500">企业名称：</span><span class="font-medium">${a.customer}</span></div>
+              <div><span class="text-slate-500">统一社会信用代码：</span><span class="font-mono text-xs">${a.creditCode}</span></div>
+              <div><span class="text-slate-500">法定代表人：</span>${a.legalRep}</div>
+              <div><span class="text-slate-500">注册资本：</span><span class="num-focus">${a.registeredCap}</span></div>
+              <div><span class="text-slate-500">成立日期：</span>${a.established}</div>
+              <div><span class="text-slate-500">经营范围：</span>${a.bizScope}</div>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-semibold text-slate-700 mb-3 pb-2 border-b">📊 平台尽调分析（AI 自动生成）</h4>
+            <div class="bg-blue-50 rounded-lg p-4 text-sm space-y-2">
+              <div class="flex justify-between"><span>工商核验：</span><span class="text-green-600 font-medium">✓ 存续正常</span></div>
+              <div class="flex justify-between"><span>司法风险：</span><span class="text-green-600 font-medium">✓ 无重大诉讼</span></div>
+              <div class="flex justify-between"><span>行政处罚：</span><span class="text-green-600 font-medium">✓ 无</span></div>
+              <div class="flex justify-between"><span>对外征信评分：</span><span class="font-bold text-blue-700">AA (78分)</span></div>
+              <div class="flex justify-between"><span>历史合作记录：</span><span class="text-slate-700">首次合作</span></div>
+              <div class="flex justify-between"><span>建议授信额度：</span><span class="font-bold text-emerald-600 num-focus">¥30,000,000</span></div>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-semibold text-slate-700 mb-3 pb-2 border-b">📎 申请材料</h4>
+            <div class="grid grid-cols-2 gap-3">
+              ${a.attachments.map(f => `
+                <div class="flex items-center justify-between p-3 bg-slate-50 rounded">
+                  <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>
+                    <span class="text-sm">${f}</span>
+                  </div>
+                  <button onclick="Utils.toast('预览文件','info')" class="text-xs text-blue-600 hover:underline">预览</button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-semibold text-slate-700 mb-3 pb-2 border-b">📝 审核意见</h4>
+            <textarea rows="3" placeholder="请输入审核意见..." class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">企业资质良好，经营范围符合，建议通过准入审批。</textarea>
+            <div class="mt-2 grid grid-cols-3 gap-2">
+              <div><label class="text-xs text-slate-500">建议授信额度</label><input type="text" value="30,000,000" class="w-full px-2 py-1 border border-slate-300 rounded text-sm num-focus"></div>
+              <div><label class="text-xs text-slate-500">建议授信期限</label><input type="text" value="12 个月" class="w-full px-2 py-1 border border-slate-300 rounded text-sm"></div>
+              <div><label class="text-xs text-slate-500">建议质押率</label><input type="text" value="80%" class="w-full px-2 py-1 border border-slate-300 rounded text-sm"></div>
+            </div>
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t border-slate-200 flex justify-between sticky bottom-0 bg-white">
+          <button onclick="Utils.toast('审核已转交下一节点','info'); this.closest('.modal-backdrop').remove()" class="px-4 py-2 border border-slate-300 rounded-md text-sm hover:bg-slate-50">转交他人</button>
+          <div class="flex gap-2">
+            <button onclick="Utils.toast('已驳回，已通知客户','error'); this.closest('.modal-backdrop').remove(); setTimeout(()=>location.reload(),600)" class="px-4 py-2 border border-rose-300 text-rose-600 hover:bg-rose-50 rounded-md text-sm">驳回</button>
+            <button onclick="Utils.toast('准入审批通过，已推送给担保方','success'); this.closest('.modal-backdrop').remove(); setTimeout(()=>location.reload(),600)" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium">通过并推送下一节点</button>
+          </div>
+        </div>
+      </div>
+    `;
+    modal.onclick = () => modal.remove();
+    document.body.appendChild(modal);
+  }
+</script>
+</body>
+</html>

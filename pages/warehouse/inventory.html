@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>库存台账 - 大河智链</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // 仓库方库存台账：基于 pledgeLedger 提取本仓库数据
+  const allStock = MockData.pledgeLedger;
+
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '库存台账（仓库方视图）',
+    currentPath: '/warehouse/inventory',
+    breadcrumb: [{ label: '在库管理', path: '/warehouse/inventory' }, '库存台账'],
+    content: `
+      <div class="grid grid-cols-4 gap-3 mb-6">
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">在库货物件数</div>
+          <div class="text-2xl font-bold text-slate-800 mt-1 num-focus">${allStock.reduce((s, l) => s + l.pieces, 0).toLocaleString()}</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">在库总重量(kg)</div>
+          <div class="text-2xl font-bold text-slate-800 mt-1 num-focus">${allStock.reduce((s, l) => s + l.weight, 0).toLocaleString()}</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">在库总货值</div>
+          <div class="text-2xl font-bold text-blue-600 mt-1 num-focus">${Utils.fmtMoney(allStock.reduce((s, l) => s + l.evaluateValue, 0))}</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">SKU 种类</div>
+          <div class="text-2xl font-bold text-slate-800 mt-1">${[...new Set(allStock.map(l => l.productId))].length}</div>
+        </div>
+      </div>
+
+      <!-- 按仓库分组的库存 -->
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="px-5 py-3 border-b border-slate-200">
+          <h3 class="font-semibold text-slate-800">各仓库库存明细（${allStock.length} 笔质押货物）</h3>
+        </div>
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+            <tr>
+              <th class="text-left px-4 py-3">业务编号</th>
+              <th class="text-left px-4 py-3">客户/货品</th>
+              <th class="text-left px-4 py-3">仓库/货位</th>
+              <th class="text-right px-3 py-3">件数</th>
+              <th class="text-right px-3 py-3">重量(kg)</th>
+              <th class="text-right px-3 py-3">评估货值</th>
+              <th class="text-right px-3 py-3">入库时间</th>
+              <th class="text-center px-3 py-3">质押状态</th>
+              <th class="text-center px-3 py-3">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${allStock.map(l => `
+              <tr class="border-t border-slate-100 hover:bg-slate-50">
+                <td class="px-4 py-3 font-mono text-xs">${l.bizNo}</td>
+                <td class="px-4 py-3">
+                  <div class="font-medium text-xs">${l.customer}</div>
+                  <div class="text-xs text-slate-500">${l.product}</div>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="text-xs font-medium">${l.warehouse}</div>
+                  <div class="text-xs text-slate-400">${['A1-001', 'A1-002', 'B2-003', 'A2-001', 'B1-002', 'A3-001', 'A1-005'][Math.floor(Math.random() * 7)]} 冷藏库</div>
+                </td>
+                <td class="px-3 py-3 text-right num-focus">${Utils.fmtNum(l.pieces)}</td>
+                <td class="px-3 py-3 text-right num-focus">${Utils.fmtNum(l.weight)}</td>
+                <td class="px-3 py-3 text-right num-focus font-medium">${Utils.fmtMoney(l.evaluateValue)}</td>
+                <td class="px-3 py-3 text-right text-xs">${Utils.relativeTime(l.dueDate - 90)}</td>
+                <td class="px-3 py-3 text-center">${Components.badge(l.status)}</td>
+                <td class="px-3 py-3 text-center">
+                  <button onclick="viewStock('${l.bizNo}')" class="text-blue-600 hover:underline text-xs mr-2">详情</button>
+                  <button onclick="checkStock('${l.bizNo}')" class="text-emerald-600 hover:underline text-xs">盘库</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+          <tfoot>
+            <tr class="bg-slate-100 font-bold">
+              <td colspan="3" class="px-4 py-3 text-right">合计：</td>
+              <td class="px-3 py-3 text-right num-focus">${allStock.reduce((s, l) => s + l.pieces, 0).toLocaleString()}</td>
+              <td class="px-3 py-3 text-right num-focus">${allStock.reduce((s, l) => s + l.weight, 0).toLocaleString()}</td>
+              <td class="px-3 py-3 text-right num-focus text-blue-700">${Utils.fmtMoney(allStock.reduce((s, l) => s + l.evaluateValue, 0))}</td>
+              <td colspan="3"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- 盘库记录 -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5 mt-6">
+        <h3 class="font-semibold text-slate-800 mb-3">📦 近期盘库记录</h3>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="p-3 bg-emerald-50 rounded-lg">
+            <div class="text-xs text-emerald-700">2026-06-30 月盘</div>
+            <div class="text-lg font-bold text-emerald-700 mt-1 num-focus">盘点 1,250 件 ✓</div>
+            <div class="text-xs text-slate-500 mt-1">账实相符</div>
+          </div>
+          <div class="p-3 bg-emerald-50 rounded-lg">
+            <div class="text-xs text-emerald-700">2026-06-15 抽盘</div>
+            <div class="text-lg font-bold text-emerald-700 mt-1 num-focus">抽盘 280 件 ✓</div>
+            <div class="text-xs text-slate-500 mt-1">无异常</div>
+          </div>
+          <div class="p-3 bg-blue-50 rounded-lg">
+            <div class="text-xs text-blue-700">下次月盘</div>
+            <div class="text-lg font-bold text-blue-700 mt-1">2026-07-31</div>
+            <div class="text-xs text-slate-500 mt-1">系统自动提醒</div>
+          </div>
+        </div>
+      </div>
+    `
+  });
+
+  function viewStock(bizNo) { Utils.toast('查看库存详情', 'info'); }
+  function checkStock(bizNo) { Utils.toast('发起盘库任务（已通知监管方）', 'success'); }
+</script>
+</body>
+</html>

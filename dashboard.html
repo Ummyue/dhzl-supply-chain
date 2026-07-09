@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>首页概览 - 大河智链</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  const role = Utils.getRole();
+  const user = MockData.users[role] || MockData.users.customer;
+
+  // v1.7.3 盖章人登录直接跳转入库申请页（不走 dashboard）
+  if (role === 'customer_seal') {
+    window.location.replace('/customer/inbound');
+    throw new Error('redirect to /customer/inbound');
+  }
+
+  let dashboardContent = '';
+  if (role === 'customer') dashboardContent = renderCustomer();
+  else if (role === 'platform') dashboardContent = renderPlatform();
+  else if (role === 'guarantor') dashboardContent = renderGuarantor();
+  else if (role === 'bank') dashboardContent = renderBank();
+  else if (role === 'warehouse') dashboardContent = renderWarehouse();
+
+  document.getElementById('app').innerHTML = `
+    ${Components.topbar()}
+    <div class="flex">
+      ${Components.sidebar('/dashboard')}
+      <main class="flex-1 overflow-y-auto bg-slate-50">
+        <div class="p-6 page-enter">
+          ${Components.breadcrumb(['工作台', '首页概览'])}
+          <div class="mb-6">
+            <h1 class="text-2xl font-bold text-slate-800">您好，${user.name} 👋</h1>
+            <p class="text-slate-500 mt-1">${Utils.fmtDate(new Date().toISOString().slice(0,10))} · ${Utils.roleLabel(role)}工作台</p>
+          </div>
+          ${dashboardContent}
+        </div>
+      </main>
+    </div>
+  `;
+
+  // ============ 货主方 Dashboard ============
+  function renderCustomer() {
+    const s = MockData.customerStats;
+    const usagePercent = (s.creditUsed / s.creditLimit * 100).toFixed(1);
+    const myBiz = MockData.bizList.filter(b => b.customer.includes('军牧源'));
+
+    return `
+      <!-- 授信概览 -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="amount-gradient rounded-xl p-5 shadow-md">
+          <div class="text-blue-100 text-sm mb-1">授信总额度</div>
+          <div class="text-3xl font-bold mb-1 num-focus">${Utils.fmtMoney(s.creditLimit, false)}</div>
+          <div class="text-blue-200 text-xs">元 · 中国民生银行</div>
+        </div>
+        <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+          <div class="text-slate-500 text-sm mb-1">已用额度</div>
+          <div class="text-2xl font-bold text-slate-800 mb-2 num-focus">${Utils.fmtMoney(s.creditUsed, false)}</div>
+          <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-blue-500 to-blue-600" style="width: ${usagePercent}%"></div>
+          </div>
+          <div class="text-xs text-slate-500 mt-1">${usagePercent}%</div>
+        </div>
+        <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+          <div class="text-slate-500 text-sm mb-1">可用额度</div>
+          <div class="text-2xl font-bold text-green-600 mb-2 num-focus">${Utils.fmtMoney(s.creditAvailable, false)}</div>
+          <div class="text-xs text-slate-500">立即申请融资</div>
+        </div>
+        <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+          <div class="text-slate-500 text-sm mb-1">在贷融资笔数</div>
+          <div class="text-2xl font-bold text-slate-800 mb-1">${s.activeFinancing}</div>
+          <div class="text-xs text-orange-600">⚠ ${s.expiringLoans} 笔 7 天内到期</div>
+        </div>
+      </div>
+
+      <!-- 在库 + 月度账单 -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-slate-800">我的在贷融资</h3>
+            <a href="/customer/financing" class="text-sm text-blue-600 hover:underline">查看全部 →</a>
+          </div>
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+              <tr>
+                <th class="text-left px-3 py-2">业务编号</th>
+                <th class="text-left px-3 py-2">货品</th>
+                <th class="text-right px-3 py-2">放款金额</th>
+                <th class="text-right px-3 py-2">剩余债权</th>
+                <th class="text-left px-3 py-2">到期日</th>
+                <th class="text-center px-3 py-2">状态</th>
+              </tr>
+            </thead>
+            <tbody class="table-row-hover">
+              ${myBiz.slice(0, 5).map(b => `
+                <tr class="border-t border-slate-100">
+                  <td class="px-3 py-3 font-mono text-xs">${b.bizNo}</td>
+                  <td class="px-3 py-3">${b.productName}</td>
+                  <td class="px-3 py-3 text-right num-focus font-medium">${Utils.fmtMoney(b.loanAmount)}</td>
+                  <td class="px-3 py-3 text-right num-focus text-orange-600">${Utils.fmtMoney(b.remainingDebt)}</td>
+                  <td class="px-3 py-3 text-slate-500">${Utils.fmtDate(b.dueDate)}</td>
+                  <td class="px-3 py-3 text-center">${Components.badge(b.status)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <h3 class="font-semibold text-slate-800 mb-4">本月账单（5月）</h3>
+          ${MockData.bills.map(b => `
+            <div class="space-y-3 text-sm">
+              <div class="flex justify-between"><span class="text-slate-500">监管费</span><span class="num-focus">${Utils.fmtMoney(b.supervisionFee)}</span></div>
+              <div class="flex justify-between"><span class="text-slate-500">担保费</span><span class="num-focus">${Utils.fmtMoney(b.guaranteeFee)}</span></div>
+              <div class="flex justify-between"><span class="text-slate-500">仓储费</span><span class="num-focus">${Utils.fmtMoney(b.storageFee)}</span></div>
+              <div class="flex justify-between"><span class="text-slate-500">装卸费</span><span class="num-focus">${Utils.fmtMoney(b.handlingFee)}</span></div>
+              <div class="border-t border-slate-200 pt-3 flex justify-between font-bold text-base">
+                <span>合计</span><span class="text-blue-600 num-focus">${Utils.fmtMoney(b.total)}</span>
+              </div>
+              <button onclick="Utils.toast('账单已确认','success')" class="w-full py-2 mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium">立即确认</button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- 价格预警 -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <h3 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+          <svg class="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495z" clip-rule="evenodd"/></svg>
+          价格盯市预警
+        </h3>
+        <div class="space-y-2">
+          ${MockData.priceAlerts.filter(a => a.customer.includes('军牧源')).map(a => `
+            <div class="flex items-center justify-between p-3 rounded-lg ${a.level === 'danger' ? 'bg-rose-50 border border-rose-200' : 'bg-amber-50 border border-amber-200'}">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full ${a.level === 'danger' ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600'} flex items-center justify-center font-bold">${a.priceChangeRate > 0 ? '↑' : '↓'}</div>
+                <div>
+                  <div class="font-medium text-slate-800">${a.productName} · ${a.bizNo}</div>
+                  <div class="text-xs text-slate-500">${a.suggestedAction}</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-lg font-bold ${a.priceChangeRate > 0 ? 'text-rose-600' : 'text-emerald-600'} num-focus">${a.priceChangeRate > 0 ? '+' : ''}${a.priceChangeRate.toFixed(2)}%</div>
+                <div class="text-xs text-slate-400">${Utils.relativeTime(a.alertTime)}</div>
+              </div>
+            </div>
+          `).join('') || '<div class="text-center text-slate-400 py-6 text-sm">暂无预警 🎉</div>'}
+        </div>
+      </div>
+    `;
+  }
+
+  // ============ 监管方 Dashboard ============
+  function renderPlatform() {
+    const s = MockData.platformStats;
+    return `
+      <!-- 业务总览 -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+          <div class="text-slate-500 text-sm mb-1">活跃客户</div>
+          <div class="text-3xl font-bold text-slate-800">${s.activeCustomers}</div>
+          <div class="text-xs text-green-600 mt-1">↑ 本月 +2</div>
+        </div>
+        <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+          <div class="text-slate-500 text-sm mb-1">在库货值</div>
+          <div class="text-3xl font-bold text-blue-600 num-focus">${(s.inStockValue/10000).toFixed(0)}<span class="text-base text-slate-500 ml-1">万</span></div>
+          <div class="text-xs text-slate-500 mt-1">折合人民币</div>
+        </div>
+        <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+          <div class="text-slate-500 text-sm mb-1">融资余额</div>
+          <div class="text-3xl font-bold text-violet-600 num-focus">${(s.financingBalance/10000).toFixed(0)}<span class="text-base text-slate-500 ml-1">万</span></div>
+          <div class="text-xs text-slate-500 mt-1">银行在贷</div>
+        </div>
+        <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+          <div class="text-slate-500 text-sm mb-1">待办审批</div>
+          <div class="text-3xl font-bold text-orange-600">${s.pendingApprovals}</div>
+          <div class="text-xs text-slate-500 mt-1">需要您处理</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <!-- 待办审批 -->
+        <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
+          <h3 class="font-semibold text-slate-800 mb-4">📋 待办审批</h3>
+          <div class="space-y-3">
+            ${[
+              { type: '准入审批', title: '郑州固联冷链有限公司准入申请', applicant: '业务一部', time: '2 小时前', urgent: true },
+              { type: '入库审批', title: 'IN_20260705001 水煮山羊肉入库', applicant: '军牧源', time: '1 小时前', urgent: true },
+              { type: '融资审核', title: 'FN_20260705001 融资申请 ¥1,190,000', applicant: '军牧源', time: '30 分钟前', urgent: false },
+              { type: '出库审批', title: 'OUT_20260708001 解押+出库 7500kg', applicant: '军牧源', time: '15 分钟前', urgent: false },
+            ].map(t => `
+              <div class="flex items-center justify-between p-3 rounded-lg border ${t.urgent ? 'border-red-200 bg-red-50' : 'border-slate-200 hover:bg-slate-50'}">
+                <div class="flex-1">
+                  <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 text-xs rounded ${t.urgent ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}">${t.type}</span>
+                    <span class="font-medium text-slate-800 text-sm">${t.title}</span>
+                  </div>
+                  <div class="text-xs text-slate-500 mt-1">${t.applicant} · ${t.time}</div>
+                </div>
+                <button class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-md">立即处理</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- 风险预警 -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <h3 class="font-semibold text-slate-800 mb-4">🚨 风险预警</h3>
+          <div class="space-y-2">
+            ${MockData.priceAlerts.map(a => `
+              <div class="p-3 rounded-lg bg-amber-50 border border-amber-200">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-medium text-amber-700">${a.level === 'danger' ? '熔断预警' : '提醒'}</span>
+                  <span class="text-xs ${a.priceChangeRate > 0 ? 'text-rose-600' : 'text-emerald-600'} font-bold">${a.priceChangeRate > 0 ? '+' : ''}${a.priceChangeRate.toFixed(2)}%</span>
+                </div>
+                <div class="text-sm text-slate-800">${a.productName}</div>
+                <div class="text-xs text-slate-500 mt-1">${a.bizNo}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+
+      <!-- 业务数据 -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <h3 class="font-semibold text-slate-800 mb-4">📊 近期业务数据</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="text-center p-4 bg-blue-50 rounded-lg">
+            <div class="text-2xl font-bold text-blue-700 num-focus">¥${(s.inStockValue/10000).toFixed(1)}万</div>
+            <div class="text-xs text-slate-500 mt-1">在库货值</div>
+          </div>
+          <div class="text-center p-4 bg-emerald-50 rounded-lg">
+            <div class="text-2xl font-bold text-emerald-700 num-focus">${s.warehouseUtilization}%</div>
+            <div class="text-xs text-slate-500 mt-1">仓库利用率</div>
+          </div>
+          <div class="text-center p-4 bg-violet-50 rounded-lg">
+            <div class="text-2xl font-bold text-violet-700 num-focus">${s.monthlyNewLoans}</div>
+            <div class="text-xs text-slate-500 mt-1">本月新增融资</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ============ 担保方 Dashboard ============
+  function renderGuarantor() {
+    return `
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="amount-gradient rounded-xl p-5 shadow-md">
+          <div class="text-blue-100 text-sm mb-1">担保总额度</div>
+          <div class="text-3xl font-bold mb-1 num-focus">¥8.5亿</div>
+          <div class="text-blue-200 text-xs">总授信敞口</div>
+        </div>
+        <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+          <div class="text-slate-500 text-sm mb-1">在保余额</div>
+          <div class="text-3xl font-bold text-amber-600 num-focus">¥5.2亿</div>
+          <div class="text-xs text-slate-500 mt-1">61.2% 敞口占用</div>
+        </div>
+        <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+          <div class="text-slate-500 text-sm mb-1">待审核融资</div>
+          <div class="text-3xl font-bold text-orange-600">3</div>
+          <div class="text-xs text-slate-500 mt-1">需出具担保函</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <h3 class="font-semibold text-slate-800 mb-4">📋 待审核融资申请</h3>
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-xs uppercase text-slate-600">
+            <tr>
+              <th class="text-left px-3 py-2">申请编号</th>
+              <th class="text-left px-3 py-2">融资客户</th>
+              <th class="text-left px-3 py-2">货品</th>
+              <th class="text-right px-3 py-2">申请金额</th>
+              <th class="text-right px-3 py-2">担保额度</th>
+              <th class="text-center px-3 py-2">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${MockData.financingList.map(f => `
+              <tr class="border-t border-slate-100 hover:bg-slate-50">
+                <td class="px-3 py-3 font-mono text-xs">${f.bizNo}</td>
+                <td class="px-3 py-3">${f.applicant}</td>
+                <td class="px-3 py-3">${f.products[0]?.name || '-'}</td>
+                <td class="px-3 py-3 text-right num-focus font-medium">${Utils.fmtMoney(f.applyAmount)}</td>
+                <td class="px-3 py-3 text-right num-focus">${Utils.fmtMoney(f.applyAmount * 1.2)}</td>
+                <td class="px-3 py-3 text-center">
+                  <a href="/guarantor/approval-financing" class="text-blue-600 hover:underline">审核 →</a>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  // ============ 资金方 Dashboard ============
+  function renderBank() {
+    return `
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-violet-600 to-violet-700 rounded-xl p-5 shadow-md text-white">
+          <div class="text-violet-100 text-sm mb-1">授信总额</div>
+          <div class="text-3xl font-bold mb-1 num-focus">¥12亿</div>
+          <div class="text-violet-200 text-xs">供应链金融专项</div>
+        </div>
+        <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+          <div class="text-slate-500 text-sm mb-1">在贷余额</div>
+          <div class="text-3xl font-bold text-slate-800 num-focus">¥8.7亿</div>
+          <div class="text-xs text-slate-500 mt-1">72.5% 占用</div>
+        </div>
+        <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+          <div class="text-slate-500 text-sm mb-1">本月放款</div>
+          <div class="text-3xl font-bold text-green-600 num-focus">¥1.2亿</div>
+          <div class="text-xs text-slate-500 mt-1">↑ 较上月 +18%</div>
+        </div>
+        <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+          <div class="text-slate-500 text-sm mb-1">不良率</div>
+          <div class="text-3xl font-bold text-emerald-600 num-focus">0.32%</div>
+          <div class="text-xs text-slate-500 mt-1">行业最低水平</div>
+        </div>
+      </div>
+
+      <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-xs text-amber-800">
+        <span class="font-medium">v1.7 阴需：</span>您（资金方）需在<strong>还款回单确认页</strong>核对货主方上传的实际收款凭证，并在放款页<strong>上传线下打款的放款证明+电子回单</strong>。
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-slate-800">🏦 待放款融资</h3>
+            <a href="/bank/approval-loan" class="text-xs text-blue-600 hover:underline">全部 →</a>
+          </div>
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 text-xs uppercase text-slate-600">
+              <tr><th class="text-left px-3 py-2">客户</th><th class="text-right px-3 py-2">金额</th><th class="text-center px-3 py-2">操作</th></tr>
+            </thead>
+            <tbody>
+              <tr class="border-t border-slate-100"><td class="px-3 py-3">郑州军牧源</td><td class="px-3 py-3 text-right num-focus">¥1,190,000</td><td class="px-3 py-3 text-center"><a href="/bank/approval-loan" class="text-blue-600 hover:underline">放款 →</a></td></tr>
+              <tr class="border-t border-slate-100"><td class="px-3 py-3">郑州固联</td><td class="px-3 py-3 text-right num-focus">¥1,760,000</td><td class="px-3 py-3 text-center"><a href="/bank/approval-loan" class="text-blue-600 hover:underline">放款 →</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="bg-white rounded-xl border-2 border-amber-200 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-slate-800">📑 待确认还款回单（v1.7 新增）</h3>
+            <a href="/bank/confirm-repayment" class="text-xs text-amber-600 hover:underline font-medium">全部 →</a>
+          </div>
+          <div class="space-y-2">
+            ${MockData.repaymentRecords.filter(r => !r.fundingConfirmed).map(r => `
+              <div class="flex items-center justify-between p-2 bg-amber-50 border border-amber-200 rounded text-xs">
+                <div>
+                  <div class="font-medium text-slate-800">${r.id} · ${r.customer}</div>
+                  <div class="text-slate-500 mt-0.5">业务 ${r.bizNo} · ${r.product}</div>
+                </div>
+                <div class="text-right">
+                  <div class="font-bold text-amber-700 num-focus">${Utils.fmtMoney(r.offLineAmount)}</div>
+                  <a href="/bank/confirm-repayment" class="text-amber-600 hover:underline text-xs">去确认 →</a>
+                </div>
+              </div>
+            `).join('') || '<div class="text-center text-slate-400 py-4 text-xs">📭 暂无待确认回单</div>'}
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <h3 class="font-semibold text-slate-800 mb-4">⚠ 五级分类</h3>
+          <div class="space-y-2">
+            ${[
+              { level: '正常类', count: 18, percent: 78, color: 'bg-green-500' },
+              { level: '关注类', count: 3, percent: 13, color: 'bg-yellow-500' },
+              { level: '次级类', count: 1, percent: 5, color: 'bg-orange-500' },
+              { level: '可疑类', count: 1, percent: 4, color: 'bg-red-500' },
+              { level: '损失类', count: 0, percent: 0, color: 'bg-slate-500' },
+            ].map(l => `
+              <div>
+                <div class="flex justify-between text-sm mb-1">
+                  <span class="text-slate-700">${l.level}</span>
+                  <span class="text-slate-500 num-focus">${l.count} 笔 · ${l.percent}%</span>
+                </div>
+                <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div class="h-full ${l.color}" style="width: ${l.percent}%"></div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ============ 仓库方 Dashboard ============
+  function renderWarehouse() {
+    const s = MockData.warehouseStats;
+    return `
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-5 shadow-md text-white">
+          <div class="text-orange-100 text-sm mb-1">本月入库</div>
+          <div class="text-3xl font-bold mb-1">${s.totalInbound} 笔</div>
+          <div class="text-orange-200 text-xs">含待执行 ${s.pendingInbound}</div>
+        </div>
+        <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-5 shadow-md text-white">
+          <div class="text-emerald-100 text-sm mb-1">本月出库</div>
+          <div class="text-3xl font-bold mb-1">${s.totalOutbound} 笔</div>
+          <div class="text-emerald-200 text-xs">含待执行 ${s.pendingOutbound}</div>
+        </div>
+        <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+          <div class="text-slate-500 text-sm mb-1">在库货值</div>
+          <div class="text-2xl font-bold text-blue-600 num-focus">${(s.inStockValue/10000).toFixed(0)}<span class="text-base text-slate-500 ml-1">万</span></div>
+        </div>
+        <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+          <div class="text-slate-500 text-sm mb-1">仓库利用率</div>
+          <div class="text-3xl font-bold ${s.utilizationRate > 85 ? 'text-orange-600' : 'text-emerald-600'} num-focus">${s.utilizationRate}%</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <h3 class="font-semibold text-slate-800 mb-4">📦 待入库任务</h3>
+          ${MockData.warehouseInboundList.filter(i => i.status === 'pending').map(i => `
+            <div class="flex items-center justify-between p-3 mb-2 rounded-lg bg-orange-50 border border-orange-200">
+              <div>
+                <div class="font-mono text-xs">${i.orderNo}</div>
+                <div class="text-xs text-slate-600">${i.applicant} · ${i.product}</div>
+                <div class="text-xs text-slate-400 mt-0.5">${i.vehicleNo} · ${i.plannedTime}</div>
+              </div>
+              <a href="/warehouse/inbound" class="text-blue-600 hover:underline text-xs">执行 →</a>
+            </div>
+          `).join('') || '<div class="text-center text-slate-400 py-6 text-sm">暂无待入库任务 🎉</div>'}
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <h3 class="font-semibold text-slate-800 mb-4">🚚 待出库任务</h3>
+          ${MockData.warehouseOutboundList.filter(o => o.status === 'pending').map(o => `
+            <div class="flex items-center justify-between p-3 mb-2 rounded-lg bg-emerald-50 border border-emerald-200">
+              <div>
+                <div class="font-mono text-xs">${o.orderNo}</div>
+                <div class="text-xs text-slate-600">${o.applicant} · ${o.product}</div>
+                <div class="text-xs text-emerald-700 mt-0.5">✓ ${o.instruction}</div>
+              </div>
+              <a href="/warehouse/outbound" class="text-blue-600 hover:underline text-xs">执行 →</a>
+            </div>
+          `).join('') || '<div class="text-center text-slate-400 py-6 text-sm">暂无待出库任务 🎉</div>'}
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <h3 class="font-semibold text-slate-800 mb-3">🏭 仓库使用情况</h3>
+        <div class="grid grid-cols-3 gap-3">
+          ${MockData.warehouses.map(w => {
+            const usage = Math.floor(Math.random() * 30 + 60);
+            return `
+              <div class="p-3 bg-slate-50 rounded-lg">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="font-medium text-sm">${w.name}</div>
+                  <span class="text-xs px-1.5 py-0.5 rounded ${w.type === '自有仓' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}">${w.type}</span>
+                </div>
+                <div class="text-xs text-slate-500 mb-1">${w.address}</div>
+                <div class="flex items-center justify-between text-xs mb-1">
+                  <span>利用率</span><span class="font-bold num-focus">${usage}%</span>
+                </div>
+                <div class="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div class="h-full bg-gradient-to-r ${usage > 85 ? 'from-orange-500 to-orange-600' : 'from-blue-500 to-blue-600'}" style="width: ${usage}%"></div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>综合数据统计 - 大河智链</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '综合数据统计',
+    currentPath: '/platform/data-statistics',
+    breadcrumb: [{ label: '数据中心', path: '/platform/data-statistics' }, '综合统计'],
+    content: `
+      <div class="grid grid-cols-4 gap-3 mb-6">
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">本月业务量</div>
+          <div class="text-2xl font-bold text-slate-800 mt-1">28 笔</div>
+          <div class="text-xs text-emerald-600 mt-1">↑ 较上月 +12%</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">本月放款额</div>
+          <div class="text-2xl font-bold text-blue-600 mt-1 num-focus">¥3,250 万</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">累计在贷余额</div>
+          <div class="text-2xl font-bold text-violet-600 mt-1 num-focus">¥8,562 万</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">平均融资期限</div>
+          <div class="text-2xl font-bold text-slate-800 mt-1">98 天</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <h3 class="font-semibold text-slate-800 mb-3">业务经营统计</h3>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="p-3 bg-blue-50 rounded text-center">
+              <div class="text-xs text-slate-500">采销规模</div>
+              <div class="text-xl font-bold text-blue-700 mt-1 num-focus">¥1.2 亿</div>
+            </div>
+            <div class="p-3 bg-emerald-50 rounded text-center">
+              <div class="text-xs text-slate-500">成交量</div>
+              <div class="text-xl font-bold text-emerald-700 mt-1 num-focus">456 吨</div>
+            </div>
+            <div class="p-3 bg-violet-50 rounded text-center">
+              <div class="text-xs text-slate-500">库存量</div>
+              <div class="text-xl font-bold text-violet-700 mt-1 num-focus">156 吨</div>
+            </div>
+            <div class="p-3 bg-amber-50 rounded text-center">
+              <div class="text-xs text-slate-500">业务单数</div>
+              <div class="text-xl font-bold text-amber-700 mt-1">28</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <h3 class="font-semibold text-slate-800 mb-3">风控风险统计</h3>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="p-3 bg-orange-50 rounded text-center">
+              <div class="text-xs text-slate-500">预警数量</div>
+              <div class="text-xl font-bold text-orange-700 mt-1">${MockData.riskAlerts.length}</div>
+            </div>
+            <div class="p-3 bg-rose-50 rounded text-center">
+              <div class="text-xs text-slate-500">违规业务条数</div>
+              <div class="text-xl font-bold text-rose-700 mt-1">0</div>
+            </div>
+            <div class="p-3 bg-violet-50 rounded text-center">
+              <div class="text-xs text-slate-500">敞口占用分布</div>
+              <div class="text-xl font-bold text-violet-700 mt-1 num-focus">61.2%</div>
+            </div>
+            <div class="p-3 bg-emerald-50 rounded text-center">
+              <div class="text-xs text-slate-500">客商风险等级</div>
+              <div class="text-xl font-bold text-emerald-700 mt-1">A 级</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <h3 class="font-semibold text-slate-800 mb-3">按品类统计</h3>
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-xs text-slate-600 uppercase">
+            <tr><th class="text-left px-3 py-2">货品</th><th class="text-right px-3 py-2">业务笔数</th><th class="text-right px-3 py-2">总货值</th><th class="text-right px-3 py-2">放款金额</th><th class="text-right px-3 py-2">平均质押率</th></tr>
+          </thead>
+          <tbody>
+            ${['熟牛腱', '水煮牛肉Qq', '水煮牛肉Qh', '去骨牛心管', '牛颈骨', '羔羊肉+牛心管+牛膝盖骨', '水煮山羊肉', '冷冻去骨牛7件套'].map((p, i) => {
+              const total = [1628000, 1352800, 1100000, 4252000, 466264, 1100000, 1302840, 2211895][i];
+              return `
+                <tr class="border-t border-slate-100">
+                  <td class="px-3 py-2">${p}</td>
+                  <td class="px-3 py-2 text-right num-focus">${[1, 1, 1, 1, 1, 1, 1, 1][i] + Math.floor(Math.random() * 3)}</td>
+                  <td class="px-3 py-2 text-right num-focus">${Utils.fmtMoney(total)}</td>
+                  <td class="px-3 py-2 text-right num-focus text-blue-600">${Utils.fmtMoney(total * 0.8)}</td>
+                  <td class="px-3 py-2 text-right">80%</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `
+  });
+</script>
+</body>
+</html>

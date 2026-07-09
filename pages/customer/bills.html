@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月度账单 - 大河智链</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '月度账单',
+    currentPath: '/customer/bills',
+    breadcrumb: [{ label: '出库与还款', path: '/customer/bills' }, '月度账单'],
+    content: `
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6 text-xs text-blue-800">
+        <span class="font-medium">计费规则：</span>
+        监管费 1.16‰/年（按日计，按月在库货值）·
+        担保费 1.5%/年（单笔结清后结算）·
+        仓储费（自有仓按天计）·
+        装卸费 70 元/吨
+      </div>
+
+      ${MockData.bills.map(b => `
+        <div class="bg-white rounded-xl border border-slate-200 p-6 mb-4">
+          <div class="flex items-center justify-between mb-4 pb-3 border-b">
+            <div>
+              <h3 class="font-bold text-lg text-slate-800">${b.period} 月度费用账单</h3>
+              <div class="text-sm text-slate-500 mt-1">账单编号：BILL_${b.customer.includes('军牧源') ? 'JMY' : 'GL'}_${b.period} · ${b.customer}</div>
+            </div>
+            <div class="text-right">
+              ${Components.badge(b.status)}
+              <div class="text-xs text-slate-400 mt-1">生成时间：2026-06-01 00:00</div>
+            </div>
+          </div>
+
+          <table class="w-full text-sm mb-4">
+            <thead class="bg-slate-50 text-xs uppercase text-slate-600">
+              <tr>
+                <th class="text-left px-3 py-2">费用项</th>
+                <th class="text-right px-3 py-2">计费基数</th>
+                <th class="text-right px-3 py-2">费率/单价</th>
+                <th class="text-right px-3 py-2">天数</th>
+                <th class="text-right px-3 py-2">金额</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-t border-slate-100">
+                <td class="px-3 py-3 font-medium">监管费</td>
+                <td class="px-3 py-3 text-right num-focus">¥8,562,000.00</td>
+                <td class="px-3 py-3 text-right num-focus">1.16‰/年</td>
+                <td class="px-3 py-3 text-right num-focus">30 天</td>
+                <td class="px-3 py-3 text-right num-focus">¥${b.supervisionFee.toLocaleString()}</td>
+              </tr>
+              <tr class="border-t border-slate-100">
+                <td class="px-3 py-3 font-medium">担保费</td>
+                <td class="px-3 py-3 text-right num-focus">¥12,000,000.00</td>
+                <td class="px-3 py-3 text-right num-focus">1.5%/年</td>
+                <td class="px-3 py-3 text-right num-focus">-</td>
+                <td class="px-3 py-3 text-right num-focus">¥${b.guaranteeFee.toLocaleString()}</td>
+              </tr>
+              <tr class="border-t border-slate-100">
+                <td class="px-3 py-3 font-medium">仓储费</td>
+                <td class="px-3 py-3 text-right num-focus">1,082 m²</td>
+                <td class="px-3 py-3 text-right num-focus">¥30/m²/月</td>
+                <td class="px-3 py-3 text-right num-focus">30 天</td>
+                <td class="px-3 py-3 text-right num-focus">¥${b.storageFee.toLocaleString()}</td>
+              </tr>
+              <tr class="border-t border-slate-100">
+                <td class="px-3 py-3 font-medium">装卸费</td>
+                <td class="px-3 py-3 text-right num-focus">119 吨</td>
+                <td class="px-3 py-3 text-right num-focus">¥70/吨</td>
+                <td class="px-3 py-3 text-right num-focus">-</td>
+                <td class="px-3 py-3 text-right num-focus">¥${b.handlingFee.toLocaleString()}</td>
+              </tr>
+              <tr class="border-t-2 border-slate-300 bg-blue-50">
+                <td colspan="4" class="px-3 py-3 text-right font-bold">合计应付：</td>
+                <td class="px-3 py-3 text-right text-xl font-bold text-blue-700 num-focus">${Utils.fmtMoney(b.total)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="flex justify-end gap-2">
+            <button onclick="Utils.toast('账单已导出 PDF','info')" class="px-4 py-2 border border-slate-300 rounded-md text-sm hover:bg-slate-50">导出账单</button>
+            <button onclick="Utils.toast('已发起异议','info')" class="px-4 py-2 border border-slate-300 rounded-md text-sm hover:bg-slate-50">提出异议</button>
+            <button onclick="Utils.toast('账单已确认，进入付款流程','success')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium">确认账单</button>
+          </div>
+        </div>
+      `).join('')}
+    `
+  });
+</script>
+</body>
+</html>

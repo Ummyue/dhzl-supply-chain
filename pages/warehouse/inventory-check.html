@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>盘库记录 - 大河智链</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '盘库记录（定期巡库）',
+    currentPath: '/warehouse/inventory-check',
+    breadcrumb: [{ label: '入库作业', path: '/warehouse/inbound' }, '盘库记录'],
+    extra: `<button onclick="createCheckRecord()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-sm font-medium flex items-center gap-1">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      新建盘库记录
+    </button>`,
+    content: `
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-800">
+        <div class="font-medium mb-1">💡 v1.7 §4.4 主线 A：定期巡库 + 盘库记录</div>
+        <div>仓库方需每周至少<strong>定期巡库一次</strong>，通过 PDA 扫码或人工录入，<strong>上传实际盘存重量</strong>。系统自动比对系统应存重量，发现差异立即推送预警。</div>
+        <div class="text-xs text-blue-700 mt-2">📌 状态：<span class="text-emerald-600">正常</span>（差异 ≤ 0.1%）| <span class="text-rose-600">异常</span>（差异 > 0.1% 或负差异）</div>
+      </div>
+
+      <div class="grid grid-cols-4 gap-3 mb-6">
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">本月盘库次数</div>
+          <div class="text-3xl font-bold text-purple-600 mt-1">${MockData.inventoryCheckRecords.length}</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">异常次数</div>
+          <div class="text-3xl font-bold text-rose-600 mt-1">${MockData.inventoryCheckRecords.filter(c => c.status === 'abnormal').length}</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">巡库覆盖率</div>
+          <div class="text-2xl font-bold text-emerald-600 mt-1 num-focus">100%</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">平均差异率</div>
+          <div class="text-2xl font-bold text-slate-800 mt-1 num-focus">-0.32%</div>
+        </div>
+      </div>
+
+      <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+        <span class="w-1 h-4 bg-purple-500 rounded"></span>
+        盘库记录列表
+      </h3>
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+            <tr>
+              <th class="text-left px-4 py-3">盘库时间</th>
+              <th class="text-left px-4 py-3">仓库</th>
+              <th class="text-left px-4 py-3">业务编号</th>
+              <th class="text-right px-4 py-3">系统应存</th>
+              <th class="text-right px-4 py-3">实际盘存</th>
+              <th class="text-right px-4 py-3">差异(kg)</th>
+              <th class="text-right px-4 py-3">差异率</th>
+              <th class="text-center px-4 py-3">结果</th>
+              <th class="text-left px-4 py-3">巡库人/备注</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${MockData.inventoryCheckRecords.map(c => {
+              const diffRate = c.expectedWeight > 0 ? ((c.actualWeight - c.expectedWeight) / c.expectedWeight * 100) : 0;
+              return `
+              <tr class="border-t border-slate-100">
+                <td class="px-4 py-3 text-xs text-slate-500">${c.checkTime}</td>
+                <td class="px-4 py-3 text-xs">${MockData.warehouses.find(w => w.id === c.warehouseId)?.name || c.warehouseId}</td>
+                <td class="px-4 py-3 font-mono text-xs text-blue-600">${c.bizNo}</td>
+                <td class="px-4 py-3 text-right num-focus">${Utils.fmtWithUnit(c.expectedWeight, ' kg')}</td>
+                <td class="px-4 py-3 text-right num-focus">${Utils.fmtWithUnit(c.actualWeight, ' kg')}</td>
+                <td class="px-4 py-3 text-right num-focus ${c.weightDiff === 0 ? '' : 'text-rose-600 font-bold'}">${c.weightDiff > 0 ? '+' : ''}${c.weightDiff}</td>
+                <td class="px-4 py-3 text-right num-focus text-xs ${Math.abs(diffRate) < 0.1 ? 'text-emerald-600' : 'text-rose-600 font-bold'}">${diffRate > 0 ? '+' : ''}${diffRate.toFixed(2)}%</td>
+                <td class="px-4 py-3 text-center">${c.status === 'normal' ? '<span class="text-xs text-emerald-600 font-medium">✓ 正常</span>' : '<span class="text-xs text-rose-600 font-bold">🔴 异常</span>'}</td>
+                <td class="px-4 py-3 text-xs">
+                  <div>${c.checker}</div>
+                  ${c.remark ? `<div class="text-slate-500 mt-0.5">${c.remark}</div>` : ''}
+                </td>
+              </tr>
+            `}).join('')}
+          </tbody>
+        </table>
+      </div>
+    `
+  });
+
+  function createCheckRecord() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-backdrop';
+    modal.innerHTML = `
+      <div class="bg-white rounded-xl w-[700px] max-h-[90vh] overflow-y-auto shadow-2xl" onclick="event.stopPropagation()">
+        <div class="px-6 py-4 border-b border-slate-200 sticky top-0 bg-white">
+          <h3 class="font-bold text-slate-800 text-lg">📱 新建盘库记录（v1.7 新增）</h3>
+          <p class="text-xs text-slate-500 mt-1">支持 PDA 扫码 / 人工录入；实际盘存重量与系统应存差异 > 0.1% 自动标记异常</p>
+        </div>
+        <div class="p-6 space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div><label class="block text-xs text-slate-600 mb-1">盘库仓库 <span class="text-red-500">*</span></label>
+              <select class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                ${MockData.warehouses.map(w => `<option>${w.name}</option>`).join('')}
+              </select>
+            </div>
+            <div><label class="block text-xs text-slate-600 mb-1">业务编号（可选）</label>
+              <select class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                <option value="">-- 全部货物盘库 --</option>
+                ${MockData.pledgeLedger.map(b => `<option>${b.bizNo} | ${b.product}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div><label class="block text-xs text-slate-600 mb-1">盘库时间 <span class="text-red-500">*</span></label>
+              <input type="datetime-local" value="2026-07-08T10:00" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+            </div>
+            <div><label class="block text-xs text-slate-600 mb-1">巡库人 <span class="text-red-500">*</span></label>
+              <input type="text" value="赵德昌" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+            </div>
+          </div>
+
+          <div class="bg-purple-50 rounded-lg p-3 text-sm">
+            <h4 class="text-xs font-semibold text-purple-800 mb-2">📦 实际盘存数据（可批量添加）</h4>
+            <table class="w-full text-xs">
+              <thead class="text-purple-700">
+                <tr><th class="text-left py-1">货品</th><th class="text-right py-1">系统应存(kg)</th><th class="text-right py-1">实际(kg)</th><th class="text-right py-1">差异</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="py-1">水煮山羊肉</td><td class="text-right num-focus">20,800</td><td class="text-right num-focus"><input type="number" value="20800" class="w-20 px-1 py-0.5 border rounded text-right"></td><td class="text-right num-focus text-emerald-600">0</td></tr>
+                <tr><td class="py-1">冷冻去骨牛7件套</td><td class="text-right num-focus">39,854</td><td class="text-right num-focus"><input type="number" value="39854" class="w-20 px-1 py-0.5 border rounded text-right"></td><td class="text-right num-focus text-emerald-600">0</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-600 mb-1">备注（差异说明）</label>
+            <textarea rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" placeholder="例：库存与系统一致 / 短少 XX 公斤，已通知货主核实">库存与系统一致</textarea>
+          </div>
+
+          <div class="border-2 border-dashed border-slate-300 rounded-lg p-3 text-center text-xs text-slate-500">
+            📷 巡库照片上传（PDA 自动采集 / 拍照）<br>
+            <span class="text-slate-400">支持多张照片，含仓房全景 + 货物特写 + 批次号特写</span>
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-2 sticky bottom-0 bg-white">
+          <button onclick="this.closest('.modal-backdrop').remove()" class="px-4 py-2 border border-slate-300 rounded-md text-sm">取消</button>
+          <button onclick="Utils.toast('✓ 盘库记录已提交，差异 > 0.1% 自动推送预警','success'); this.closest('.modal-backdrop').remove(); setTimeout(()=>location.reload(),800)" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-sm font-medium">提交盘库记录</button>
+        </div>
+      </div>
+    `;
+    modal.onclick = () => modal.remove();
+    document.body.appendChild(modal);
+  }
+</script>
+</body>
+</html>

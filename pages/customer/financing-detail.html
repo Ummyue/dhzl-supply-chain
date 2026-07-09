@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>融资详情 - 大河智链</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+  const urlParams = new URLSearchParams(window.location.search);
+  const id = urlParams.get('id') || 'fn_001';
+  const f = MockData.financingList.find(x => x.id === id) || MockData.financingList[0];
+
+  const guaranteeFee = (f.applyAmount * 0.015 / 365 * f.duration).toFixed(2);
+  const supervisionFee = (f.evaluateValue * 0.00116 / 365 * f.duration).toFixed(2);
+
+  const progressMap = {
+    'pending': [
+      { node: '融资申请', operator: '客户', time: f.applyDate, status: 'success', opinion: '申请已提交，等待监管方审核' },
+      { node: '监管方审核', operator: '—', time: '—', status: 'current', opinion: '⏳ 等待监管方审核货值' },
+      { node: '货主方盖章①', operator: '—', time: '—', status: 'pending', opinion: '—' },
+      { node: '担保方审核', operator: '—', time: '—', status: 'pending', opinion: '—' },
+      { node: '货主方盖章②', operator: '—', time: '—', status: 'pending', opinion: '—' },
+      { node: '资金方审核', operator: '—', time: '—', status: 'pending', opinion: '—' },
+      { node: '货主方盖章③', operator: '—', time: '—', status: 'pending', opinion: '—' },
+      { node: '资金方放款', operator: '—', time: '—', status: 'pending', opinion: '—' },
+    ],
+    'pending_owner_seal': [
+      { node: '融资申请', operator: '客户', time: f.applyDate, status: 'success', opinion: '申请已提交' },
+      { node: '监管方审核', operator: '李雪 (风控经理)', time: f.applyDate + ' 14:00', status: 'success', opinion: '✓ 审核通过，建议融资 ¥' + Utils.fmtMoney(f.applyAmount) },
+      { node: '货主方盖章①', operator: '—', time: '—', status: 'current', opinion: '⏳ 等待货主方盖章《质物清单》+《质押反担保合同》' },
+      { node: '担保方审核', operator: '—', time: '—', status: 'pending', opinion: '—' },
+      { node: '货主方盖章②', operator: '—', time: '—', status: 'pending', opinion: '—' },
+      { node: '资金方审核', operator: '—', time: '—', status: 'pending', opinion: '—' },
+      { node: '货主方盖章③', operator: '—', time: '—', status: 'pending', opinion: '—' },
+      { node: '资金方放款', operator: '—', time: '—', status: 'pending', opinion: '—' },
+    ],
+    'pending_guarantor': [
+      { node: '融资申请', operator: '客户', time: f.applyDate, status: 'success', opinion: '申请已提交' },
+      { node: '监管方审核', operator: '李雪 (风控经理)', time: f.applyDate + ' 14:00', status: 'success', opinion: '✓ 审核通过' },
+      { node: '货主方盖章①', operator: '李雪（盖章人）', time: f.applyDate + ' 14:20', status: 'success', opinion: '✓ 已盖《质物清单》+《质押反担保合同》' },
+      { node: '担保方审核', operator: '—', time: '—', status: 'current', opinion: '⏳ 等待担保方核保' },
+      { node: '货主方盖章②', operator: '—', time: '—', status: 'pending', opinion: '—' },
+      { node: '资金方审核', operator: '—', time: '—', status: 'pending', opinion: '—' },
+      { node: '货主方盖章③', operator: '—', time: '—', status: 'pending', opinion: '—' },
+      { node: '资金方放款', operator: '—', time: '—', status: 'pending', opinion: '—' },
+    ],
+    'pending_funding': [
+      { node: '融资申请', operator: '客户', time: f.applyDate, status: 'success', opinion: '申请已提交' },
+      { node: '监管方审核', operator: '李雪', time: f.applyDate + ' 14:00', status: 'success', opinion: '✓ 通过' },
+      { node: '货主方盖章①', operator: '李雪', time: f.applyDate + ' 14:20', status: 'success', opinion: '✓ 盖章①完成' },
+      { node: '担保方审核', operator: '中原担保 王建国', time: f.applyDate + ' 16:30', status: 'success', opinion: '✓ 出具担保函，担保金额 ¥' + Utils.fmtMoney(f.applyAmount * 1.2) },
+      { node: '货主方盖章②', operator: '李雪', time: f.applyDate + ' 16:50', status: 'success', opinion: '✓ 盖章②完成' },
+      { node: '资金方审核', operator: '—', time: '—', status: 'current', opinion: '⏳ 等待资金方审核' },
+      { node: '货主方盖章③', operator: '—', time: '—', status: 'pending', opinion: '—' },
+      { node: '资金方放款', operator: '—', time: '—', status: 'pending', opinion: '—' },
+    ],
+    'financing': [
+      { node: '融资申请', operator: '客户', time: f.applyDate, status: 'success', opinion: '申请已提交' },
+      { node: '监管方审核', operator: '李雪', time: f.applyDate + ' 14:00', status: 'success', opinion: '✓ 通过' },
+      { node: '货主方盖章①', operator: '李雪', time: f.applyDate + ' 14:20', status: 'success', opinion: '✓ 盖章①完成' },
+      { node: '担保方审核', operator: '王建国', time: f.applyDate + ' 16:30', status: 'success', opinion: '✓ 出具担保函' },
+      { node: '货主方盖章②', operator: '李雪', time: f.applyDate + ' 16:50', status: 'success', opinion: '✓ 盖章②完成' },
+      { node: '资金方审核', operator: '刘敏', time: f.applyDate + ' 17:30', status: 'success', opinion: '✓ 审核通过' },
+      { node: '货主方盖章③', operator: '—', time: '—', status: 'current', opinion: '⏳ 等待货主方盖章③' },
+      { node: '资金方放款', operator: '—', time: '—', status: 'pending', opinion: '—' },
+    ],
+    'released': [
+      { node: '融资申请', operator: '客户', time: f.applyDate, status: 'success', opinion: '申请已提交' },
+      { node: '监管方审核', operator: '李雪', time: f.applyDate + ' 14:00', status: 'success', opinion: '✓ 通过' },
+      { node: '货主方盖章①', operator: '李雪', time: f.applyDate + ' 14:20', status: 'success', opinion: '✓ 盖章①完成' },
+      { node: '担保方审核', operator: '王建国', time: f.applyDate + ' 16:30', status: 'success', opinion: '✓ 出具担保函' },
+      { node: '货主方盖章②', operator: '李雪', time: f.applyDate + ' 16:50', status: 'success', opinion: '✓ 盖章②完成' },
+      { node: '资金方审核', operator: '刘敏', time: f.applyDate + ' 17:30', status: 'success', opinion: '✓ 审核通过' },
+      { node: '货主方盖章③', operator: '李雪', time: f.applyDate + ' 17:45', status: 'success', opinion: '✓ 盖章③完成（三章齐全）' },
+      { node: '资金方放款', operator: '刘敏', time: f.applyDate + ' 18:00', status: 'success', opinion: '✓ 银行线下打款完成 + 放款凭证已上传' },
+    ],
+  };
+  const progress = progressMap[f.status] || progressMap['pending'];
+
+  const actions = {
+    'pending': [
+      { label: '撤回申请', type: 'danger', onclick: "if(confirm('确认撤回？')){Utils.toast('已撤回','success');setTimeout(()=>history.back(),600)}" },
+      { label: '修改申请', type: 'default', onclick: "Utils.toast('打开修改','info')" },
+      { label: '查看审批进度', type: 'primary', onclick: "document.getElementById('progressSection').scrollIntoView({behavior:'smooth'})" },
+    ],
+    'financing': [
+      { label: '查看质物清单', type: 'primary', onclick: "window.location.href='/customer/pledge-list'" },
+      { label: '查看放款详情', type: 'default', onclick: "Utils.toast('放款处理中...','info')" },
+    ],
+    'released': [
+      { label: '查看质物清单', type: 'primary', onclick: "window.location.href='/customer/pledge-list'" },
+      { label: '查看借据详情', type: 'default', onclick: "Utils.toast('展示借据详情','info')" },
+      { label: '发起解押/出库', type: 'success', onclick: "window.location.href='/customer/outbound'" },
+      { label: '下载放款凭证', type: 'default', onclick: "Utils.toast('下载中...','info')" },
+    ],
+  };
+  const currentActions = actions[f.status] || actions['pending'];
+
+  document.getElementById('app').innerHTML = `
+    ${Components.topbar()}
+    <div class="flex">
+      ${Components.sidebar('/customer/financing')}
+      <main class="flex-1 overflow-y-auto bg-slate-50">
+        <div class="p-6 page-enter">
+          ${Components.breadcrumb([{ label: '融资管理', path: '/customer/financing' }, '融资详情'])}
+          <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+            <div class="flex items-start justify-between mb-4">
+              <div>
+                <div class="flex items-center gap-3 mb-2">
+                  <h1 class="text-2xl font-bold text-slate-800">融资详情</h1>
+                  ${Components.badge(f.status)}
+                </div>
+                <div class="text-sm text-slate-500">融资编号: <span class="font-mono">${f.bizNo}</span> · 申请日期: ${f.applyDate}</div>
+              </div>
+              <button onclick="history.back()" class="px-3 py-2 border border-slate-300 rounded-md text-sm hover:bg-slate-50">← 返回列表</button>
+            </div>
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <div class="grid grid-cols-4 gap-4 text-center">
+                <div>
+                  <div class="text-xs text-slate-500">评估货值</div>
+                  <div class="text-xl font-bold text-slate-800 num-focus mt-1">${Utils.fmtMoney(f.evaluateValue, false)}</div>
+                </div>
+                <div>
+                  <div class="text-xs text-slate-500">质押率</div>
+                  <div class="text-xl font-bold text-blue-600 mt-1">${(f.pledgeRatio * 100).toFixed(0)}%</div>
+                </div>
+                <div>
+                  <div class="text-xs text-slate-500">放款金额</div>
+                  <div class="text-2xl font-bold text-emerald-600 num-focus mt-1">${Utils.fmtMoney(f.applyAmount, false)}</div>
+                </div>
+                <div>
+                  <div class="text-xs text-slate-500">融资期限</div>
+                  <div class="text-xl font-bold text-slate-800 mt-1">${f.duration} 天</div>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              ${currentActions.map(act => `
+                <button onclick="${act.onclick.replace(/"/g, '&quot;')}" class="px-4 py-2 rounded-md text-sm font-medium ${
+                  act.type === 'primary' ? 'bg-blue-600 hover:bg-blue-700 text-white' :
+                  act.type === 'success' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' :
+                  act.type === 'danger' ? 'bg-white border border-rose-300 text-rose-600 hover:bg-rose-50' :
+                  'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50'
+                }">${act.label}</button>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 space-y-6">
+              <div class="bg-white rounded-xl border border-slate-200 p-6">
+                <h3 class="font-semibold text-slate-800 mb-4 pb-3 border-b">💼 融资基本信息</h3>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                  <div><span class="text-slate-500">融资客户：</span><span class="font-medium">${f.applicant}</span></div>
+                  <div><span class="text-slate-500">关联入库单：</span><span class="font-mono text-xs">${f.inboundBizNo}</span></div>
+                  <div><span class="text-slate-500">质押物：</span>${f.products[0]?.name || '-'}</div>
+                  <div><span class="text-slate-500">融资期限：</span>${f.duration} 天</div>
+                  <div><span class="text-slate-500">还款方式：</span>到期一次性还本付息</div>
+                  <div><span class="text-slate-500">资金用途：</span>采购冻品原材料</div>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-xl border border-slate-200 p-6">
+                <h3 class="font-semibold text-slate-800 mb-4 pb-3 border-b">💸 资金成本预估</h3>
+                <table class="w-full text-sm">
+                  <tbody>
+                    <tr class="border-b border-slate-100">
+                      <td class="py-2 text-slate-500">担保费</td>
+                      <td class="py-2 text-right text-xs">${Utils.fmtMoney(f.applyAmount)} × 1.5% / 365 × ${f.duration} 天</td>
+                      <td class="py-2 text-right num-focus font-medium">¥${Number(guaranteeFee).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                    <tr class="border-b border-slate-100">
+                      <td class="py-2 text-slate-500">监管费</td>
+                      <td class="py-2 text-right text-xs">${Utils.fmtMoney(f.evaluateValue)} × 1.16‰ / 365 × ${f.duration} 天</td>
+                      <td class="py-2 text-right num-focus font-medium">¥${Number(supervisionFee).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                    <tr class="bg-blue-50">
+                      <td colspan="2" class="py-3 text-right font-bold">合计资金成本</td>
+                      <td class="py-3 text-right text-lg font-bold text-blue-700 num-focus">¥${(Number(guaranteeFee) + Number(supervisionFee)).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              ${f.status === 'released' ? `
+                <div class="bg-white rounded-xl border border-slate-200 p-6">
+                  <h3 class="font-semibold text-slate-800 mb-4 pb-3 border-b">🏦 借据信息</h3>
+                  <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div><span class="text-slate-500">借据号：</span><span class="font-mono text-xs">${Utils.genLoanNo()}</span></div>
+                    <div><span class="text-slate-500">放款银行：</span>中国民生银行郑州分行</div>
+                    <div><span class="text-slate-500">放款日期：</span>${f.applyDate}</div>
+                    <div><span class="text-slate-500">到期日期：</span>${Utils.fmtDate(46000 + f.duration)}</div>
+                    <div><span class="text-slate-500">执行利率：</span>4.35% / 年</div>
+                    <div><span class="text-slate-500">还款方式：</span>按月结息，到期还本</div>
+                    <div><span class="text-slate-500">收款账户：</span>民生银行 6217 **** **** 6688</div>
+                    <div><span class="text-slate-500">担保方式：</span>动产质押 + 中原担保连带责任</div>
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+
+            <div id="progressSection" class="space-y-6">
+              <div class="bg-white rounded-xl border border-slate-200 p-6 sticky top-4">
+                <h3 class="font-semibold text-slate-800 mb-4 pb-3 border-b">🕐 审批进度</h3>
+                <div class="mb-4">
+                  <div class="flex items-center justify-between text-xs text-slate-500 mb-2">
+                    <span>已完成 ${progress.filter(p => p.status === 'success').length} / 共 ${progress.length} 步</span>
+                    <span class="font-medium">${Math.round(progress.filter(p => p.status === 'success').length / progress.length * 100)}%</span>
+                  </div>
+                  <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-blue-500 to-blue-600" style="width: ${progress.filter(p => p.status === 'success').length / progress.length * 100}%"></div>
+                  </div>
+                </div>
+                <div class="space-y-4 mt-6">
+                  ${progress.map((p, idx) => `
+                    <div class="flex gap-3">
+                      <div class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                        p.status === 'success' ? 'bg-green-500 text-white' :
+                        p.status === 'current' ? 'bg-blue-500 text-white animate-pulse' :
+                        'bg-slate-200 text-slate-400'
+                      }">${p.status === 'success' ? '✓' : idx + 1}</div>
+                      <div class="flex-1 ${p.status === 'pending' ? 'opacity-50' : ''}">
+                        <div class="flex items-center justify-between">
+                          <div class="text-sm font-medium text-slate-800">${p.node}</div>
+                          <div class="text-xs text-slate-400">${p.time}</div>
+                        </div>
+                        <div class="text-xs text-slate-500 mt-0.5">${p.operator}</div>
+                        ${p.opinion && p.opinion !== '—' ? `<div class="text-xs text-slate-600 mt-1 p-2 bg-slate-50 rounded">${p.opinion}</div>` : ''}
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  `;
+</script>
+</body>
+</html>

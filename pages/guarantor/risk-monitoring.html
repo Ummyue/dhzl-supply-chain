@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>风险监控 - 担保方</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '风险监控（担保方视图）',
+    currentPath: '/guarantor/risk-monitoring',
+    breadcrumb: [{ label: '质押管理', path: '/guarantor/risk-monitoring' }, '风险监控'],
+    content: `
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-800">
+        担保方风险监控：实时跟踪在保货物的价格波动、库存变化、逾期情况，及时评估代偿风险。
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">在保货物笔数</div>
+          <div class="text-2xl font-bold text-slate-800 mt-1">${MockData.pledgeLedger.length}</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">价格预警</div>
+          <div class="text-2xl font-bold text-orange-600 mt-1">${MockData.pledgeLedger.filter(l => Math.abs(l.priceChangeRate) > 5).length}</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">逾期业务</div>
+          <div class="text-2xl font-bold text-rose-600 mt-1">${MockData.pledgeLedger.filter(l => l.isOverdue).length}</div>
+        </div>
+        <div class="bg-emerald-50 rounded-xl p-4 border border-emerald-200">
+          <div class="text-xs text-emerald-700">本月代偿率</div>
+          <div class="text-2xl font-bold text-emerald-700 mt-1 num-focus">0.00%</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 p-5 mb-6">
+        <h3 class="font-semibold text-slate-800 mb-3">高风险质押货物</h3>
+        <div class="space-y-2">
+          ${MockData.pledgeLedger.filter(l => Math.abs(l.priceChangeRate) > 3).map(l => `
+            <div class="flex items-center justify-between p-3 rounded-lg ${Math.abs(l.priceChangeRate) > 10 ? 'bg-rose-50 border border-rose-200' : 'bg-amber-50 border border-amber-200'}">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full ${Math.abs(l.priceChangeRate) > 10 ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600'} flex items-center justify-center font-bold">${l.priceChangeRate > 0 ? '↑' : '↓'}</div>
+                <div>
+                  <div class="font-medium">${l.product} · ${l.customer}</div>
+                  <div class="text-xs text-slate-500">${l.bizNo} · ${l.warehouse}</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-lg font-bold ${l.priceChangeRate > 0 ? 'text-rose-600' : 'text-emerald-600'} num-focus">${l.priceChangeRate > 0 ? '+' : ''}${l.priceChangeRate.toFixed(2)}%</div>
+                <div class="text-xs text-slate-400">剩余债权 ${Utils.fmtMoney(l.remainingDebt)}</div>
+              </div>
+            </div>
+          `).join('') || '<div class="text-center text-slate-400 py-4 text-sm">暂无高风险质押 🎉</div>'}
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <h3 class="font-semibold text-slate-800 mb-3">代偿能力评估</h3>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="p-4 bg-emerald-50 rounded-lg text-center">
+            <div class="text-xs text-emerald-700">担保代偿准备金</div>
+            <div class="text-2xl font-bold text-emerald-700 mt-1 num-focus">¥8,500 万</div>
+            <div class="text-xs text-slate-500 mt-1">覆盖率 158%</div>
+          </div>
+          <div class="p-4 bg-blue-50 rounded-lg text-center">
+            <div class="text-xs text-blue-700">已使用敞口</div>
+            <div class="text-2xl font-bold text-blue-700 mt-1 num-focus">¥5.2 亿</div>
+            <div class="text-xs text-slate-500 mt-1">占总授信 61.2%</div>
+          </div>
+          <div class="p-4 bg-violet-50 rounded-lg text-center">
+            <div class="text-xs text-violet-700">反担保覆盖率</div>
+            <div class="text-2xl font-bold text-violet-700 mt-1 num-focus">125%</div>
+            <div class="text-xs text-slate-500 mt-1">充足</div>
+          </div>
+        </div>
+      </div>
+    `
+  });
+</script>
+</body>
+</html>

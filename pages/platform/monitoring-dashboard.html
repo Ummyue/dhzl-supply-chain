@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>在库监控大盘 - 大河智链</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '在库监控大盘',
+    currentPath: '/platform/monitoring-dashboard',
+    breadcrumb: [{ label: '货物管理', path: '/platform/monitoring-dashboard' }, '在库监控大盘'],
+    content: `
+      <!-- 核心指标 -->
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-slate-500 text-xs">在库货值</div>
+          <div class="text-2xl font-bold text-blue-600 num-focus mt-1">¥8,562万</div>
+          <div class="text-xs text-green-600 mt-1">↑ 较昨日 +2.3%</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-slate-500 text-xs">在贷余额</div>
+          <div class="text-2xl font-bold text-violet-600 num-focus mt-1">¥6,850万</div>
+          <div class="text-xs text-slate-500 mt-1">质押率 80%</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-slate-500 text-xs">活跃客户</div>
+          <div class="text-2xl font-bold text-slate-800 mt-1">12</div>
+          <div class="text-xs text-slate-500 mt-1">本月新增 2</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-slate-500 text-xs">预警数</div>
+          <div class="text-2xl font-bold text-orange-600 mt-1">2</div>
+          <div class="text-xs text-slate-500 mt-1">1 熔断 / 1 提醒</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-slate-500 text-xs">仓库利用率</div>
+          <div class="text-2xl font-bold text-emerald-600 num-focus mt-1">78%</div>
+          <div class="text-xs text-slate-500 mt-1">3 个仓库</div>
+        </div>
+      </div>
+
+      <!-- 三仓分布 -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        ${MockData.warehouses.map(w => {
+          const usage = Math.floor(Math.random() * 40 + 50);
+          return `
+            <div class="bg-white rounded-xl p-5 border border-slate-200">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="font-semibold text-slate-800">${w.name}</h4>
+                <span class="text-xs px-2 py-0.5 rounded ${w.type === '自有仓' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}">${w.type}</span>
+              </div>
+              <div class="text-xs text-slate-500 mb-3">${w.address}</div>
+              <div class="flex items-center justify-between text-sm mb-1">
+                <span class="text-slate-600">利用率</span>
+                <span class="font-bold num-focus">${usage}%</span>
+              </div>
+              <div class="h-2 bg-slate-100 rounded-full overflow-hidden mb-3">
+                <div class="h-full bg-gradient-to-r ${usage > 85 ? 'from-orange-500 to-orange-600' : 'from-blue-500 to-blue-600'}" style="width: ${usage}%"></div>
+              </div>
+              <div class="text-xs text-slate-500">库管员：${w.manager} · ${w.phone}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      <!-- 价格预警 + 在库货物 -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <h3 class="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+            <svg class="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495z" clip-rule="evenodd"/></svg>
+            实时预警（自动盯市）
+          </h3>
+          <div class="space-y-2">
+            ${MockData.priceAlerts.map(a => `
+              <div class="p-3 rounded-lg ${a.level === 'danger' ? 'bg-rose-50 border border-rose-200' : 'bg-amber-50 border border-amber-200'}">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-medium ${a.level === 'danger' ? 'text-rose-700' : 'text-amber-700'}">${a.level === 'danger' ? '🔴 熔断预警' : '🟡 价格提醒'}</span>
+                  <span class="text-sm font-bold ${a.priceChangeRate > 0 ? 'text-rose-600' : 'text-emerald-600'} num-focus">${a.priceChangeRate > 0 ? '+' : ''}${a.priceChangeRate.toFixed(2)}%</span>
+                </div>
+                <div class="text-sm font-medium">${a.productName}</div>
+                <div class="text-xs text-slate-500">${a.bizNo}</div>
+                <div class="text-xs text-slate-600 mt-1">${a.suggestedAction}</div>
+                <button onclick="Utils.toast('已发起追保','success')" class="mt-2 w-full py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded">发起追保</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
+          <h3 class="font-semibold text-slate-800 mb-3">📊 在库业务实时监控</h3>
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 text-xs uppercase text-slate-600">
+              <tr>
+                <th class="text-left px-3 py-2">业务编号</th>
+                <th class="text-left px-3 py-2">客户/货品</th>
+                <th class="text-right px-3 py-2">货值</th>
+                <th class="text-right px-3 py-2">当前价</th>
+                <th class="text-right px-3 py-2">变化</th>
+                <th class="text-center px-3 py-2">状态</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${MockData.bizList.map(b => `
+                <tr class="border-t border-slate-100 hover:bg-slate-50">
+                  <td class="px-3 py-2 font-mono text-xs">${b.bizNo}</td>
+                  <td class="px-3 py-2">
+                    <div class="font-medium text-xs">${b.customer.substring(0, 8)}</div>
+                    <div class="text-xs text-slate-500">${b.productName}</div>
+                  </td>
+                  <td class="px-3 py-2 text-right num-focus">${Utils.fmtMoney(b.evaluateValue)}</td>
+                  <td class="px-3 py-2 text-right num-focus">¥${b.currentPrice.toFixed(2)}</td>
+                  <td class="px-3 py-2 text-right num-focus font-bold ${b.priceChangeRate > 5 ? 'text-rose-600' : b.priceChangeRate < -5 ? 'text-emerald-600' : 'text-slate-600'}">${b.priceChangeRate > 0 ? '+' : ''}${b.priceChangeRate.toFixed(2)}%</td>
+                  <td class="px-3 py-2 text-center">${Components.badge(b.status)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 客户风险分布 -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <h3 class="font-semibold text-slate-800 mb-3">🎯 客户风险敞口分布</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          ${[
+            { name: '军牧源', used: 4210, total: 5000, risk: 'low' },
+            { name: '郑州固联', used: 1760, total: 3000, risk: 'low' },
+            { name: '冰峰冷链', used: 1450, total: 2000, risk: 'medium' },
+            { name: '其他 9 客户', used: 4230, total: 8000, risk: 'low' },
+          ].map(c => `
+            <div class="p-4 bg-slate-50 rounded-lg">
+              <div class="text-sm font-medium text-slate-800 mb-1">${c.name}</div>
+              <div class="text-xs text-slate-500 mb-2">已用 / 总额度</div>
+              <div class="flex items-baseline gap-1 mb-2">
+                <span class="text-xl font-bold num-focus">¥${c.used}</span>
+                <span class="text-xs text-slate-500">/ ¥${c.total} 万</span>
+              </div>
+              <div class="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <div class="h-full ${c.risk === 'high' ? 'bg-rose-500' : c.risk === 'medium' ? 'bg-amber-500' : 'bg-blue-500'}" style="width: ${(c.used/c.total*100).toFixed(0)}%"></div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `
+  });
+</script>
+</body>
+</html>

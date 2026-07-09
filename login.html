@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录 - 大河智链供应链金融平台</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } }
+  }
+</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="min-h-screen flex">
+<!-- 左侧品牌区 -->
+<div class="hidden lg:flex w-1/2 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900 text-white flex-col justify-between p-12 relative overflow-hidden">
+  <div class="absolute top-0 right-0 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl"></div>
+  <div class="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl"></div>
+
+  <div class="relative">
+    <div class="flex items-center gap-3 mb-8">
+      <div class="w-12 h-12 rounded-xl bg-white/10 backdrop-blur flex items-center justify-center text-white font-bold text-2xl border border-white/20">大</div>
+      <div>
+        <div class="font-bold text-2xl">大河智链</div>
+        <div class="text-blue-200 text-sm">供应链综合服务平台</div>
+      </div>
+    </div>
+
+    <h1 class="text-4xl font-bold leading-tight mb-4">
+      冻品供应链金融<br/>全流程数字化解决方案
+    </h1>
+    <p class="text-blue-100 leading-relaxed mb-8 max-w-md">
+      覆盖客户准入、入库质押、融资放款、在库监管、出库结算五大核心业务，
+      服务于产业链上下游中小贸易商、监管方、金融机构。
+    </p>
+
+    <div class="space-y-3 text-sm text-blue-100">
+      <div class="flex items-center gap-2">
+        <svg class="w-5 h-5 text-green-300" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+        四方协同：货主 · 监管 · 担保 · 资金
+      </div>
+      <div class="flex items-center gap-2">
+        <svg class="w-5 h-5 text-green-300" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+        实时价格盯市：5%预警 / 10%熔断
+      </div>
+      <div class="flex items-center gap-2">
+        <svg class="w-5 h-5 text-green-300" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+        数字资产打包：银行直连放款
+      </div>
+      <div class="flex items-center gap-2">
+        <svg class="w-5 h-5 text-green-300" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+        电子签章 + 月度账单自动核算
+      </div>
+    </div>
+  </div>
+
+  <div class="relative text-xs text-blue-200/60">
+    © 2026 大河智链物流（郑州）有限公司 · 豫ICP备 2026000001 号
+  </div>
+</div>
+
+<!-- 右侧登录区 -->
+<div class="flex-1 flex items-center justify-center p-8 bg-slate-50">
+  <div class="w-full max-w-md">
+    <div class="lg:hidden flex items-center gap-3 mb-8">
+      <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white font-bold text-xl">大</div>
+      <div class="font-bold text-xl text-slate-800">大河智链</div>
+    </div>
+
+    <h2 class="text-2xl font-bold text-slate-800 mb-2">欢迎登录</h2>
+    <p class="text-slate-500 mb-6">请选择您的身份进入系统演示</p>
+
+    <!-- 角色快捷登录（演示用） -->
+    <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm mb-6">
+      <div class="text-xs font-medium text-slate-400 mb-3 uppercase tracking-wider">演示账号 · 一键登录</div>
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="loginAs('customer')" class="group flex flex-col items-start p-4 border-2 border-slate-200 rounded-lg hover:border-emerald-500 hover:bg-emerald-50 transition text-left">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span class="font-semibold text-slate-800">货主方 · 操作人</span>
+          </div>
+          <div class="text-xs text-slate-500">军牧源 · 陈志强（无盖章权限）</div>
+        </button>
+        <button onclick="loginAs('customer_seal')" class="group flex flex-col items-start p-4 border-2 border-amber-300 rounded-lg hover:border-amber-500 hover:bg-amber-50 transition text-left">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+            <span class="font-semibold text-slate-800">货主方 · 盖章人</span>
+          </div>
+          <div class="text-xs text-slate-500">军牧源 · 李雪（有盖章权限）</div>
+        </button>
+        <button onclick="loginAs('platform')" class="group flex flex-col items-start p-4 border-2 border-slate-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition text-left">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+            <span class="font-semibold text-slate-800">监管方</span>
+          </div>
+          <div class="text-xs text-slate-500">大河智链 · 李雪</div>
+        </button>
+        <button onclick="loginAs('guarantor')" class="group flex flex-col items-start p-4 border-2 border-slate-200 rounded-lg hover:border-amber-500 hover:bg-amber-50 transition text-left">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+            <span class="font-semibold text-slate-800">担保方</span>
+          </div>
+          <div class="text-xs text-slate-500">中原担保 · 王建国</div>
+        </button>
+        <button onclick="loginAs('bank')" class="group flex flex-col items-start p-4 border-2 border-slate-200 rounded-lg hover:border-violet-500 hover:bg-violet-50 transition text-left">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="w-2 h-2 rounded-full bg-violet-500"></span>
+            <span class="font-semibold text-slate-800">资金方</span>
+          </div>
+          <div class="text-xs text-slate-500">民生银行 · 刘敏</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- 表单登录（可省略） -->
+    <details class="bg-white rounded-xl border border-slate-200 shadow-sm">
+      <summary class="px-6 py-4 cursor-pointer text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-xl">使用账号密码登录（演示）</summary>
+      <div class="px-6 pb-6">
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">手机号</label>
+            <input type="text" value="13888886688" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">密码</label>
+            <input type="password" value="123456" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">验证码</label>
+            <div class="flex gap-2">
+              <input type="text" placeholder="请输入" class="flex-1 px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:border-blue-500">
+              <div class="w-24 h-10 bg-slate-100 rounded-md flex items-center justify-center text-xs text-slate-500">8X3P</div>
+            </div>
+          </div>
+          <button onclick="loginAs('customer')" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition">登录</button>
+        </div>
+      </div>
+    </details>
+
+    <div class="mt-6 text-center text-xs text-slate-400">
+      登录即表示您同意 <a href="#" class="text-blue-600 hover:underline">《用户服务协议》</a> 和 <a href="#" class="text-blue-600 hover:underline">《隐私保护协议》</a>
+    </div>
+  </div>
+</div>
+
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script>
+  function loginAs(role) {
+    Utils.setRole(role);
+    Utils.setUser(MockData.users[role]);
+    Utils.toast(`欢迎，${MockData.users[role].name}`, 'success');
+    setTimeout(() => window.location.href = '/dashboard', 500);
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+/* 大河智链 - 自定义样式 */
+
+/* 数字字体（金融场景数字等宽） */
+.tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* 状态色系统 */
+.status-pending { @apply bg-yellow-100 text-yellow-700 border-yellow-200; }
+.status-running { @apply bg-blue-100 text-blue-700 border-blue-200; }
+.status-success { @apply bg-green-100 text-green-700 border-green-200; }
+.status-rejected { @apply bg-red-100 text-red-700 border-red-200; }
+.status-draft { @apply bg-gray-100 text-gray-700 border-gray-200; }
+.status-warning { @apply bg-amber-100 text-amber-700 border-amber-200; }
+.status-danger { @apply bg-rose-100 text-rose-700 border-rose-200; }
+
+/* 滚动条美化 */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* 页面切换动画 */
+.page-enter { animation: fadeIn .3s ease-out; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 表格 hover */
+.table-row-hover tr:hover { background-color: #f8fafc; }
+
+/* 卡片 hover */
+.card-hover { transition: all .2s; }
+.card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+
+/* 流程时间轴 */
+.timeline-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 2px solid #cbd5e1; background: #fff;
+}
+.timeline-dot.active { background: #3b82f6; border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.15); }
+.timeline-dot.success { background: #10b981; border-color: #10b981; }
+.timeline-dot.danger { background: #ef4444; border-color: #ef4444; }
+
+/* 资金卡片渐变 */
+.amount-gradient {
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+  color: #fff;
+}
+
+/* 隐藏 Tailwind 默认链接颜色 */
+a { text-decoration: none; color: inherit; }
+
+/* 弹窗 */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(15,23,42,0.5);
+  display: flex; align-items: center; justify-content: center; z-index: 50;
+  backdrop-filter: blur(2px);
+}
+
+/* toast */
+.toast {
+  position: fixed; top: 24px; right: 24px; z-index: 100;
+  padding: 12px 20px; border-radius: 8px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15);
+  animation: slideIn .3s ease-out;
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* 数字聚焦 */
+.num-focus { font-feature-settings: "tnum"; font-variant-numeric: tabular-nums; }

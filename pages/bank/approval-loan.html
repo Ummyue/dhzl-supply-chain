@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>放款审核 - 大河智链</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '放款审核工作台',
+    currentPath: '/bank/approval-loan',
+    breadcrumb: [{ label: '授信与放款', path: '/bank/approval-loan' }, '放款审核'],
+    content: `
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-xs text-blue-800">
+        <span class="font-medium">v1.7 流程：</span>本页面是<strong>3 级审核的第 3 步</strong>（监管方 + 担保方均已通过 → <strong>您（资金方）</strong>）。审核通过后，<br>
+        ① 货主方需在《质物清单》上盖章③<br>
+        ② 您需<strong>线下完成银行打款</strong>（受托支付）<br>
+        ③ 您需<strong>上传放款证明 + 电子回单</strong>完成放款登记
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div class="bg-violet-50 rounded-xl p-4 border border-violet-200">
+          <div class="text-xs text-violet-700">待放款</div>
+          <div class="text-2xl font-bold text-violet-700 num-focus mt-1">¥1.19M</div>
+          <div class="text-xs text-slate-500 mt-1">2 笔</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">本月放款</div>
+          <div class="text-2xl font-bold text-green-600 num-focus mt-1">¥1.2亿</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">在贷客户</div>
+          <div class="text-2xl font-bold text-slate-800 mt-1">23</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">不良率</div>
+          <div class="text-2xl font-bold text-emerald-600 num-focus mt-1">0.32%</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="px-5 py-3 border-b border-slate-200">
+          <h3 class="font-semibold text-slate-800">待放款融资（担保函已出具）</h3>
+        </div>
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+            <tr>
+              <th class="text-left px-4 py-3">融资编号</th>
+              <th class="text-left px-4 py-3">客户</th>
+              <th class="text-left px-4 py-3">货品/质押</th>
+              <th class="text-right px-4 py-3">放款金额</th>
+              <th class="text-right px-4 py-3">期限</th>
+              <th class="text-right px-4 py-3">利率</th>
+              <th class="text-center px-4 py-3">状态</th>
+              <th class="text-center px-4 py-3">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${MockData.financingList.map(f => `
+              <tr class="border-t border-slate-100 hover:bg-slate-50">
+                <td class="px-4 py-3 font-mono text-xs">${f.bizNo}</td>
+                <td class="px-4 py-3 font-medium">${f.applicant}</td>
+                <td class="px-4 py-3">
+                  <div class="text-xs">${f.products[0]?.name || '-'}</div>
+                  <div class="text-xs text-slate-400">货值 ${Utils.fmtMoney(f.evaluateValue)}</div>
+                </td>
+                <td class="px-4 py-3 text-right num-focus font-bold text-violet-600">${Utils.fmtMoney(f.applyAmount)}</td>
+                <td class="px-4 py-3 text-right">${f.duration}天</td>
+                <td class="px-4 py-3 text-right">4.35%</td>
+                <td class="px-4 py-3 text-center"><span class="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded">待放款</span></td>
+                <td class="px-4 py-3 text-center">
+                  <button onclick="confirmLoan('${f.id}')" class="px-3 py-1 bg-violet-600 hover:bg-violet-700 text-white text-xs rounded">确认放款</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `
+  });
+
+  function confirmLoan(id) {
+    const f = MockData.financingList.find(x => x.id === id) || MockData.financingList[0];
+    const modal = document.createElement('div');
+    modal.className = 'modal-backdrop';
+    modal.innerHTML = `
+      <div class="bg-white rounded-xl w-[700px] max-h-[90vh] overflow-y-auto shadow-2xl" onclick="event.stopPropagation()">
+        <div class="px-6 py-4 border-b border-slate-200 sticky top-0 bg-white">
+          <h3 class="font-bold text-slate-800 text-lg">确认放款 - ${f.bizNo}</h3>
+        </div>
+        <div class="p-6 space-y-4">
+          <div class="bg-violet-50 border border-violet-200 rounded-lg p-4 text-sm space-y-2">
+            <div class="flex justify-between"><span class="text-slate-600">放款金额：</span><span class="text-2xl font-bold text-violet-700 num-focus">${Utils.fmtMoney(f.applyAmount)}</span></div>
+            <div class="flex justify-between"><span class="text-slate-600">收款账户：</span><span>${f.applicant} · 民生银行郑州分行</span></div>
+            <div class="flex justify-between"><span class="text-slate-600">还款方式：</span>到期一次性还本付息</div>
+            <div class="flex justify-between"><span class="text-slate-600">放款执行利率：</span>4.35%</div>
+            <div class="flex justify-between"><span class="text-slate-600">结息方式：</span>按月结息，到期还本</div>
+            <div class="flex justify-between"><span class="text-slate-600">担保方式：</span>动产质押 + 中原担保连带责任</div>
+            <div class="flex justify-between"><span class="text-slate-600">担保函编号：</span><span class="font-mono text-xs">GUAR_${f.bizNo.replace('FN_', '')}_001</span></div>
+          </div>
+
+          <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+            ⚠ 放款后，资金将通过受托支付方式支付至客户指定账户。请确认收款方合规性
+          </div>
+
+          <div>
+            <label class="flex items-start gap-2 text-sm text-slate-700">
+              <input type="checkbox" class="mt-1">
+              <span>本人确认放款信息无误，同意按上述条款执行放款操作。已按反洗钱及客户身份识别要求完成核查。</span>
+            </label>
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-2 sticky bottom-0 bg-white">
+          <button onclick="this.closest('.modal-backdrop').remove()" class="px-4 py-2 border border-slate-300 rounded-md text-sm hover:bg-slate-50">取消</button>
+          <button onclick="Utils.toast('✓ 放款成功！资金已发放至客户账户','success'); this.closest('.modal-backdrop').remove(); setTimeout(()=>location.reload(),800)" class="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-md text-sm font-medium">确认放款</button>
+        </div>
+      </div>
+    `;
+    modal.onclick = () => modal.remove();
+    document.body.appendChild(modal);
+  }
+</script>
+</body>
+</html>

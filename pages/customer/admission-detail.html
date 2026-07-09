@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>准入申请详情 - 大河智链</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // 从 URL 取 id
+  const urlParams = new URLSearchParams(window.location.search);
+  const id = urlParams.get('id') || 'adm_001';
+  const a = MockData.admissionList.find(x => x.id === id) || MockData.admissionList[0];
+
+  // 模拟审批进度（基于状态机）- 5 步流程：含签章节点
+  const progressMap = {
+    'draft': [
+      { node: '草稿保存', operator: a.drafter || '陈志强（操作人）', time: a.applyDate, status: 'current', opinion: '草稿已保存，材料未补全，需盖章人完成签章' },
+      { node: '电子签章', operator: '—', time: '—', status: 'pending', opinion: '—' },
+      { node: '监管方审核', operator: '—', time: '—', status: 'pending', opinion: '—' },
+      { node: '担保方审核', operator: '—', time: '—', status: 'pending', opinion: '—' },
+      { node: '资金方录入授信', operator: '—', time: '—', status: 'pending', opinion: '—' },
+    ],
+    'pending': [
+      { node: '草稿保存', operator: a.drafter || '陈志强（操作人）', time: a.applyDate, status: 'success', opinion: '操作人完成表单填写，保存为草稿' },
+      { node: '电子签章', operator: a.sealUser || '李雪（盖章人）', time: Utils.relativeTime(a.applyDate), status: 'success', opinion: '盖章人完成图片盖章（公司公章）' },
+      { node: '监管方审核', operator: '—', time: '—', status: 'current', opinion: '等待监管方审核中' },
+      { node: '担保方审核', operator: '—', time: '—', status: 'pending', opinion: '—' },
+      { node: '资金方录入授信', operator: '—', time: '—', status: 'pending', opinion: '—' },
+    ],
+    'reviewing': [
+      { node: '草稿保存', operator: a.drafter || '陈志强（操作人）', time: a.applyDate, status: 'success', opinion: '操作人完成表单填写，保存为草稿' },
+      { node: '电子签章', operator: a.sealUser || '李雪（盖章人）', time: a.applyDate, status: 'success', opinion: '盖章人完成图片盖章（公司公章 + 法人章）' },
+      { node: '监管方审核', operator: '李雪 (风控经理)', time: Utils.relativeTime(a.applyDate), status: 'success', opinion: '工商核验通过，征信评分 AA，建议授信 5000 万' },
+      { node: '担保方审核', operator: '—', time: '—', status: 'current', opinion: '等待担保方核保' },
+      { node: '资金方录入授信', operator: '—', time: '—', status: 'pending', opinion: '—' },
+    ],
+    'approved': [
+      { node: '草稿保存', operator: a.drafter || '陈志强（操作人）', time: '2025-11-15 10:00', status: 'success', opinion: '操作人完成表单填写，保存为草稿' },
+      { node: '电子签章', operator: a.sealUser || '李雪（盖章人）', time: '2025-11-15 10:25', status: 'success', opinion: '盖章人完成图片盖章（公司公章）' },
+      { node: '监管方审核', operator: '李雪 (风控经理)', time: '2025-11-15 14:20', status: 'success', opinion: '工商核验通过，征信评分 AA，建议授信 5000 万' },
+      { node: '担保方审核', operator: '王建国 (业务总监)', time: '2025-11-16 09:45', status: 'success', opinion: '反担保措施到位，同意准入' },
+      { node: '资金方录入授信', operator: '刘敏 (客户经理)', time: '2025-11-16 16:30', status: 'success', opinion: '授信额度 ¥5,000 万，期限 12 个月，利率 4.35%' },
+    ],
+    'rejected': [
+      { node: '草稿保存', operator: a.drafter || '陈志强（操作人）', time: a.applyDate, status: 'success', opinion: '操作人完成表单填写，保存为草稿' },
+      { node: '电子签章', operator: a.sealUser || '李雪（盖章人）', time: a.applyDate, status: 'success', opinion: '盖章人完成图片盖章' },
+      { node: '监管方审核', operator: '李雪 (风控经理)', time: Utils.relativeTime(a.applyDate), status: 'danger', opinion: a.rejectReason || '资质审核未通过' },
+      { node: '担保方审核', operator: '—', time: '—', status: 'pending', opinion: '—' },
+      { node: '资金方录入授信', operator: '—', time: '—', status: 'pending', opinion: '—' },
+    ],
+  };
+
+  const progress = progressMap[a.status] || progressMap['pending'];
+
+  // 根据状态决定操作按钮
+  const actions = {
+    'draft': [
+      { label: '编辑草稿', type: 'primary', onclick: "Utils.toast('打开编辑','info')" },
+      { label: '删除', type: 'danger', onclick: "if(confirm('确认删除此草稿？')){Utils.toast('已删除','success');setTimeout(()=>history.back(),600)}" },
+      { label: '提交申请', type: 'success', onclick: "Utils.toast('申请已提交','success');setTimeout(()=>location.reload(),800)" },
+    ],
+    'pending': [
+      { label: '撤回申请', type: 'danger', onclick: "if(confirm('确认撤回？撤回后可重新编辑')){Utils.toast('已撤回','success');setTimeout(()=>history.back(),600)}" },
+      { label: '联系业务员', type: 'default', onclick: "Utils.toast('业务员：张丽 13900001234','info')" },
+      { label: '查看审批进度', type: 'default', onclick: "document.getElementById('progressSection').scrollIntoView({behavior:'smooth'})" },
+    ],
+    'reviewing': [
+      { label: '查看审批进度', type: 'primary', onclick: "document.getElementById('progressSection').scrollIntoView({behavior:'smooth'})" },
+      { label: '催办', type: 'default', onclick: "Utils.toast('已发送催办短信给担保方','success')" },
+      { label: '联系业务员', type: 'default', onclick: "Utils.toast('业务员：张丽 13900001234','info')" },
+    ],
+    'approved': [
+      { label: '查看授信额度', type: 'primary', onclick: "Utils.toast('已授信 ¥5,000万，期限 12 个月','info')" },
+      { label: '发起入库申请', type: 'success', onclick: "window.location.href='/customer/inbound'" },
+      { label: '下载准入通知书', type: 'default', onclick: "Utils.toast('正在生成 PDF...','info')" },
+    ],
+    'rejected': [
+      { label: '查看驳回原因', type: 'primary', onclick: "document.getElementById('progressSection').scrollIntoView({behavior:'smooth'})" },
+      { label: '修改并重新提交', type: 'success', onclick: "Utils.toast('打开修改表单','info')" },
+      { label: '申诉', type: 'default', onclick: "Utils.toast('已提交申诉，预计 3 个工作日反馈','info')" },
+    ],
+  };
+
+  const currentActions = actions[a.status] || actions['pending'];
+
+  document.getElementById('app').innerHTML = `
+    ${Components.topbar()}
+    <div class="flex">
+      ${Components.sidebar('/customer/admission')}
+      <main class="flex-1 overflow-y-auto bg-slate-50">
+        <div class="p-6 page-enter">
+          ${Components.breadcrumb([
+            { label: '客户准入', path: '/customer/admission' },
+            '准入详情'
+          ])}
+          <!-- 顶部状态卡 -->
+          <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+            <div class="flex items-start justify-between mb-4">
+              <div>
+                <div class="flex items-center gap-3 mb-2">
+                  <h1 class="text-2xl font-bold text-slate-800">准入申请详情</h1>
+                  ${Components.badge(a.status)}
+                </div>
+                <div class="text-sm text-slate-500">申请编号: <span class="font-mono">${a.id.toUpperCase()}</span> · 提交时间: ${a.applyDate}</div>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="history.back()" class="px-3 py-2 border border-slate-300 rounded-md text-sm hover:bg-slate-50">← 返回列表</button>
+              </div>
+            </div>
+
+            <!-- 当前节点提示 -->
+            <div class="bg-${a.status === 'approved' ? 'green' : a.status === 'rejected' ? 'red' : 'blue'}-50 border border-${a.status === 'approved' ? 'green' : a.status === 'rejected' ? 'red' : 'blue'}-200 rounded-lg p-3 mb-4">
+              <div class="text-sm font-medium text-${a.status === 'approved' ? 'green' : a.status === 'rejected' ? 'red' : 'blue'}-800">
+                ${a.status === 'pending' ? '⏳ 当前状态：监管方审核中，预计 1-2 个工作日内反馈' :
+                  a.status === 'reviewing' ? '⏳ 当前状态：担保方核保中，预计 1 个工作日内反馈' :
+                  a.status === 'approved' ? '✅ 准入已通过！授信额度 ¥' + (a.creditLimit ? a.creditLimit.toLocaleString() : '50,000,000') + '，您可发起入库申请' :
+                  a.status === 'rejected' ? '❌ 准入已驳回，请查看驳回原因后可修改重新提交' :
+                  '📝 当前为草稿状态，您可以编辑或提交'}
+              </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="flex flex-wrap gap-2">
+              ${currentActions.map(act => `
+                <button onclick="${act.onclick.replace(/"/g, '&quot;')}" class="px-4 py-2 rounded-md text-sm font-medium ${
+                  act.type === 'primary' ? 'bg-blue-600 hover:bg-blue-700 text-white' :
+                  act.type === 'success' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' :
+                  act.type === 'danger' ? 'bg-white border border-rose-300 text-rose-600 hover:bg-rose-50' :
+                  'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50'
+                }">${act.label}</button>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 左侧主信息 -->
+            <div class="lg:col-span-2 space-y-6">
+              <!-- 企业基本信息 -->
+              <div class="bg-white rounded-xl border border-slate-200 p-6">
+                <h3 class="font-semibold text-slate-800 mb-4 pb-3 border-b">📋 企业基本信息</h3>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                  <div><span class="text-slate-500">企业名称：</span><span class="font-medium">${a.customer}</span></div>
+                  <div><span class="text-slate-500">统一社会信用代码：</span><span class="font-mono text-xs">${a.creditCode}</span></div>
+                  <div><span class="text-slate-500">法定代表人：</span>${a.legalRep}</div>
+                  <div><span class="text-slate-500">注册资本：</span><span class="num-focus font-medium">${a.registeredCap}</span></div>
+                  <div><span class="text-slate-500">成立日期：</span>${a.established}</div>
+                  <div><span class="text-slate-500">申请日期：</span>${a.applyDate}</div>
+                  <div class="col-span-2"><span class="text-slate-500">经营范围：</span>${a.bizScope}</div>
+                </div>
+              </div>
+
+              <!-- 联系人信息 -->
+              <div class="bg-white rounded-xl border border-slate-200 p-6">
+                <h3 class="font-semibold text-slate-800 mb-4 pb-3 border-b">📞 联系人信息</h3>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                  <div><span class="text-slate-500">联系人姓名：</span>${Utils.randomName()}</div>
+                  <div><span class="text-slate-500">联系电话：</span>${Utils.randomPhone()}</div>
+                  <div><span class="text-slate-500">电子邮箱：</span>chenzhiqiang@junmuyuan.com</div>
+                  <div><span class="text-slate-500">联系地址：</span>郑州市惠济区大河惠济国际食品贸易港 A 座 18 层</div>
+                </div>
+              </div>
+
+              <!-- 申请材料 -->
+              <div class="bg-white rounded-xl border border-slate-200 p-6">
+                <h3 class="font-semibold text-slate-800 mb-4 pb-3 border-b flex items-center justify-between">
+                  <span>📎 申请材料 <span class="text-xs text-slate-400">(${a.attachments.length}/4 已上传)</span></span>
+                  ${a.status === 'draft' || a.status === 'rejected' ? '<button class="text-sm text-blue-600 hover:underline">+ 上传材料</button>' : ''}
+                </h3>
+                <div class="grid grid-cols-2 gap-3">
+                  ${a.attachments.map(f => `
+                    <div class="flex items-center justify-between p-3 border border-slate-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition cursor-pointer" onclick="Utils.toast('预览文件: ${f}','info')">
+                      <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>
+                        <div>
+                          <div class="text-sm font-medium">${f}</div>
+                          <div class="text-xs text-slate-400">${(Math.random() * 3 + 0.5).toFixed(1)} MB · 已上传</div>
+                        </div>
+                      </div>
+                      <div class="flex gap-2">
+                        <button onclick="event.stopPropagation();Utils.toast('预览中...','info')" class="text-xs text-blue-600 hover:underline">预览</button>
+                        <button onclick="event.stopPropagation();Utils.toast('下载中...','info')" class="text-xs text-slate-600 hover:underline">下载</button>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+
+              <!-- 数据授权 -->
+              <div class="bg-white rounded-xl border border-slate-200 p-6">
+                <h3 class="font-semibold text-slate-800 mb-4 pb-3 border-b">🔐 数据授权</h3>
+                <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
+                  ✓ 已授权大河智链平台使用本企业相关数据进行准入审核、风险评估及融资业务合作
+                </div>
+                <div class="text-xs text-slate-500 mt-2">授权时间：${a.applyDate} · 授权有效期：长期有效</div>
+              </div>
+            </div>
+
+            <!-- 右侧：审批进度时间轴 -->
+            <div id="progressSection" class="space-y-6">
+              <div class="bg-white rounded-xl border border-slate-200 p-6 sticky top-4">
+                <h3 class="font-semibold text-slate-800 mb-4 pb-3 border-b">🕐 审批进度</h3>
+
+                <!-- 进度概览 -->
+                <div class="mb-4">
+                  <div class="flex items-center justify-between text-xs text-slate-500 mb-2">
+                    <span>已完成 ${progress.filter(p => p.status === 'success').length} / 共 ${progress.length} 步</span>
+                    <span class="font-medium">${Math.round(progress.filter(p => p.status === 'success').length / progress.length * 100)}%</span>
+                  </div>
+                  <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-blue-500 to-blue-600" style="width: ${progress.filter(p => p.status === 'success').length / progress.length * 100}%"></div>
+                  </div>
+                </div>
+
+                <!-- 时间轴 -->
+                <div class="space-y-4 mt-6">
+                  ${progress.map((p, idx) => `
+                    <div class="relative flex gap-3">
+                      ${idx < progress.length - 1 ? `<div class="absolute left-[11px] top-6 w-0.5 h-${p.status === 'success' ? 'full' : '0'} bg-${p.status === 'success' ? 'green-500' : 'slate-200'}"></div>` : ''}
+                      <div class="relative flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                        p.status === 'success' ? 'bg-green-500 text-white' :
+                        p.status === 'current' ? 'bg-blue-500 text-white animate-pulse' :
+                        p.status === 'danger' ? 'bg-rose-500 text-white' :
+                        'bg-slate-200 text-slate-400'
+                      }">
+                        ${p.status === 'success' ? '✓' : p.status === 'danger' ? '✕' : idx + 1}
+                      </div>
+                      <div class="flex-1 ${p.status === 'pending' ? 'opacity-50' : ''}">
+                        <div class="flex items-center justify-between">
+                          <div class="text-sm font-medium text-slate-800">${p.node}</div>
+                          <div class="text-xs text-slate-400">${p.time}</div>
+                        </div>
+                        <div class="text-xs text-slate-500 mt-0.5">${p.operator}</div>
+                        ${p.opinion && p.opinion !== '—' ? `<div class="text-xs text-slate-600 mt-1 p-2 bg-slate-50 rounded">${p.opinion}</div>` : ''}
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+
+                <!-- 预计完成时间 -->
+                ${a.status === 'pending' || a.status === 'reviewing' ? `
+                  <div class="mt-6 pt-4 border-t border-slate-200 text-xs text-slate-500">
+                    <div class="flex items-center gap-1">
+                      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+                      预计 ${a.status === 'pending' ? '1-2' : '0.5-1'} 个工作日内反馈
+                    </div>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  `;
+</script>
+</body>
+</html>

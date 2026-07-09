@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>入库申请 - 大河智链</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // v1.7.3 盖章人专属视图：根据当前登录角色决定列表过滤 + 顶部按钮
+  const _role = Utils.getRole();
+  const _isSealer = _role === 'customer_seal';
+  const _sealerName = MockData.users.customer_seal.name;
+  const _sealerCompany = MockData.users.customer_seal.company;
+
+  // 盖章人过滤：customerCode=JMY AND status ∈ {pending_owner_seal, rejected} AND sealUser=李雪
+  const _inboundList = _isSealer
+    ? MockData.inboundList.filter(i =>
+        i.customerCode === 'JMY' &&
+        ['pending_owner_seal', 'rejected'].includes(i.status) &&
+        (i.sealUser || _sealerName) === _sealerName
+      )
+    : MockData.inboundList;
+
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: _isSealer ? '我的待盖章入库申请' : '入库申请',
+    currentPath: '/customer/inbound',
+    breadcrumb: [{ label: '货物管理', path: '/customer/inbound' }, _isSealer ? '我的待盖章入库申请' : '入库申请'],
+    extra: _isSealer ? `
+      <span class="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-100 text-amber-800 rounded-md text-sm font-medium border border-amber-300">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v4a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
+        货主方 · 盖章人 · ${_sealerName}
+      </span>
+    ` : `<button onclick="createInbound()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium flex items-center gap-1">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      新建入库申请
+    </button>`,
+    content: `
+      ${_isSealer ? `
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-sm text-amber-800">
+          <span class="font-medium">📌 盖章人专属视图：</span>当前显示 ${_sealerCompany}（客户编码 JMY）<strong>待盖章</strong>与<strong>已驳回</strong>的入库申请，共 <strong>${_inboundList.length}</strong> 条。点击「查看详情」进入详情页执行盖章。
+        </div>
+      ` : `
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-800">
+          <span class="font-medium">入库流程（v1.7 按甲方 drawio 调整）：</span>
+          新建申请 → <strong>货主方盖章</strong>（图片签章）→ <strong>担保方审核</strong> → <strong>监管方审核</strong>（货值评估）→ 仓库入库验货 → 出具《质物清单》
+        </div>
+      `}
+
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+            <tr>
+              <th class="text-left px-4 py-3">入库单号</th>
+              <th class="text-left px-4 py-3">货品</th>
+              <th class="text-right px-4 py-3">件数</th>
+              <th class="text-right px-4 py-3">净重(kg)</th>
+              <th class="text-right px-4 py-3">评估货值</th>
+              <th class="text-left px-4 py-3">入库仓库</th>
+              <th class="text-left px-4 py-3">车牌号</th>
+              <th class="text-center px-4 py-3 ${_isSealer ? 'text-amber-700 font-bold' : ''}">盖章进度</th>
+              <th class="text-center px-4 py-3">状态</th>
+              <th class="text-left px-4 py-3 ${_isSealer ? 'text-amber-700 font-bold' : ''}">创建人</th>
+              <th class="text-center px-4 py-3">操作</th>
+            </tr>
+          </thead>
+          <tbody class="table-row-hover">
+            ${_inboundList.length === 0 ? `
+              <tr><td colspan="11" class="text-center py-12 text-slate-400 text-sm">
+                ${_isSealer ? '🎉 当前没有需要盖章的入库申请' : '暂无入库申请'}
+              </td></tr>
+            ` : _inboundList.map(i => {
+              // v1.7 盖章进度计算
+              const sealMap = {
+                'draft': '<span class="text-xs text-slate-400">未提交</span>',
+                'pending_owner_seal': '<span class="text-xs font-bold text-amber-600">⏳ 待盖章</span>',
+                'pending_guarantor': '<span class="text-xs text-blue-600">✓ 货主已盖 / 待担保</span>',
+                'pending_platform': '<span class="text-xs text-blue-600">✓ 担保已审 / 待监管</span>',
+                'inbound_completed': '<span class="text-xs text-emerald-600">✓ 三级审核通过</span>',
+                'rejected': '<span class="text-xs font-bold text-red-600">🔴 驳回</span>',
+                'voided': '<span class="text-xs text-slate-400">作废</span>',
+              };
+              const sealProgress = sealMap[i.status] || '<span class="text-xs text-slate-400">-</span>';
+              // v1.7.3 创建人角色徽标
+              const creatorRole = (i.creatorUserRole === 'sealUser')
+                ? '<span class="ml-1 px-1.5 py-0.5 text-[10px] rounded bg-amber-100 text-amber-700 font-medium">盖章人</span>'
+                : '<span class="ml-1 px-1.5 py-0.5 text-[10px] rounded bg-slate-100 text-slate-600 font-medium">操作人</span>';
+              return `
+              <tr class="border-t border-slate-100 ${i.status === 'rejected' ? 'bg-red-50/30' : ''}">
+                <td class="px-4 py-3 font-mono text-xs">${i.bizNo}</td>
+                <td class="px-4 py-3">
+                  <div class="font-medium text-slate-800">${i.products[0].name}</div>
+                  <div class="text-xs text-slate-400">${i.products[0].id || '-'}</div>
+                </td>
+                <td class="px-4 py-3 text-right num-focus">${Utils.fmtNum(i.products[0].pieces)}</td>
+                <td class="px-4 py-3 text-right num-focus">${Utils.fmtWithUnit(i.products[0].weight, ' kg')}</td>
+                <td class="px-4 py-3 text-right num-focus font-medium">${Utils.fmtMoney(i.totalValue)}</td>
+                <td class="px-4 py-3 text-xs">${i.warehouse}</td>
+                <td class="px-4 py-3 font-mono text-xs">${i.vehicleNo}</td>
+                <td class="px-4 py-3 text-center ${_isSealer ? 'font-bold' : ''}">${sealProgress}</td>
+                <td class="px-4 py-3 text-center">${Components.badge(i.status)}</td>
+                <td class="px-4 py-3 text-xs">
+                  <div>${i.creator || '—'}${creatorRole}</div>
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <button onclick="viewInbound('${i.id}')" class="text-blue-600 hover:underline text-xs font-medium">查看详情 →</button>
+                </td>
+              </tr>
+            `}).join('')}
+          </tbody>
+        </table>
+      </div>
+    `
+  });
+
+  function createInbound() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-backdrop';
+    modal.innerHTML = `
+      <div class="bg-white rounded-xl w-[900px] max-h-[90vh] overflow-y-auto shadow-2xl" onclick="event.stopPropagation()">
+        <div class="px-6 py-4 border-b border-slate-200 sticky top-0 bg-white">
+          <h3 class="font-bold text-slate-800 text-lg">新建入库申请</h3>
+        </div>
+        <div class="p-6 space-y-5">
+          <div>
+            <h4 class="text-sm font-semibold text-slate-700 mb-3 pb-2 border-b">一、入库基本信息</h4>
+            <div class="grid grid-cols-2 gap-4">
+              <div><label class="block text-xs text-slate-600 mb-1">入库仓库 <span class="text-red-500">*</span></label>
+                <select class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                  ${MockData.warehouses.map(w => `<option value="${w.id}">${w.name} (${w.type})</option>`).join('')}
+                </select>
+              </div>
+              <div><label class="block text-xs text-slate-600 mb-1">入库方式 <span class="text-red-500">*</span></label>
+                <select class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                  <option>新货入库</option><option>货权转移入库</option>
+                </select>
+              </div>
+              <div><label class="block text-xs text-slate-600 mb-1">车牌号 <span class="text-red-500">*</span></label><input type="text" placeholder="豫A·XXXXX" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"></div>
+              <div><label class="block text-xs text-slate-600 mb-1">司机姓名/电话</label><input type="text" placeholder="如：张大伟 13812345678" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"></div>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-semibold text-slate-700 mb-3 pb-2 border-b flex items-center justify-between">
+              <span>二、货物明细 <span class="text-red-500">*</span></span>
+              <button class="text-xs text-blue-600 hover:underline">+ 添加货品</button>
+            </h4>
+            <table class="w-full text-sm border border-slate-200 rounded-lg overflow-hidden">
+              <thead class="bg-slate-50 text-xs">
+                <tr>
+                  <th class="text-left px-3 py-2">货品</th>
+                  <th class="text-right px-3 py-2">件数</th>
+                  <th class="text-right px-3 py-2">净重(kg)</th>
+                  <th class="text-right px-3 py-2">评估单价(¥/kg)</th>
+                  <th class="text-right px-3 py-2">评估货值</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="px-3 py-2">
+                    <select class="w-full px-2 py-1 border border-slate-300 rounded text-sm">
+                      ${MockData.products.map(p => `<option>${p.id} | ${p.name} (${p.country})</option>`).join('')}
+                    </select>
+                  </td>
+                  <td class="px-3 py-2"><input type="number" value="1190" class="w-24 px-2 py-1 border border-slate-300 rounded text-sm text-right num-focus"></td>
+                  <td class="px-3 py-2"><input type="number" value="23800" class="w-28 px-2 py-1 border border-slate-300 rounded text-sm text-right num-focus"></td>
+                  <td class="px-3 py-2"><input type="number" value="63.00" class="w-24 px-2 py-1 border border-slate-300 rounded text-sm text-right num-focus"></td>
+                  <td class="px-3 py-2 text-right num-focus font-medium">¥1,499,400.00</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="bg-blue-50">
+                  <td colspan="4" class="px-3 py-2 text-right text-sm font-medium">合计评估货值：</td>
+                  <td class="px-3 py-2 text-right text-base font-bold text-blue-700 num-focus">¥1,499,400.00</td>
+                </tr>
+              </tfoot>
+            </table>
+            <div class="mt-2 text-xs text-slate-500">💡 系统将根据第三方网站价格（牧集/肉交所）自动建议评估单价，下浮 5%-10%</div>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-semibold text-slate-700 mb-3 pb-2 border-b">三、随附单据</h4>
+            <div class="grid grid-cols-2 gap-3">
+              ${['报关单', '检验检疫证', '入境货物检验检疫证明', '货权转移单'].map(d => `
+                <div class="flex items-center gap-2 p-2 border border-slate-200 rounded">
+                  <svg class="w-4 h-4 text-slate-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>
+                  <span class="text-xs text-slate-700 flex-1">${d}</span>
+                  <button class="text-xs text-blue-600 hover:underline">上传</button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-2 sticky bottom-0 bg-white">
+          <button onclick="this.closest('.modal-backdrop').remove()" class="px-4 py-2 border border-slate-300 rounded-md text-sm hover:bg-slate-50">取消</button>
+          <button onclick="Utils.toast('入库申请已保存为草稿','info'); this.closest('.modal-backdrop').remove(); setTimeout(()=>location.reload(),600)" class="px-4 py-2 border border-slate-300 rounded-md text-sm hover:bg-slate-50">保存草稿</button>
+          <button onclick="Utils.toast('已提交，请货主方（盖章人）前往【准入申请/我的入库】点击【查看详情】完成图片签章','success'); this.closest('.modal-backdrop').remove(); setTimeout(()=>location.href='/customer/admission-seal',800)" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium">提交并去盖章 →</button>
+        </div>
+      </div>
+    `;
+    modal.onclick = () => modal.remove();
+    document.body.appendChild(modal);
+  }
+
+  function viewInbound(id) { window.location.href = '/customer/inbound-detail?id=' + id; }
+</script>
+</body>
+</html>

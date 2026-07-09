@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>大河智链 - 供应链金融平台</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'Inter', 'sans-serif'] },
+      }
+    }
+  }
+</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body>
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800">
+  <div class="text-center text-white">
+    <div class="text-6xl font-bold mb-4">大</div>
+    <h1 class="text-3xl font-bold mb-2">大河智链</h1>
+    <p class="text-blue-100 mb-6">供应链综合服务平台</p>
+    <div class="animate-pulse text-sm text-blue-200">正在跳转...</div>
+  </div>
+</div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script>
+  // 入口自动跳转
+  setTimeout(() => {
+    if (Utils.getUser()) {
+      window.location.href = '/dashboard';
+    } else {
+      window.location.href = '/login';
+    }
+  }, 600);
+</script>
+</body>
+</html>

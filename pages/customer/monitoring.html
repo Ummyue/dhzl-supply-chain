@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>在库监控 - 大河智链</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // 生成模拟价格趋势数据（30天）
+  const priceTrend = Array.from({length: 30}, (_, i) => ({
+    day: i + 1,
+    price: 76 + Math.sin(i / 3) * 3 + (Math.random() - 0.5) * 2,
+    warning: i > 24 ? 5 : 0,
+  }));
+
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '在库监控',
+    currentPath: '/customer/inventory',
+    breadcrumb: [{ label: '货物管理', path: '/customer/inventory' }, '在库货物'],
+    content: `
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-xs text-blue-800">
+        <span class="font-medium">v1.7 按甲方 drawio：</span>在库监控含 2 条主线 — <strong>主线A 仓库定期巡库 + 盘库记录</strong>（线下/线上）；<strong>主线B 价格盯市 + 追保</strong>。预警触发后，<strong>提前线下还款</strong> 直接跳转 §4.5 解押出库子流程。
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-slate-500 text-xs">在库总数</div>
+          <div class="text-2xl font-bold text-slate-800 num-focus mt-1">${Utils.fmtNum(MockData.customerStats.totalStock)} kg</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-slate-500 text-xs">在库总货值</div>
+          <div class="text-2xl font-bold text-blue-600 num-focus mt-1">${Utils.fmtMoney(MockData.customerStats.stockValue)}</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-slate-500 text-xs">在贷笔数</div>
+          <div class="text-2xl font-bold text-slate-800 mt-1">${MockData.customerStats.activeFinancing}</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border-2 border-amber-200 bg-amber-50/30">
+          <div class="text-amber-700 text-xs font-medium">价格预警</div>
+          <div class="text-2xl font-bold text-amber-600 mt-1">2</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border-2 border-rose-200 bg-rose-50/30">
+          <div class="text-rose-700 text-xs font-medium">熔断/异常</div>
+          <div class="text-2xl font-bold text-rose-600 mt-1">1</div>
+        </div>
+      </div>
+
+      <!-- 预警卡片 -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5 mb-6">
+        <h3 class="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+          <svg class="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495z" clip-rule="evenodd"/></svg>
+          价格盯市预警（-5% 提醒 / -10% 熔断）
+        </h3>
+        ${MockData.priceAlerts.map(a => `
+          <div class="flex items-center justify-between p-3 mb-2 rounded-lg ${a.level === 'danger' ? 'bg-rose-50 border border-rose-200' : 'bg-amber-50 border border-amber-200'}">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full ${a.level === 'danger' ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600'} flex items-center justify-center font-bold">${a.priceChangeRate > 0 ? '↑' : '↓'}</div>
+              <div>
+                <div class="font-medium text-slate-800">${a.productName}</div>
+                <div class="text-xs text-slate-500">业务编号: ${a.bizNo} · 阈值: ${a.threshold}%</div>
+                <div class="text-xs text-slate-600 mt-1">${a.suggestedAction}</div>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-lg font-bold ${a.priceChangeRate > 0 ? 'text-rose-600' : 'text-emerald-600'} num-focus">${a.priceChangeRate > 0 ? '+' : ''}${a.priceChangeRate.toFixed(2)}%</div>
+              <div class="flex gap-1 mt-1 justify-end">
+                <button onclick="Utils.toast('已发起补货流程（走 §4.2 入库子流程）','success')" class="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded">补货</button>
+                <button onclick="window.location.href='/customer/outbound'" class="px-2 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded">提前线下还款 →</button>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      <!-- v1.7 新增：盘库记录（仓库方定期巡库） -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5 mb-6">
+        <h3 class="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+          <svg class="w-5 h-5 text-purple-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>
+          仓库方盘库记录（v1.7 新增：定期巡库）
+        </h3>
+        <div class="text-xs text-slate-500 mb-3">仓库方每周定期巡库 + 上传盘库记录，发现异常立即推送预警</div>
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-xs text-slate-600">
+            <tr>
+              <th class="text-left px-3 py-2">盘库时间</th>
+              <th class="text-left px-3 py-2">业务编号</th>
+              <th class="text-right px-3 py-2">系统应存</th>
+              <th class="text-right px-3 py-2">实际盘存</th>
+              <th class="text-right px-3 py-2">差异(kg)</th>
+              <th class="text-center px-3 py-2">结果</th>
+              <th class="text-left px-3 py-2">巡库人</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${MockData.inventoryCheckRecords.map(c => `
+              <tr class="border-t border-slate-100">
+                <td class="px-3 py-2 text-xs text-slate-500">${c.checkTime}</td>
+                <td class="px-3 py-2 font-mono text-xs text-blue-600">${c.bizNo}</td>
+                <td class="px-3 py-2 text-right num-focus">${Utils.fmtWithUnit(c.expectedWeight, ' kg')}</td>
+                <td class="px-3 py-2 text-right num-focus">${Utils.fmtWithUnit(c.actualWeight, ' kg')}</td>
+                <td class="px-3 py-2 text-right num-focus ${c.weightDiff === 0 ? '' : 'text-rose-600 font-bold'}">${c.weightDiff > 0 ? '+' : ''}${c.weightDiff}</td>
+                <td class="px-3 py-2 text-center">${c.status === 'normal' ? '<span class="text-xs text-emerald-600">✓ 正常</span>' : '<span class="text-xs text-rose-600 font-bold">🔴 异常</span>'}</td>
+                <td class="px-3 py-2 text-xs">${c.checker}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 价格走势图 -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5 mb-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold text-slate-800">价格趋势 - 去骨牛心管（近30天）</h3>
+          <div class="flex gap-2 text-xs">
+            <button class="px-3 py-1 bg-blue-100 text-blue-700 rounded">30天</button>
+            <button class="px-3 py-1 text-slate-600 hover:bg-slate-100 rounded">90天</button>
+            <button class="px-3 py-1 text-slate-600 hover:bg-slate-100 rounded">1年</button>
+          </div>
+        </div>
+        <div class="h-48 flex items-end gap-1 px-2">
+          ${priceTrend.map((p, i) => `
+            <div class="flex-1 flex flex-col items-center justify-end group cursor-pointer relative">
+              <div class="w-full bg-gradient-to-t from-blue-400 to-blue-500 rounded-t ${p.warning > 0 ? 'from-amber-400 to-amber-500' : ''}" style="height: ${(p.price / 80) * 100}%"></div>
+              ${i % 5 === 0 ? `<div class="text-[10px] text-slate-400 mt-1">${i + 1}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+        <div class="mt-4 flex items-center gap-4 text-xs text-slate-500">
+          <span class="flex items-center gap-1"><span class="w-3 h-3 bg-blue-500 rounded"></span>正常区间</span>
+          <span class="flex items-center gap-1"><span class="w-3 h-3 bg-amber-500 rounded"></span>预警区间</span>
+        </div>
+      </div>
+
+      <!-- 在库货物列表 -->
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+            <tr>
+              <th class="text-left px-4 py-3">业务编号</th>
+              <th class="text-left px-4 py-3">货品</th>
+              <th class="text-left px-4 py-3">仓库</th>
+              <th class="text-right px-4 py-3">在库重量</th>
+              <th class="text-right px-4 py-3">货值</th>
+              <th class="text-right px-3 py-3">最新价</th>
+              <th class="text-right px-3 py-3">变化率</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${MockData.bizList.map(b => `
+              <tr class="border-t border-slate-100 hover:bg-slate-50">
+                <td class="px-4 py-3 font-mono text-xs">${b.bizNo}</td>
+                <td class="px-4 py-3">
+                  <div class="font-medium">${b.productName}</div>
+                  <div class="text-xs text-slate-400">${b.productId || '-'}</div>
+                </td>
+                <td class="px-4 py-3 text-xs">${b.warehouse}</td>
+                <td class="px-4 py-3 text-right num-focus">${Utils.fmtWithUnit(b.weight, ' kg')}</td>
+                <td class="px-4 py-3 text-right num-focus font-medium">${Utils.fmtMoney(b.evaluateValue)}</td>
+                <td class="px-3 py-3 text-right num-focus">¥${b.currentPrice.toFixed(2)}</td>
+                <td class="px-3 py-3 text-right num-focus font-bold ${b.priceChangeRate > 5 ? 'text-rose-600' : b.priceChangeRate < -5 ? 'text-emerald-600' : 'text-slate-600'}">${b.priceChangeRate > 0 ? '+' : ''}${b.priceChangeRate.toFixed(2)}%</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `
+  });
+</script>
+</body>
+</html>

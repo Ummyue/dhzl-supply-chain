@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>融资申请 - 大河智链</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '融资申请',
+    currentPath: '/customer/financing',
+    breadcrumb: [{ label: '融资管理', path: '/customer/financing' }, '融资申请'],
+    extra: `<button onclick="createFinancing()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium flex items-center gap-1">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      新建融资申请
+    </button>`,
+    content: `
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-800">
+        <span class="font-medium">融资流程（v1.7 按甲方 drawio 调整）：</span>
+        货主发起申请 → 系统自动生成《质物清单》+《质押反担保合同》→ <strong>货主方盖章①</strong>（监管通过后）→ 担保方审核 → <strong>货主方盖章②</strong>（担保通过后）→ 资金方审核 → <strong>货主方盖章③</strong>（资金方通过后）→ 银行线下放款+凭证登记
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
+        <div class="amount-gradient rounded-xl p-4 shadow-md">
+          <div class="text-blue-100 text-xs">可用额度</div>
+          <div class="text-2xl font-bold num-focus mt-1">¥7,900,000.00</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-slate-500 text-xs">质押率</div>
+          <div class="text-2xl font-bold text-blue-600 num-focus mt-1">80%</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-slate-500 text-xs">融资期限</div>
+          <div class="text-2xl font-bold text-slate-800 mt-1">≤ 4 个月</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-slate-500 text-xs">核心单据</div>
+          <div class="text-sm font-medium text-slate-800 mt-2">📄 质物清单<br>📄 质押反担保合同</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+            <tr>
+              <th class="text-left px-4 py-3">融资编号</th>
+              <th class="text-left px-4 py-3">关联入库单</th>
+              <th class="text-right px-4 py-3">评估货值</th>
+              <th class="text-right px-4 py-3">申请金额</th>
+              <th class="text-right px-4 py-3">融资期限</th>
+              <th class="text-center px-4 py-3">货主方盖章进度</th>
+              <th class="text-center px-4 py-3">状态</th>
+              <th class="text-center px-4 py-3">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${MockData.financingList.map(f => {
+              // v1.7 三次盖章进度
+              const sealMap = {
+                'pending': '<span class="text-xs text-slate-400">未提交</span>',
+                'pending_owner_seal': '<span class="text-xs text-amber-600">⏳ 待盖章①</span>',
+                'pending_guarantor': '<span class="text-xs text-blue-600">✓① 监管后 / 待担保</span>',
+                'pending_owner_seal_2': '<span class="text-xs text-amber-600">⏳ 待盖章②</span>',
+                'pending_funding': '<span class="text-xs text-blue-600">✓② 担保后 / 待资金</span>',
+                'pending_owner_seal_3': '<span class="text-xs text-amber-600">⏳ 待盖章③</span>',
+                'released': '<span class="text-xs text-emerald-600">✓ 三章齐全</span>',
+                'rejected': '<span class="text-xs text-red-600">🔴 驳回</span>',
+              };
+              const sealProgress = sealMap[f.status] || '<span class="text-xs text-slate-400">-</span>';
+              return `
+              <tr class="border-t border-slate-100 hover:bg-slate-50">
+                <td class="px-4 py-3 font-mono text-xs">${f.bizNo}</td>
+                <td class="px-4 py-3 font-mono text-xs">${f.inboundBizNo}</td>
+                <td class="px-4 py-3 text-right num-focus">${Utils.fmtMoney(f.evaluateValue)}</td>
+                <td class="px-4 py-3 text-right num-focus font-bold text-blue-600">${Utils.fmtMoney(f.applyAmount)}</td>
+                <td class="px-4 py-3 text-right">${f.duration} 天</td>
+                <td class="px-4 py-3 text-center">${sealProgress}</td>
+                <td class="px-4 py-3 text-center">${Components.badge(f.status)}</td>
+                <td class="px-4 py-3 text-center">
+                  <button onclick="viewFinancing('${f.id}')" class="text-blue-600 hover:underline text-xs mr-2 font-medium">查看详情 →</button>
+                  <button onclick="window.location.href='/customer/pledge-list'" class="text-emerald-600 hover:underline text-xs">质物清单</button>
+                </td>
+              </tr>
+            `}).join('')}
+          </tbody>
+        </table>
+      </div>
+    `
+  });
+
+  function createFinancing() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-backdrop';
+    modal.innerHTML = `
+      <div class="bg-white rounded-xl w-[800px] max-h-[90vh] overflow-y-auto shadow-2xl" onclick="event.stopPropagation()">
+        <div class="px-6 py-4 border-b border-slate-200 sticky top-0 bg-white">
+          <h3 class="font-bold text-slate-800 text-lg">新建融资申请</h3>
+        </div>
+        <div class="p-6 space-y-5">
+          <div>
+            <label class="block text-xs text-slate-600 mb-1">选择质押入库单 <span class="text-red-500">*</span></label>
+            <select class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+              ${MockData.inboundList.map(i => `<option>${i.bizNo} | ${i.products[0].name} ${i.products[0].weight}kg | 货值 ${Utils.fmtMoney(i.totalValue)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="bg-blue-50 rounded-lg p-4">
+            <h4 class="text-sm font-semibold text-blue-800 mb-2">📦 自动生成的质物清单预览</h4>
+            <table class="w-full text-xs">
+              <thead class="text-blue-700">
+                <tr><th class="text-left py-1">货品</th><th class="text-right py-1">件数</th><th class="text-right py-1">净重</th><th class="text-right py-1">单价</th><th class="text-right py-1">货值</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="py-1">水煮山羊肉 MNG_SZSYR_BWS</td><td class="text-right num-focus">1,190</td><td class="text-right num-focus">23,800 kg</td><td class="text-right num-focus">¥63.00</td><td class="text-right num-focus font-medium">¥1,499,400.00</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div><label class="block text-xs text-slate-600 mb-1">质押率</label><input type="text" value="80%" disabled class="w-full px-3 py-2 border border-slate-200 bg-slate-50 rounded-md text-sm text-slate-500"></div>
+            <div><label class="block text-xs text-slate-600 mb-1">申请融资金额 <span class="text-red-500">*</span></label><input type="text" value="¥1,190,000.00 (系统自动计算)" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm font-bold text-blue-600 num-focus"></div>
+            <div><label class="block text-xs text-slate-600 mb-1">融资期限 <span class="text-red-500">*</span></label>
+              <select class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                <option>60 天</option><option>90 天</option><option selected>120 天</option><option>最长 120 天</option>
+              </select>
+            </div>
+            <div><label class="block text-xs text-slate-600 mb-1">还款方式</label>
+              <select class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                <option>到期一次性还本付息</option><option>分期还款</option>
+              </select>
+            </div>
+          </div>
+          <div class="bg-amber-50 border border-amber-200 rounded p-3 text-xs text-amber-800">
+            ⚠ <span class="font-medium">资金成本预估：</span>
+            担保费 ¥1,785.00（放款金额 1.5% / 年 × 120 天）<br>
+            监管费 ¥570.13（货值 1.16‰ / 年 × 120 天）<br>
+            合计资金成本 ≈ ¥2,355.13
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-2 sticky bottom-0 bg-white">
+          <button onclick="this.closest('.modal-backdrop').remove()" class="px-4 py-2 border border-slate-300 rounded-md text-sm hover:bg-slate-50">取消</button>
+          <button onclick="Utils.toast('融资申请已提交，系统自动生成质物清单','success'); this.closest('.modal-backdrop').remove(); setTimeout(()=>location.reload(),800)" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium">提交申请</button>
+        </div>
+      </div>
+    `;
+    modal.onclick = () => modal.remove();
+    document.body.appendChild(modal);
+  }
+
+  function viewFinancing(id) { window.location.href = '/customer/financing-detail?id=' + id; }
+</script>
+</body>
+</html>

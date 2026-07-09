@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>融资审核 - 大河智链</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '融资审核工作台',
+    currentPath: '/platform/approval-financing',
+    breadcrumb: [{ label: '融资管理', path: '/platform/approval-financing' }, '融资审核'],
+    content: `
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-xs text-blue-800">
+        <span class="font-medium">v1.7 流程：</span>本页面是<strong>3 级审核的第 1 步</strong>（您 → 担保方 → 资金方）。审核通过后，货主方需在《质物清单》和《质押反担保合同》上盖章①。
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+            <tr>
+              <th class="text-left px-4 py-3">融资编号</th>
+              <th class="text-left px-4 py-3">货主/货品</th>
+              <th class="text-right px-4 py-3">评估货值</th>
+              <th class="text-right px-4 py-3">质押率</th>
+              <th class="text-right px-4 py-3">申请金额</th>
+              <th class="text-center px-4 py-3">期限</th>
+              <th class="text-center px-4 py-3">状态</th>
+              <th class="text-center px-4 py-3">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${MockData.financingList.map(f => `
+              <tr class="border-t border-slate-100 hover:bg-slate-50">
+                <td class="px-4 py-3 font-mono text-xs">${f.bizNo}</td>
+                <td class="px-4 py-3">
+                  <div class="font-medium text-xs">${f.applicant}</div>
+                  <div class="text-xs text-slate-500">${f.products[0]?.name || '-'}</div>
+                </td>
+                <td class="px-4 py-3 text-right num-focus">${Utils.fmtMoney(f.evaluateValue)}</td>
+                <td class="px-4 py-3 text-right">${(f.pledgeRatio * 100).toFixed(0)}%</td>
+                <td class="px-4 py-3 text-right num-focus font-bold text-blue-600">${Utils.fmtMoney(f.applyAmount)}</td>
+                <td class="px-4 py-3 text-center">${f.duration}天</td>
+                <td class="px-4 py-3 text-center">${Components.badge(f.status)}</td>
+                <td class="px-4 py-3 text-center">
+                  <button onclick="Utils.toast('查看融资详情','info')" class="text-blue-600 hover:underline text-xs mr-2">查看</button>
+                  <button onclick="Utils.toast('已推送担保方','success')" class="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded">推送下一节点</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `
+  });
+</script>
+</body>
+</html>

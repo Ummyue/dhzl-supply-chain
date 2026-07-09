@@ -1,0 +1,54 @@
+# ========== 操作系统 ==========
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ========== macOS ==========
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+.AppleDB
+.AppleDesktop
+.com.apple.timemachine.donotpresent
+
+# ========== 编辑器 / IDE ==========
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.iml
+.project
+.classpath
+.settings/
+
+# ========== Node / Vercel ==========
+node_modules/
+.vercel
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ========== 临时文件 ==========
+*.tmp
+*.bak
+*.swp
+.cache/
+
+# ========== 敏感信息（如果未来加） ==========
+.env
+.env.local
+.env.*.local
+
+# ========== PRD 构建产物（如果加） ==========
+dist/
+build/
+
+# ========== 截图资源（占位，按需） ==========
+# assets/screenshots/*.png

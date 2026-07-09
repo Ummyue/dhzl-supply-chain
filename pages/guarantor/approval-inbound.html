@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>入库审核 - 大河智链</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+<link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '入库审核工作台（担保方）',
+    currentPath: '/guarantor/approval-inbound',
+    breadcrumb: [{ label: '入库审核', path: '/guarantor/approval-inbound' }, '担保方入库审批'],
+    content: `
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-xs text-blue-800">
+        <span class="font-medium">v1.7 §4.2 流程：</span>本页面是<strong>3 级审核的第 2 步</strong>（货主方盖章 → <strong>您（担保方）</strong> → 监管方）。
+        审核通过后，货主方需在《入库申请单》上盖章，然后推送监管方审核货值。
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div class="bg-amber-50 rounded-xl p-4 border border-amber-200">
+          <div class="text-xs text-amber-700">待审入库申请</div>
+          <div class="text-2xl font-bold text-amber-700 mt-1">3</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">本月已审</div>
+          <div class="text-2xl font-bold text-emerald-600 mt-1">12</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">通过率</div>
+          <div class="text-2xl font-bold text-blue-600 mt-1 num-focus">92%</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">平均处理时长</div>
+          <div class="text-2xl font-bold text-slate-800 mt-1">1.2 <span class="text-sm">天</span></div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="px-5 py-3 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="font-semibold text-slate-800">待审入库申请（货主方已盖章）</h3>
+          <div class="text-xs text-slate-500">共 3 笔</div>
+        </div>
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+            <tr>
+              <th class="text-left px-4 py-3">入库单号</th>
+              <th class="text-left px-4 py-3">货主/货品</th>
+              <th class="text-right px-4 py-3">评估货值</th>
+              <th class="text-right px-4 py-3">入库重量</th>
+              <th class="text-left px-4 py-3">货主方盖章</th>
+              <th class="text-center px-4 py-3">状态</th>
+              <th class="text-center px-4 py-3">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-3 font-mono text-xs">IN_20260705001</td>
+              <td class="px-4 py-3">
+                <div class="font-medium text-xs">郑州军牧源贸易有限公司</div>
+                <div class="text-xs text-slate-500">水煮山羊肉 MNG_SZSYR_BWS</div>
+              </td>
+              <td class="px-4 py-3 text-right num-focus font-bold text-blue-600">${Utils.fmtMoney(1499400)}</td>
+              <td class="px-4 py-3 text-right num-focus">23,800 kg</td>
+              <td class="px-4 py-3 text-center">
+                <span class="px-2 py-0.5 rounded text-xs bg-emerald-100 text-emerald-700">✓ 已盖章</span>
+                <div class="text-xs text-slate-500 mt-0.5">2026-07-05 14:32</div>
+              </td>
+              <td class="px-4 py-3 text-center">${Components.badge('pending_guarantor')}</td>
+              <td class="px-4 py-3 text-center">
+                <button onclick="reviewInbound('IN_20260705001')" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded">审核</button>
+              </td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-3 font-mono text-xs">IN_20260703001</td>
+              <td class="px-4 py-3">
+                <div class="font-medium text-xs">郑州固联冷链有限公司</div>
+                <div class="text-xs text-slate-500">冷冻去骨牛7件套</div>
+              </td>
+              <td class="px-4 py-3 text-right num-focus font-bold text-blue-600">${Utils.fmtMoney(2211894.56)}</td>
+              <td class="px-4 py-3 text-right num-focus">39,853.96 kg</td>
+              <td class="px-4 py-3 text-center">
+                <span class="px-2 py-0.5 rounded text-xs bg-emerald-100 text-emerald-700">✓ 已盖章</span>
+                <div class="text-xs text-slate-500 mt-0.5">2026-07-03 16:50</div>
+              </td>
+              <td class="px-4 py-3 text-center">${Components.badge('pending_guarantor')}</td>
+              <td class="px-4 py-3 text-center">
+                <button onclick="reviewInbound('IN_20260703001')" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded">审核</button>
+              </td>
+            </tr>
+            <tr class="border-t border-slate-100">
+              <td class="px-4 py-3 font-mono text-xs">IN_20260702001</td>
+              <td class="px-4 py-3">
+                <div class="font-medium text-xs">河南冰峰冷链股份有限公司</div>
+                <div class="text-xs text-slate-500">熟牛腱 MNG_SNJ_3191397</div>
+              </td>
+              <td class="px-4 py-3 text-right num-focus font-bold text-blue-600">${Utils.fmtMoney(1628000)}</td>
+              <td class="px-4 py-3 text-right num-focus">22,000 kg</td>
+              <td class="px-4 py-3 text-center">
+                <span class="px-2 py-0.5 rounded text-xs bg-emerald-100 text-emerald-700">✓ 已盖章</span>
+                <div class="text-xs text-slate-500 mt-0.5">2026-07-02 11:15</div>
+              </td>
+              <td class="px-4 py-3 text-center">${Components.badge('pending_guarantor')}</td>
+              <td class="px-4 py-3 text-center">
+                <button onclick="reviewInbound('IN_20260702001')" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded">审核</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `
+  });
+
+  function reviewInbound(id) {
+    const modal = document.createElement('div');
+    modal.className = 'modal-backdrop';
+    modal.innerHTML = `
+      <div class="bg-white rounded-xl w-[800px] max-h-[90vh] overflow-y-auto shadow-2xl" onclick="event.stopPropagation()">
+        <div class="px-6 py-4 border-b border-slate-200 sticky top-0 bg-white">
+          <h3 class="font-bold text-slate-800 text-lg">入库申请审核 - ${id}</h3>
+        </div>
+        <div class="p-6 space-y-4">
+          <div class="bg-blue-50 rounded-lg p-4 text-sm">
+            <div class="font-semibold text-blue-800 mb-2">📋 申请基本信息</div>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div><span class="text-slate-500">货主：</span>郑州军牧源贸易有限公司</div>
+              <div><span class="text-slate-500">入库仓库：</span>物流港二期大河智链监管库</div>
+              <div><span class="text-slate-500">货品：</span>水煮山羊肉 MNG_SZSYR_BWS</div>
+              <div><span class="text-slate-500">件数：</span>1,190 件</div>
+              <div><span class="text-slate-500">入库重量：</span>23,800 kg</div>
+              <div><span class="text-slate-500">评估单价：</span>¥63.00/kg</div>
+              <div><span class="text-slate-500">评估货值：</span><span class="font-bold text-blue-700 num-focus">${Utils.fmtMoney(1499400)}</span></div>
+              <div><span class="text-slate-500">货主方盖章：</span><span class="text-emerald-600">✓ 已盖章 2026-07-05 14:32</span></div>
+            </div>
+          </div>
+
+          <div class="bg-white border border-slate-200 rounded-lg p-4 text-sm">
+            <h4 class="font-semibold text-slate-700 mb-3">📎 申请材料</h4>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div class="p-2 border border-slate-200 rounded">📄 报关单.pdf (2.3MB)</div>
+              <div class="p-2 border border-slate-200 rounded">📄 检验检疫证.pdf (1.8MB)</div>
+              <div class="p-2 border border-slate-200 rounded">📄 入境货物检验检疫证明.pdf</div>
+              <div class="p-2 border border-slate-200 rounded">📄 货权转移单.pdf</div>
+              <div class="p-2 border border-slate-200 rounded col-span-2 text-emerald-600">✓ 《入库申请单》已盖公章（李雪 2026-07-05 14:32）</div>
+            </div>
+          </div>
+
+          <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm">
+            <h4 class="font-semibold text-amber-800 mb-2">🛡 反担保措施</h4>
+            <div class="text-xs text-slate-700 space-y-1">
+              <div>✓ 动产质押（本次货物）</div>
+              <div>✓ 第三方担保（郑州军牧源法人陈志强连带责任）</div>
+              <div>✓ 准入评级：AA</div>
+              <div>✓ 银行征信：无重大违约记录</div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-600 mb-1">担保方审核意见</label>
+            <textarea rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm" placeholder="请输入审核意见...">材料齐全，反担保措施到位，同意入库。</textarea>
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-2 sticky bottom-0 bg-white">
+          <button onclick="Utils.toast('已驳回，货主方可修改后重新提交','warning'); this.closest('.modal-backdrop').remove()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-md text-sm">🔴 驳回</button>
+          <button onclick="Utils.toast('✓ 担保方审核通过，已推送监管方','success'); this.closest('.modal-backdrop').remove(); setTimeout(()=>location.reload(),800)" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium">✓ 通过并推送监管方</button>
+        </div>
+      </div>
+    `;
+    modal.onclick = () => modal.remove();
+    document.body.appendChild(modal);
+  }
+</script>
+</body>
+</html>
