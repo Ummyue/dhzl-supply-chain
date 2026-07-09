@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新增入库申请 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.14 新增入库申请（4 级页面，从 inbound.html 弹窗升级为独立页面） ============
+  // 4 段：基础信息 / 质物明细信息表格（17 列含【有效期】）/ 附件 / 入库申请清单
+  // 表格内"新增"按钮触发"新增货物明细"弹窗（modal，13 字段含【有效期】）
+
+  // 默认表单数据
+  const form = {
+    pledgor: '郑州某冷链贸易有限公司',
+    contact: '李雪 — 138 0000 1234',
+    financeProduct: '',
+    supervisor: '大河智链物流（郑州）有限公司',
+    pledgee: '河南农业担保股份有限公司',
+  };
+
+  // 质物明细行（v1.7.14：含【有效期】列，默认 4 行）
+  let pledgeRows = [
+    { no: 1, name: '保乐肩', country: '巴西', factoryNo: '002', qty: 140, qtyUnit: '箱', weight: 3000, weightUnit: '千克', expiryDate: '2027-06-30', plannedInbound: '2026-01-01', produceDate: '2026-01-01', batchNo: '2026-01-01', contractNo: '2026-01-01', waybill: 'ZXT20260103', cabinet: '002', location: '河南省郑州市' },
+    { no: 2, name: '保乐肩', country: '巴西', factoryNo: '002', qty: 140, qtyUnit: '箱', weight: 3000, weightUnit: '千克', expiryDate: '2027-06-30', plannedInbound: '2026-01-01', produceDate: '2026-01-01', batchNo: '2026-01-01', contractNo: '2026-01-01', waybill: 'ZXT20260103', cabinet: '002', location: '河南省郑州市' },
+    { no: 3, name: '保乐肩', country: '巴西', factoryNo: '002', qty: 140, qtyUnit: '箱', weight: 3000, weightUnit: '千克', expiryDate: '2027-06-30', plannedInbound: '2026-01-01', produceDate: '2026-01-01', batchNo: '2026-01-01', contractNo: '2026-01-01', waybill: 'ZXT20260103', cabinet: '002', location: '河南省郑州市' },
+    { no: 4, name: '保乐肩', country: '巴西', factoryNo: '002', qty: 140, qtyUnit: '箱', weight: 3000, weightUnit: '千克', expiryDate: '2027-06-30', plannedInbound: '2026-01-01', produceDate: '2026-01-01', batchNo: '2026-01-01', contractNo: '2026-01-01', waybill: 'ZXT20260103', cabinet: '002', location: '河南省郑州市' },
+  ];
+
+  let selectedRows = new Set(); // 复选框选中的行号
+  let bizNo = `IN_${Utils.genBizNo().slice(-12)}`; // 业务编号 demo
+
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '新增入库申请',
+    currentPath: '/customer/inbound',
+    breadcrumb: [
+      { label: '货物管理', path: '/customer/inbound' },
+      { label: '入库申请', path: '/customer/inbound' },
+      { label: '新增入库申请', path: '/customer/inbound-create' },
+    ],
+    extra: '',
+    content: render(),
+  });
+
+  function render() {
+    return `
+      <!-- 顶部操作条 -->
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <button onclick="goBack()" class="flex items-center gap-1 text-slate-600 hover:text-blue-600 text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            返回入库申请
+          </button>
+          <span class="text-slate-300">|</span>
+          <span class="text-xs text-slate-500">业务编号：<span class="font-mono text-slate-700">${bizNo}</span></span>
+        </div>
+        <div class="flex items-center gap-2 text-sm">
+          <button onclick="saveDraft()" class="px-3 py-1.5 border border-slate-300 rounded hover:bg-slate-50">保存草稿</button>
+          <button onclick="previewSubmit()" class="px-3 py-1.5 border border-slate-300 rounded hover:bg-slate-50">预览</button>
+        </div>
+      </div>
+
+      <!-- 1. 基础信息 -->
+      <section class="bg-white border border-slate-200 rounded-xl mb-4">
+        <div class="px-6 py-3 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="font-bold text-slate-800">基础信息</h3>
+          <span class="text-xs text-slate-400">带 <span class="text-red-500">*</span> 为必填项</span>
+        </div>
+        <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
+          <div>
+            <label class="block text-xs text-slate-600 mb-1.5">出质方 <span class="text-red-500">*</span></label>
+            <input type="text" value="${form.pledgor}" onchange="updateForm('pledgor', this.value)" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-600 mb-1.5">联系人 <span class="text-red-500">*</span></label>
+            <input type="text" placeholder="姓名 — 电话" value="${form.contact}" onchange="updateForm('contact', this.value)" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-600 mb-1.5">金融产品 <span class="text-red-500">*</span></label>
+            <select onchange="updateForm('financeProduct', this.value)" class="w-full px-3 py-2 border border-slate-300 rounded text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              <option value="">请选择</option>
+              ${(MockData.financingProduct || MockData.products || []).slice(0, 15).map(p => `<option ${form.financeProduct === p.name ? 'selected' : ''}>${p.name || p}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-600 mb-1.5">监管方 <span class="text-red-500">*</span></label>
+            <input type="text" value="${form.supervisor}" onchange="updateForm('supervisor', this.value)" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-600 mb-1.5">质权方 <span class="text-red-500">*</span></label>
+            <input type="text" value="${form.pledgee}" onchange="updateForm('pledgee', this.value)" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-600 mb-1.5">联系人邮箱</label>
+            <input type="email" placeholder="用于系统通知" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. 状态机选择（按用户截图样式）-->
+      <section class="bg-white border border-slate-200 rounded-xl mb-4 p-3 flex items-center justify-center gap-3">
+        <select class="px-3 py-1.5 text-sm border border-slate-300 rounded bg-white">
+          <option>State1</option>
+          <option>State2</option>
+        </select>
+        <button onclick="prevState()" class="px-2 py-1 text-slate-500 hover:text-slate-800">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <button onclick="nextState()" class="px-2 py-1 text-slate-500 hover:text-slate-800">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </button>
+        <button onclick="viewAllStates()" class="px-3 py-1.5 text-sm text-blue-600 hover:underline">查看全部状态</button>
+        <button onclick="resetStateSelector()" class="px-2 py-1 text-slate-400 hover:text-slate-700">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </section>
+
+      <!-- 3. 质物明细信息（17 列：含新增【有效期】） -->
+      <section class="bg-white border border-slate-200 rounded-xl mb-4">
+        <div class="px-6 py-3 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="font-bold text-slate-800">质物明细信息 <span class="text-red-500">*</span></h3>
+          <div class="flex items-center gap-2">
+            <button onclick="addPledgeRow()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              新增
+            </button>
+            <button onclick="deleteSelectedRows()" class="px-4 py-1.5 border border-slate-300 rounded text-sm text-slate-700 hover:bg-slate-50">删除</button>
+            <button onclick="batchImport()" class="px-4 py-1.5 border border-slate-300 rounded text-sm text-slate-700 hover:bg-slate-50">批量导入</button>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs min-w-[1700px]">
+            <thead class="bg-slate-50 text-slate-600">
+              <tr>
+                <th class="text-center px-2 py-3 w-10"><input type="checkbox" onchange="toggleAllRows(this.checked)" ${selectedRows.size === pledgeRows.length && pledgeRows.length > 0 ? 'checked' : ''}></th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">序号</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">货品名称</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">国家</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">厂号</th>
+                <th class="text-right px-2 py-3 whitespace-nowrap">入库数量</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">数量单位</th>
+                <th class="text-right px-2 py-3 whitespace-nowrap">入库重量</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">重量单位</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">${badgeNew('有效期')}</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">计划入库时间</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">生产日期</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">生产批号</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">合同号</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">提/运单号</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">柜号</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">货物所在地</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">操作</th>
+              </tr>
+            </thead>
+            <tbody>${renderPledgeRows()}</tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 4. 附件 -->
+      <section class="bg-white border border-slate-200 rounded-xl mb-4">
+        <div class="px-6 py-3 border-b border-slate-200">
+          <h3 class="font-bold text-slate-800">附件</h3>
+        </div>
+        <div class="p-6">
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700 mb-4 flex items-start gap-2">
+            <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+            <span>可支持格式为 jpg、jpeg、png、pdf 的附件，支持多张，单个附件大小不得超过 100M 的文件。</span>
+          </div>
+
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-slate-600">
+                <th class="text-left py-2 px-3 w-40">单据类型</th>
+                <th class="text-center py-2 px-3 w-32">操作</th>
+                <th class="text-left py-2 px-3">文件名</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${renderAttachmentRow('* 合同及订单', ['采购合同.pdf','采购订单.pdf'], false)}
+              ${renderAttachmentRow('* 报关单', ['明细1.pdf'], false)}
+              ${renderAttachmentRow('* 检验检疫证明', [], false)}
+              ${renderAttachmentRow('其他附件', [], true)}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 5. 入库申请清单 -->
+      <section class="bg-white border border-slate-200 rounded-xl mb-6">
+        <div class="px-6 py-3 border-b border-slate-200">
+          <h3 class="font-bold text-slate-800">入库申请清单</h3>
+        </div>
+        <div class="p-6">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-slate-50 text-slate-600">
+                <th class="text-left py-2 px-3 w-20">序号</th>
+                <th class="text-left py-2 px-3">单据名称</th>
+                <th class="text-left py-2 px-3 w-32">状态</th>
+                <th class="text-left py-2 px-3 w-40">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-t border-slate-100">
+                <td class="py-3 px-3">1</td>
+                <td class="py-3 px-3">入库申请清单</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 text-xs bg-slate-100 text-slate-700 rounded">起草</span></td>
+                <td class="py-3 px-3">
+                  <button class="text-blue-600 hover:underline mr-3" onclick="Utils.toast('查看入库申请清单（占位）','info')">查看</button>
+                  <button class="text-blue-600 hover:underline" onclick="Utils.toast('下载入库申请清单（占位）','info')">下载</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 底部按钮 -->
+      <div class="flex justify-center gap-3 pb-8">
+        <button onclick="cancelCreate()" class="px-8 py-2 border border-slate-300 rounded text-sm text-slate-700 hover:bg-slate-50">取消</button>
+        <button onclick="saveDraft()" class="px-8 py-2 border border-slate-300 rounded text-sm text-slate-700 hover:bg-slate-50">保存草稿</button>
+        <button onclick="submitForm()" class="px-8 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">提交</button>
+      </div>
+    `;
+  }
+
+  // v1.7.14 新增小标签
+  function badgeNew(text) {
+    return `<span>${text} <span class="ml-1 px-1 py-0.5 text-[10px] bg-emerald-100 text-emerald-700 rounded font-medium">新</span></span>`;
+  }
+
+  function renderPledgeRows() {
+    if (!pledgeRows.length) {
+      return `<tr><td colspan="18" class="py-12 text-center text-slate-400 text-sm">📭 暂无明细，请点击「新增」按钮添加</td></tr>`;
+    }
+    return pledgeRows.map(row => `
+      <tr class="border-t border-slate-100 hover:bg-slate-50/50">
+        <td class="px-2 py-2 text-center"><input type="checkbox" ${selectedRows.has(row.no) ? 'checked' : ''} onchange="toggleRow(${row.no}, this.checked)"></td>
+        <td class="px-2 py-2">${row.no}</td>
+        <td class="px-2 py-2">${row.name}</td>
+        <td class="px-2 py-2">${row.country}</td>
+        <td class="px-2 py-2">${row.factoryNo}</td>
+        <td class="px-2 py-2 text-right num-focus">${row.qty}</td>
+        <td class="px-2 py-2">${row.qtyUnit}</td>
+        <td class="px-2 py-2 text-right num-focus">${row.weight}</td>
+        <td class="px-2 py-2">${row.weightUnit}</td>
+        <td class="px-2 py-2"><span class="text-blue-700">${row.expiryDate || '-'}</span></td>
+        <td class="px-2 py-2">${row.plannedInbound || '-'}</td>
+        <td class="px-2 py-2">${row.produceDate || '-'}</td>
+        <td class="px-2 py-2">${row.batchNo || '-'}</td>
+        <td class="px-2 py-2">${row.contractNo || '-'}</td>
+        <td class="px-2 py-2">${row.waybill || '-'}</td>
+        <td class="px-2 py-2">${row.cabinet || '-'}</td>
+        <td class="px-2 py-2">${row.location || '-'}</td>
+        <td class="px-2 py-2">
+          <button onclick="editRow(${row.no})" class="text-blue-600 hover:underline mr-2">编辑</button>
+          <button onclick="deleteRow(${row.no})" class="text-rose-600 hover:underline">删除</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function renderAttachmentRow(label, files, optional) {
+    const labelHtml = `<td class="py-3 px-3">${label}</td>`;
+    const uploadCell = `<td class="py-3 px-3 text-center relative">
+      <button onclick="uploadFile(this)" class="px-3 py-1 border border-blue-500 text-blue-600 rounded text-xs hover:bg-blue-50">+ 上传</button>
+    </td>`;
+    const filesHtml = files.length === 0
+      ? `<span class="text-slate-300 text-xs">（暂无文件）</span>`
+      : `<div class="flex items-center gap-2 flex-wrap">${files.map((f, i) => `
+          <div class="relative inline-block">
+            <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>
+              ${f}
+            </span>
+            <button onclick="removeFile(this)" class="ml-1 -mr-1 -mt-1 absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-slate-500 hover:bg-rose-500 text-white text-[10px] flex items-center justify-center">×</button>
+            ${i === 0 && !optional ? '<div class="absolute -top-8 left-0 bg-slate-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">上传时间：2023-12-12 12:23:32<div class="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-slate-800"></div></div>' : ''}
+          </div>
+        `).join('')}</div>`;
+    const filesCell = `<td class="py-3 px-3">${filesHtml}</td>`;
+    return `<tr class="border-t border-slate-100">${labelHtml}${uploadCell}${filesCell}</tr>`;
+  }
+
+  // ============ 货物明细 新增/编辑 弹窗（v1.7.14 含【有效期】字段） ============
+  function openDetailModal(rowNo) {
+    const isEdit = rowNo != null;
+    const existing = isEdit ? pledgeRows.find(r => r.no === rowNo) : null;
+    const modal = document.createElement('div');
+    modal.className = 'modal-backdrop';
+    const d = existing || {
+      name: '', country: '', factoryNo: '',
+      qty: '', qtyUnit: '箱',
+      weight: '', weightUnit: '千克',
+      produceDate: '', expiryDate: '',
+      batchNo: '', contractNo: '', waybill: '', cabinet: '',
+      plannedInbound: '', location: '',
+    };
+    modal.innerHTML = `
+      <div class="bg-white rounded-xl w-[640px] max-h-[90vh] overflow-y-auto shadow-2xl" onclick="event.stopPropagation()">
+        <div class="px-6 py-4 border-b border-slate-200 sticky top-0 bg-white flex items-center justify-between">
+          <h3 class="font-bold text-slate-800 text-lg">${isEdit ? '编辑货物明细' : '新增货物明细'}</h3>
+          <button onclick="this.closest('.modal-backdrop').remove()" class="text-slate-400 hover:text-slate-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <div>
+            <label class="block text-xs text-slate-600 mb-1.5">货物名称 <span class="text-red-500">*</span></label>
+            <input type="text" id="dm_name" value="${d.name}" placeholder="请输入" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-600 mb-1.5">国家 <span class="text-red-500">*</span></label>
+            <input type="text" id="dm_country" value="${d.country}" placeholder="请输入" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-600 mb-1.5">厂号 <span class="text-red-500">*</span></label>
+            <select id="dm_factory" class="w-full px-3 py-2 border border-slate-300 rounded text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              <option value="">请选择所属组织</option>
+              <option ${d.factoryNo === '002' ? 'selected' : ''}>002</option>
+              <option ${d.factoryNo === '003' ? 'selected' : ''}>003</option>
+              <option ${d.factoryNo === 'BWS' ? 'selected' : ''}>BWS</option>
+              <option ${d.factoryNo === '3191397' ? 'selected' : ''}>3191397</option>
+              <option ${d.factoryNo === '50' ? 'selected' : ''}>50</option>
+              <option ${d.factoryNo === '1265' ? 'selected' : ''}>1265</option>
+              <option ${d.factoryNo === '137' ? 'selected' : ''}>137</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-3 gap-3">
+            <div class="col-span-2">
+              <label class="block text-xs text-slate-600 mb-1.5">入库数量 <span class="text-red-500">*</span></label>
+              <input type="number" id="dm_qty" value="${d.qty}" placeholder="入库数量" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-600 mb-1.5">单位</label>
+              <select id="dm_qtyUnit" class="w-full px-2 py-2 border border-slate-300 rounded text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+                <option ${d.qtyUnit === '箱' ? 'selected' : ''}>箱</option>
+                <option ${d.qtyUnit === '件' ? 'selected' : ''}>件</option>
+                <option ${d.qtyUnit === '托' ? 'selected' : ''}>托</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-3">
+            <div class="col-span-2">
+              <label class="block text-xs text-slate-600 mb-1.5">入库重量 <span class="text-red-500">*</span></label>
+              <input type="number" id="dm_weight" value="${d.weight}" placeholder="入库重量" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-600 mb-1.5">单位</label>
+              <select id="dm_weightUnit" class="w-full px-2 py-2 border border-slate-300 rounded text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+                <option ${d.weightUnit === '千克' ? 'selected' : ''}>千克</option>
+                <option ${d.weightUnit === '吨' ? 'selected' : ''}>吨</option>
+                <option ${d.weightUnit === '斤' ? 'selected' : ''}>斤</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-600 mb-1.5">生产日期 <span class="text-red-500">*</span></label>
+            <input type="date" id="dm_produce" value="${d.produceDate}" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-600 mb-1.5 flex items-center gap-1">
+              有效期 <span class="text-red-500">*</span>
+              <span class="ml-1 px-1 py-0.5 text-[10px] bg-emerald-100 text-emerald-700 rounded font-medium">v1.7.14 新增</span>
+              <span class="ml-2 text-slate-400 text-xs">（影响融资期限合规校验）</span>
+            </label>
+            <input type="date" id="dm_expiry" value="${d.expiryDate}" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-600 mb-1.5">生产批号</label>
+            <input type="text" id="dm_batchNo" value="${d.batchNo}" placeholder="请输入" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-600 mb-1.5">合同号</label>
+            <input type="text" id="dm_contractNo" value="${d.contractNo}" placeholder="请输入" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-600 mb-1.5">提/运单号</label>
+            <input type="text" id="dm_waybill" value="${d.waybill}" placeholder="请输入" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-600 mb-1.5">柜号</label>
+            <input type="text" id="dm_cabinet" value="${d.cabinet}" placeholder="请输入" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-600 mb-1.5">计划入库时间 <span class="text-red-500">*</span></label>
+            <input type="date" id="dm_planned" value="${d.plannedInbound}" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-600 mb-1.5">货物所在地 <span class="text-red-500">*</span></label>
+            <select id="dm_location" class="w-full px-3 py-2 border border-slate-300 rounded text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              <option value="">请选择城市</option>
+              <option ${d.location === '河南省郑州市' ? 'selected' : ''}>河南省郑州市</option>
+              <option ${d.location === '天津市' ? 'selected' : ''}>天津市</option>
+              <option ${d.location === '山西省汾阳市' ? 'selected' : ''}>山西省汾阳市</option>
+              <option ${d.location === '宁夏银川' ? 'selected' : ''}>宁夏银川</option>
+              <option ${d.location === '陕西省' ? 'selected' : ''}>陕西省</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-2 sticky bottom-0 bg-white">
+          <button onclick="this.closest('.modal-backdrop').remove()" class="px-5 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">取消</button>
+          <button onclick="confirmDetail(${rowNo != null ? rowNo : 'null'})" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">确定</button>
+        </div>
+      </div>
+    `;
+    modal.onclick = () => {}; // 阻止点击外面关闭
+    document.body.appendChild(modal);
+  }
+
+  function confirmDetail(rowNo) {
+    const data = {
+      name: document.getElementById('dm_name').value,
+      country: document.getElementById('dm_country').value,
+      factoryNo: document.getElementById('dm_factory').value,
+      qty: document.getElementById('dm_qty').value,
+      qtyUnit: document.getElementById('dm_qtyUnit').value,
+      weight: document.getElementById('dm_weight').value,
+      weightUnit: document.getElementById('dm_weightUnit').value,
+      produceDate: document.getElementById('dm_produce').value,
+      expiryDate: document.getElementById('dm_expiry').value,
+      batchNo: document.getElementById('dm_batchNo').value,
+      contractNo: document.getElementById('dm_contractNo').value,
+      waybill: document.getElementById('dm_waybill').value,
+      cabinet: document.getElementById('dm_cabinet').value,
+      plannedInbound: document.getElementById('dm_planned').value,
+      location: document.getElementById('dm_location').value,
+    };
+    // 必填校验
+    const missing = [];
+    if (!data.name) missing.push('货物名称');
+    if (!data.country) missing.push('国家');
+    if (!data.factoryNo) missing.push('厂号');
+    if (!data.qty) missing.push('入库数量');
+    if (!data.weight) missing.push('入库重量');
+    if (!data.produceDate) missing.push('生产日期');
+    if (!data.expiryDate) missing.push('有效期');
+    if (!data.plannedInbound) missing.push('计划入库时间');
+    if (!data.location) missing.push('货物所在地');
+    if (missing.length) return Utils.toast(`请填写：${missing.join('、')}`, 'error');
+
+    if (rowNo == null) {
+      pledgeRows.push({ no: Math.max(0, ...pledgeRows.map(r => r.no)) + 1, ...data });
+    } else {
+      const idx = pledgeRows.findIndex(r => r.no === rowNo);
+      if (idx >= 0) pledgeRows[idx] = { ...pledgeRows[idx], ...data };
+    }
+    document.querySelector('.modal-backdrop').remove();
+    refresh();
+  }
+
+  // ============ 顶部操作 ============
+  window.updateForm = (k, v) => { form[k] = v; };
+
+  window.addPledgeRow = () => openDetailModal();
+
+  window.editRow = (no) => openDetailModal(no);
+
+  window.deleteRow = (no) => {
+    if (!confirm('确认删除第 ' + no + ' 行？')) return;
+    pledgeRows = pledgeRows.filter(r => r.no !== no);
+    selectedRows.delete(no);
+    refresh();
+  };
+
+  window.toggleRow = (no, checked) => {
+    if (checked) selectedRows.add(no); else selectedRows.delete(no);
+    refresh();
+  };
+
+  window.toggleAllRows = (checked) => {
+    if (checked) pledgeRows.forEach(r => selectedRows.add(r.no));
+    else selectedRows.clear();
+    refresh();
+  };
+
+  window.deleteSelectedRows = () => {
+    if (selectedRows.size === 0) return Utils.toast('请先勾选要删除的行', 'warning');
+    if (!confirm(`确认删除选中的 ${selectedRows.size} 行？`)) return;
+    pledgeRows = pledgeRows.filter(r => !selectedRows.has(r.no));
+    selectedRows.clear();
+    refresh();
+  };
+
+  window.batchImport = () => Utils.toast('批量导入：从 Excel 粘贴或上传文件（占位）', 'info');
+
+  window.uploadFile = (btn) => Utils.toast('已弹出文件选择（占位）', 'info');
+  window.removeFile = (btn) => { btn.parentElement.remove(); };
+
+  window.goBack = () => window.location.href = Utils.nav('/customer/inbound');
+
+  window.saveDraft = () => {
+    Utils.toast(`已保存草稿（${bizNo}）`, 'success');
+    setTimeout(() => goBack(), 800);
+  };
+
+  window.submitForm = () => {
+    // 校验
+    if (!form.pledgor || !form.contact || !form.financeProduct || !form.supervisor || !form.pledgee) {
+      return Utils.toast('请填写所有基础信息必填项', 'error');
+    }
+    if (pledgeRows.length === 0) return Utils.toast('请至少添加一条质物明细', 'error');
+    const noExpiry = pledgeRows.find(r => !r.expiryDate);
+    if (noExpiry) return Utils.toast(`第 ${noExpiry.no} 行缺少「有效期」字段`, 'error');
+    Utils.toast('入库申请已提交，等待审批', 'success');
+    setTimeout(() => goBack(), 1000);
+  };
+
+  window.cancelCreate = () => {
+    if (confirm('确认取消新增？未保存的内容将丢失。')) goBack();
+  };
+
+  window.previewSubmit = () => Utils.toast('预览模式（占位）', 'info');
+
+  window.prevState = () => Utils.toast('上一步（占位）', 'info');
+  window.nextState = () => Utils.toast('下一步（占位）', 'info');
+  window.viewAllStates = () => Utils.toast('查看全部状态（占位）', 'info');
+  window.resetStateSelector = () => Utils.toast('状态选择器重置（占位）', 'info');
+
+  function refresh() {
+    document.getElementById('app').innerHTML = Components.pageShell({
+      title: '新增入库申请',
+      currentPath: '/customer/inbound',
+      breadcrumb: [
+        { label: '货物管理', path: '/customer/inbound' },
+        { label: '入库申请', path: '/customer/inbound' },
+        { label: '新增入库申请', path: '/customer/inbound-create' },
+      ],
+      extra: '',
+      content: render(),
+    });
+  }
+</script>
+</body>
+</html>
