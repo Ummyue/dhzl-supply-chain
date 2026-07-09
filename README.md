@@ -241,3 +241,6 @@ vercel --prod
 ## License
 
 仅供大河智链内部使用，未经授权不得外传。
+## 部署文档
+
+- 📘 国内+海外双访问部署指南（Cloudflare Pages 方案）：[docs/DEPLOY-CN.md](docs/DEPLOY-CN.md)
