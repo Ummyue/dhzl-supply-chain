@@ -279,12 +279,18 @@
                       <th class="text-right px-2 py-2">入库重量</th>
                       <th class="text-right px-2 py-2 bg-amber-50">可质押重量</th>
                       <th class="text-left px-2 py-2">重量单位</th>
+                      <th class="text-right px-2 py-2 bg-blue-50">本次质押数量</th>
+                      <th class="text-right px-2 py-2 bg-blue-50">本次质押重量</th>
                     </tr>
                   </thead>
                   <tbody>
-                    ${_pledgeableItems.map(it => `
+                    ${_pledgeableItems.map(it => {
+                      const availPieces = it.availablePieces || it.products[0].pieces;
+                      const availWeight = it.availableWeight || it.products[0].weight;
+                      const unitPrice = availPieces > 0 ? (it.totalValue / availPieces) : 0;
+                      return `
                       <tr class="border-t border-slate-100 hover:bg-blue-50/30">
-                        <td class="text-center px-2 py-2"><input type="checkbox" class="pledge-check" data-id="${it.id}" data-value="${it.totalValue}" data-pieces="${it.availablePieces || it.products?.[0]?.pieces || 0}" data-weight="${it.availableWeight || it.products?.[0]?.weight || 0}" onchange="onPledgeItemChange()"></td>
+                        <td class="text-center px-2 py-2"><input type="checkbox" class="pledge-check" data-id="${it.id}" data-value="${it.totalValue}" data-pieces="${availPieces}" data-weight="${availWeight}" data-unitprice="${unitPrice.toFixed(4)}" onchange="onPledgeItemChange()"></td>
                         <td class="px-2 py-2">${it.warehouse}</td>
                         <td class="px-2 py-2 text-slate-500">${it.storageLocation || '-'}</td>
                         <td class="px-2 py-2 font-mono text-blue-600">${it.bizNo}</td>
@@ -294,13 +300,19 @@
                           <div class="text-[10px] text-slate-400 font-mono">${it.products[0].id}</div>
                         </td>
                         <td class="px-2 py-2 text-right num-focus">${Utils.fmtNum(it.products[0].pieces)}</td>
-                        <td class="px-2 py-2 text-right num-focus font-bold text-amber-700 bg-amber-50/50">${Utils.fmtNum(it.availablePieces || it.products[0].pieces)}</td>
+                        <td class="px-2 py-2 text-right num-focus font-bold text-amber-700 bg-amber-50/50">${Utils.fmtNum(availPieces)}</td>
                         <td class="px-2 py-2 text-slate-500">箱</td>
                         <td class="px-2 py-2 text-right num-focus">${Utils.fmtNum(it.products[0].weight)}</td>
-                        <td class="px-2 py-2 text-right num-focus font-bold text-amber-700 bg-amber-50/50">${Utils.fmtNum(it.availableWeight || it.products[0].weight)}</td>
+                        <td class="px-2 py-2 text-right num-focus font-bold text-amber-700 bg-amber-50/50">${Utils.fmtNum(availWeight)}</td>
                         <td class="px-2 py-2 text-slate-500">千克</td>
+                        <td class="px-2 py-2 text-right bg-blue-50/30">
+                          <input type="number" class="pledge-qty w-20 px-1 py-0.5 border border-slate-300 rounded text-right text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-200 outline-none disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed" data-id="${it.id}" min="0" max="${availPieces}" step="1" value="" placeholder="0" disabled oninput="onPledgeQtyChange('${it.id}')">
+                        </td>
+                        <td class="px-2 py-2 text-right num-focus font-bold text-blue-700 bg-blue-50/50">
+                          <span class="pledge-weight-display" data-id="${it.id}">0</span>
+                        </td>
                       </tr>
-                    `).join('')}
+                    `;}).join('')}
                   </tbody>
                 </table>
               </div>
@@ -308,7 +320,7 @@
             `}
 
             <div class="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
-              💡 <span class="font-medium">可质押数量/重量</span>是扣除已质押部分后的剩余可质押量。同一笔入库货物只能被一笔融资申请质押一次。
+              💡 <span class="font-medium">可质押数量/重量</span>是扣除已质押部分后的剩余可质押量（系统值，不可修改）。勾选后<b class="text-blue-700">本次质押数量</b>默认填入可质押数量，可手动调整（≤可质押数量），<b class="text-blue-700">本次质押重量</b>系统自动计算（按单位重量折算）。同一笔入库货物只能被一笔融资申请质押一次。
             </div>
           </div>
         </div>
@@ -328,6 +340,7 @@
     // 暴露给内联 onclick 的函数
     window.onFinanceProductChange = onFinanceProductChange;
     window.onPledgeItemChange = onPledgeItemChange;
+    window.onPledgeQtyChange = onPledgeQtyChange;
     window.onSelectAllPledge = onSelectAllPledge;
     window.onLoanAccountChange = onLoanAccountChange;
     window.submitFinancing = submitFinancing;
@@ -354,19 +367,77 @@
     onPledgeItemChange();
   }
 
-  // 选质押物 → 统计 + 重算拟融资金额
+  // 选质押物（checkbox 切换）→ 启用/禁用本次质押数量输入 + 重算统计
   function onPledgeItemChange() {
+    document.querySelectorAll('.pledge-check').forEach(c => {
+      const id = c.dataset.id;
+      const qtyInput = document.querySelector(`.pledge-qty[data-id="${id}"]`);
+      const weightDisplay = document.querySelector(`.pledge-weight-display[data-id="${id}"]`);
+      if (!qtyInput || !weightDisplay) return;
+      if (c.checked) {
+        // 启用并默认填入可质押数量
+        qtyInput.disabled = false;
+        if (!qtyInput.value || parseInt(qtyInput.value) === 0) {
+          qtyInput.value = c.dataset.pieces;
+        }
+        // 计算本次质押重量
+        onPledgeQtyChange(id, true);
+      } else {
+        // 取消勾选：清空 + 禁用
+        qtyInput.value = '';
+        qtyInput.disabled = true;
+        weightDisplay.textContent = '0';
+      }
+    });
+    recalcPledgeTotals();
+  }
+
+  // 本次质押数量变更 → 自动计算本次质押重量 + 校验 + 触发顶部统计更新
+  function onPledgeQtyChange(id, skipDefault) {
+    const qtyInput = document.querySelector(`.pledge-qty[data-id="${id}"]`);
+    const weightDisplay = document.querySelector(`.pledge-weight-display[data-id="${id}"]`);
+    if (!qtyInput || !weightDisplay) return;
+    const check = document.querySelector(`.pledge-check[data-id="${id}"]`);
+    if (!check || !check.checked) {
+      weightDisplay.textContent = '0';
+      return;
+    }
+    const maxPieces = parseInt(check.dataset.pieces || 0);
+    const maxWeight = parseFloat(check.dataset.weight || 0);
+    let qty = parseInt(qtyInput.value || 0);
+    if (isNaN(qty) || qty < 0) qty = 0;
+    // 校验：不能超过可质押数量
+    if (!skipDefault && qty > maxPieces) {
+      qty = maxPieces;
+      qtyInput.value = maxPieces;
+      Utils.toast(`本次质押数量不能超过可质押数量 ${maxPieces}`, 'warning');
+    }
+    // 自动计算重量：单件重量 = 可质押重量 / 可质押数量
+    const perPieceWeight = maxPieces > 0 ? maxWeight / maxPieces : 0;
+    const weight = qty * perPieceWeight;
+    weightDisplay.textContent = Utils.fmtNum(weight);
+    recalcPledgeTotals();
+  }
+
+  // 重算顶部统计：总质押数量/重量 + 拟融资金额
+  function recalcPledgeTotals() {
     const checks = document.querySelectorAll('.pledge-check:checked');
     let totalPieces = 0, totalWeight = 0, totalValue = 0;
     checks.forEach(c => {
-      totalPieces += parseInt(c.dataset.pieces || 0);
-      totalWeight += parseFloat(c.dataset.weight || 0);
-      totalValue += parseFloat(c.dataset.value || 0);
+      const id = c.dataset.id;
+      const qtyInput = document.querySelector(`.pledge-qty[data-id="${id}"]`);
+      const weightDisplay = document.querySelector(`.pledge-weight-display[data-id="${id}"]`);
+      const qty = parseInt(qtyInput?.value || 0);
+      const w = parseFloat((weightDisplay?.textContent || '0').replace(/,/g, ''));
+      const unitPrice = parseFloat(c.dataset.unitprice || 0);
+      totalPieces += qty;
+      totalWeight += w;
+      totalValue += qty * unitPrice; // 本次质押价值 = 本次质押数量 × 单价
     });
     document.getElementById('pledgeCount').textContent = checks.length;
     document.getElementById('pledgeTotalPieces').textContent = Utils.fmtNum(totalPieces);
     document.getElementById('pledgeTotalWeight').textContent = Utils.fmtNum(totalWeight);
-    // 计算拟融资金额 = 总货值 × 质押率
+    // 计算拟融资金额 = 本次质押总价值 × 质押率
     const productId = document.getElementById('finProduct').value;
     const product = MockData.financeProducts.find(x => x.id === productId);
     const ratio = product ? product.pledgeRatio : 0.8;
