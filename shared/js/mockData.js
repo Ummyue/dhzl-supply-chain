@@ -86,7 +86,7 @@ const MockData = {
       company: '物流港二期大河智链监管库',
       department: '仓储运营部',
       title: '仓库主管',
-      phone: '139 1111 2222',
+      phone: '139 0000 2222',
       avatar: '赵',
     },
     customer: {
@@ -97,9 +97,9 @@ const MockData = {
       sealPermission: false,      // 无电子签章权限
       sealScope: [],              // 可用印章列表（空）
       company: '郑州军牧源贸易有限公司',
-      creditCode: '91410100MA9F8X9T5X',
+      creditCode: '91XXXXXXXXMAXXXXXXXX',
       legalRep: '陈志强',
-      phone: '138 8888 6688',
+      phone: '138 0000 6688',
       avatar: '陈',
     },
     // 客户方-盖章人（独立演示账号）：拥有电子签章权限
@@ -111,11 +111,11 @@ const MockData = {
       sealPermission: true,       // 有电子签章权限
       sealScope: ['company_seal', 'finance_seal', 'legal_seal'], // 可用印章
       company: '郑州军牧源贸易有限公司',
-      creditCode: '91410100MA9F8X9T5X',
+      creditCode: '91XXXXXXXXMAXXXXXXXX',
       legalRep: '陈志强',
       department: '财务部',
       title: '财务总监',
-      phone: '139 8888 6666',
+      phone: '139 0000 6666',
       avatar: '李',
     },
     platform: {
@@ -135,7 +135,7 @@ const MockData = {
       company: '中原信用担保有限公司',
       department: '业务一部',
       title: '业务总监',
-      phone: '136 5555 8888',
+      phone: '136 0000 8888',
       avatar: '王',
     },
     bank: {
@@ -145,7 +145,7 @@ const MockData = {
       company: '中国民生银行股份有限公司郑州分行',
       department: '供应链金融部',
       title: '客户经理',
-      phone: '135 2222 6666',
+      phone: '135 0000 6666',
       avatar: '刘',
     },
   },
@@ -269,9 +269,9 @@ const MockData = {
 
   // ========== 仓库 ==========
   warehouses: [
-    { id: 'wh_001', name: '物流港二期大河智链监管库', type: '自有仓', address: '郑州市惠济区大河惠济国际食品贸易港', manager: '赵德昌', phone: '139 1111 2222', capacity: 5000 },
-    { id: 'wh_002', name: '郑州融万冷链库', type: '第三方', address: '郑州市中牟县万邦物流园A区', manager: '孙浩', phone: '137 3333 4444', capacity: 8000 },
-    { id: 'wh_003', name: '天津港国际冷链基地', type: '第三方', address: '天津市东疆保税港区', manager: '钱志远', phone: '136 5555 6666', capacity: 12000 },
+    { id: 'wh_001', name: '物流港二期大河智链监管库', type: '自有仓', address: '郑州市惠济区大河惠济国际食品贸易港', manager: '赵德昌', phone: '139 0000 2222', capacity: 5000 },
+    { id: 'wh_002', name: '郑州融万冷链库', type: '第三方', address: '郑州市中牟县万邦物流园A区', manager: '孙浩', phone: '137 0000 4444', capacity: 8000 },
+    { id: 'wh_003', name: '天津港国际冷链基地', type: '第三方', address: '天津市东疆保税港区', manager: '钱志远', phone: '136 0000 6666', capacity: 12000 },
   ],
 
   // ========== 真实业务记录（基于盯市台账 + 实际业务编号） ==========
@@ -285,7 +285,7 @@ const MockData = {
       produceDate: 45959,
       inboundDate: 45992,
       batchNo: '25-10B78',
-      loanNo: 'LN3019202590153717',
+      loanNo: 'LN30XXXXXXXXXXXX',
       loanDate: 45994,
       dueDate: 46114,
       warehouse: '郑州融万冷链库',
@@ -311,7 +311,7 @@ const MockData = {
       produceDate: 45961,
       inboundDate: 46000,
       batchNo: 'ZXT20251129002',
-      loanNo: 'LN3019202590373370',
+      loanNo: 'LN30XXXXXXXXXXXX',
       loanDate: 46004,
       dueDate: 46124,
       warehouse: '郑州融万冷链库',
@@ -335,8 +335,8 @@ const MockData = {
       productName: '去骨牛心管',
       produceDate: 46048,
       inboundDate: 46048,
-      batchNo: 'LN3019202691433212',
-      loanNo: 'LN3019202691433212',
+      batchNo: 'LN30XXXXXXXXXXXX',
+      loanNo: 'LN30XXXXXXXXXXXX',
       loanDate: 46049,
       dueDate: 45804,
       warehouse: '天津港国际冷链基地',
@@ -361,7 +361,7 @@ const MockData = {
       produceDate: '2025-09',
       inboundDate: 46166,
       batchNo: 'CGMU5711540/MSWU0105564',
-      loanNo: 'LN3019202693777900',
+      loanNo: 'LN30XXXXXXXXXXXX',
       loanDate: 46168,
       dueDate: 46288,
       warehouse: '物流港二期大河智链监管库',
@@ -386,7 +386,7 @@ const MockData = {
       produceDate: 46053,
       inboundDate: 46053,
       batchNo: 'MNDU9228587',
-      loanNo: 'LN3019202691596997',
+      loanNo: 'LN30XXXXXXXXXXXX',
       loanDate: 46056,
       dueDate: 46176,
       warehouse: '天津港国际冷链基地',
@@ -411,7 +411,7 @@ const MockData = {
       produceDate: 45930,
       inboundDate: 46137,
       batchNo: 'MNBU4081581/BURU8881272/SEGU9763888',
-      loanNo: 'LN3019202693221860',
+      loanNo: 'LN30XXXXXXXXXXXX',
       loanDate: 46140,
       dueDate: 46260,
       warehouse: '天津港国际冷链基地',
@@ -436,7 +436,7 @@ const MockData = {
       id: 'adm_004',
       customer: '郑州军牧源贸易有限公司',
       customerCode: 'JMY',
-      creditCode: '91410100MA9F8X9T5X',
+      creditCode: '91XXXXXXXXMAXXXXXXXX',
       legalRep: '陈志强',
       registeredCap: '3000万元',
       established: '2019-06-10',
@@ -454,7 +454,7 @@ const MockData = {
       id: 'adm_005',
       customer: '郑州军牧源贸易有限公司',
       customerCode: 'JMY',
-      creditCode: '91410100MA9F8X9T5X',
+      creditCode: '91XXXXXXXXMAXXXXXXXX',
       legalRep: '陈志强',
       registeredCap: '3000万元',
       established: '2019-06-10',
@@ -472,7 +472,7 @@ const MockData = {
     {
       id: 'adm_001',
       customer: '郑州固联冷链有限公司',
-      creditCode: '91410100MA9G8X2P3R',
+      creditCode: '91XXXXXXXXMAXXXXXXXX',
       legalRep: '吴建波',
       registeredCap: '5000万元',
       established: '2018-03-15',
@@ -491,7 +491,7 @@ const MockData = {
     {
       id: 'adm_002',
       customer: '河南冰峰冷链股份有限公司',
-      creditCode: '91410100MA46X2RT8P',
+      creditCode: '91XXXXXXXXMAXXXXXXXX',
       legalRep: '韩志远',
       registeredCap: '1亿元',
       established: '2015-08-22',
@@ -510,7 +510,7 @@ const MockData = {
     {
       id: 'adm_003',
       customer: '郑州军牧源贸易有限公司',
-      creditCode: '91410100MA9F8X9T5X',
+      creditCode: '91XXXXXXXXMAXXXXXXXX',
       legalRep: '陈志强',
       registeredCap: '3000万元',
       established: '2019-06-10',
@@ -558,7 +558,7 @@ const MockData = {
       warehouse: '物流港二期大河智链监管库',
       vehicleNo: '豫A·F8829',
       driver: '张大伟',
-      driverPhone: '138 1234 5678',
+      driverPhone: '138 0000 5678',
       products: [
         { id: 'MNG_SZSYR_BWS', name: '水煮山羊肉', pieces: 1190, weight: 23800, evaluatePrice: 63, evaluateValue: 1499400 },
       ],
@@ -582,7 +582,7 @@ const MockData = {
       warehouse: '物流港二期大河智链监管库',
       vehicleNo: '豫A·H5521',
       driver: '李明',
-      driverPhone: '139 8765 4321',
+      driverPhone: '139 0000 4321',
       products: [
         { id: 'AUTO_MULTI', name: '冷冻去骨牛7件套', pieces: 1716, weight: 39853.96, evaluatePrice: 55.5, evaluateValue: 2211894.56 },
       ],
@@ -606,7 +606,7 @@ const MockData = {
       warehouse: '天津港国际冷链基地',
       vehicleNo: '豫A·K3318',
       driver: '王建国',
-      driverPhone: '138 5566 7788',
+      driverPhone: '138 0000 7788',
       products: [
         { id: 'MNG_SZNRQq_3191397', name: '蒙古水煮牛肉Qq', pieces: 480, weight: 9600, evaluatePrice: 78, evaluateValue: 748800 },
       ],
@@ -630,7 +630,7 @@ const MockData = {
       warehouse: '物流港二期大河智链监管库',
       vehicleNo: '豫A·L9201',
       driver: '刘海涛',
-      driverPhone: '139 2233 4455',
+      driverPhone: '139 0000 4455',
       products: [
         { id: 'MNG_QGNXG', name: '去骨牛心管', pieces: 850, weight: 17000, evaluatePrice: 74, evaluateValue: 1258000 },
       ],
@@ -654,7 +654,7 @@ const MockData = {
       warehouse: '物流港二期大河智链监管库',
       vehicleNo: '豫A·M7152',
       driver: '赵建斌',
-      driverPhone: '136 7890 1234',
+      driverPhone: '136 0000 1234',
       products: [
         { id: 'MNG_NJG', name: '牛颈骨', pieces: 660, weight: 13200, evaluatePrice: 24.5, evaluateValue: 323400 },
       ],
@@ -680,7 +680,7 @@ const MockData = {
       warehouse: '郑州融万冷链库',
       vehicleNo: '豫A·N8846',
       driver: '陈大壮',
-      driverPhone: '135 1122 3344',
+      driverPhone: '135 0000 3344',
       products: [
         { id: 'MNG_GPYR', name: '羔羊肉', pieces: 320, weight: 6400, evaluatePrice: 56, evaluateValue: 358400 },
       ],
@@ -819,17 +819,17 @@ const MockData = {
 
   // ========== 还款记录（监管方 + 资金方） ==========
   repaymentRecords: [
-    { id: 'rp_001', bizNo: 'DHZL_JMY_2026050901', customer: '郑州军牧源', loanNo: 'LN3019202693439203', repayDate: '2026-05-28', repayType: '部分还款', repayAmount: 196560, remainingDebt: 993440, status: 'completed' },
-    { id: 'rp_002', bizNo: 'DHZL_JMY_2026012701', customer: '郑州军牧源', loanNo: 'LN3019202691433212', repayDate: '2026-06-15', repayType: '部分还款', repayAmount: 32082, remainingDebt: 0, status: 'completed' },
-    { id: 'rp_003', bizNo: 'DHZL_JMY_2026042701', customer: '郑州军牧源', loanNo: 'LN3019202693221860', repayDate: '2026-08-10', repayType: '到期还本付息', repayAmount: 738600, remainingDebt: 720000, status: 'pending', dueIn: 33 },
-    { id: 'rp_004', bizNo: 'DHZL_JMY_2025120101', customer: '郑州军牧源', loanNo: 'LN3019202590153717', repayDate: '2026-07-15', repayType: '到期还本付息', repayAmount: 1163900, remainingDebt: 1130000, status: 'pending', dueIn: 7 },
+    { id: 'rp_001', bizNo: 'DHZL_JMY_2026050901', customer: '郑州军牧源', loanNo: 'LN30XXXXXXXXXXXX', repayDate: '2026-05-28', repayType: '部分还款', repayAmount: 196560, remainingDebt: 993440, status: 'completed' },
+    { id: 'rp_002', bizNo: 'DHZL_JMY_2026012701', customer: '郑州军牧源', loanNo: 'LN30XXXXXXXXXXXX', repayDate: '2026-06-15', repayType: '部分还款', repayAmount: 32082, remainingDebt: 0, status: 'completed' },
+    { id: 'rp_003', bizNo: 'DHZL_JMY_2026042701', customer: '郑州军牧源', loanNo: 'LN30XXXXXXXXXXXX', repayDate: '2026-08-10', repayType: '到期还本付息', repayAmount: 738600, remainingDebt: 720000, status: 'pending', dueIn: 33 },
+    { id: 'rp_004', bizNo: 'DHZL_JMY_2025120101', customer: '郑州军牧源', loanNo: 'LN30XXXXXXXXXXXX', repayDate: '2026-07-15', repayType: '到期还本付息', repayAmount: 1163900, remainingDebt: 1130000, status: 'pending', dueIn: 7 },
   ],
 
   // ========== 额度管理（资金方） ==========
   creditLimits: [
-    { id: 'cl_001', customer: '郑州军牧源贸易有限公司', creditCode: '91410100MA9F8X9T5X', totalLimit: 50000000, usedLimit: 42100000, availableLimit: 7900000, validFrom: '2025-11-16', validTo: '2026-11-15', interestRate: '4.35%', status: 'active', bizCount: 4 },
-    { id: 'cl_002', customer: '郑州固联冷链有限公司', creditCode: '91410100MA9G8X2P3R', totalLimit: 30000000, usedLimit: 17600000, availableLimit: 12400000, validFrom: '2026-03-20', validTo: '2027-03-19', interestRate: '4.55%', status: 'active', bizCount: 2 },
-    { id: 'cl_003', customer: '河南冰峰冷链股份有限公司', creditCode: '91410100MA46X2RT8P', totalLimit: 20000000, usedLimit: 0, availableLimit: 20000000, validFrom: '2026-06-01', validTo: '2027-05-31', interestRate: '4.75%', status: 'active', bizCount: 0 },
+    { id: 'cl_001', customer: '郑州军牧源贸易有限公司', creditCode: '91XXXXXXXXMAXXXXXXXX', totalLimit: 50000000, usedLimit: 42100000, availableLimit: 7900000, validFrom: '2025-11-16', validTo: '2026-11-15', interestRate: '4.35%', status: 'active', bizCount: 4 },
+    { id: 'cl_002', customer: '郑州固联冷链有限公司', creditCode: '91XXXXXXXXMAXXXXXXXX', totalLimit: 30000000, usedLimit: 17600000, availableLimit: 12400000, validFrom: '2026-03-20', validTo: '2027-03-19', interestRate: '4.55%', status: 'active', bizCount: 2 },
+    { id: 'cl_003', customer: '河南冰峰冷链股份有限公司', creditCode: '91XXXXXXXXMAXXXXXXXX', totalLimit: 20000000, usedLimit: 0, availableLimit: 20000000, validFrom: '2026-06-01', validTo: '2027-05-31', interestRate: '4.75%', status: 'active', bizCount: 0 },
   ],
 
   // ========== 平台方（冻品在线交易平台）数据 ==========
@@ -857,11 +857,11 @@ const MockData = {
 
   // 供求信息
   supplyDemands: [
-    { id: 'SD001', type: '集采', title: '【集采需求】5 吨熟牛腱（蒙古）', company: '河南冰峰冷链股份有限公司', productId: 'MNG_SNJ_3191397', quantity: 5000, maxPrice: 76.00, validTo: '2026-07-31', delivery: '郑州', paymentMethod: '货到付款', contact: '韩志远 13800001111', status: 'recruiting', participantCount: 5, publishTime: '2026-07-06' },
-    { id: 'SD002', type: '求购', title: '【求购】澳洲去骨牛心管 2 吨', company: '洛阳冷联食品贸易有限公司', productId: 'AU_QGNXG_1265', quantity: 2000, maxPrice: 75.00, validTo: '2026-07-20', delivery: '洛阳', paymentMethod: '银行转账', contact: '张明远 13700002222', status: 'active', publishTime: '2026-07-07' },
-    { id: 'SD003', type: '集采', title: '【平台集采】羔羊肉+牛心管 8吨', company: '大河智链平台', productId: 'MIX_Multi', quantity: 8000, maxPrice: 32.00, validTo: '2026-07-25', delivery: '物流港二期', paymentMethod: '30 天账期', contact: '平台运营 - 王经理 13900003333', status: 'recruiting', participantCount: 3, publishTime: '2026-07-05' },
-    { id: 'SD004', type: '寄售', title: '【寄售】蒙古水煮牛肉 Qq 3 吨', company: '郑州军牧源贸易有限公司', productId: 'MNG_SZNRQq_3191397', quantity: 3000, maxPrice: 78.00, validTo: '2026-08-15', delivery: '郑州', paymentMethod: '销售后结算', contact: '陈志强 13888886688', status: 'active', publishTime: '2026-07-04' },
-    { id: 'SD005', type: '求购', title: '【紧急求购】新西兰羊排 1 吨', company: '郑州思念食品有限公司', productId: 'NZ_LDDGMYYJP_50', quantity: 1000, maxPrice: 47.00, validTo: '2026-07-15', delivery: '郑州', paymentMethod: '现款现货', contact: '王采购 13600004444', status: 'urgent', publishTime: '2026-07-08' },
+    { id: 'SD001', type: '集采', title: '【集采需求】5 吨熟牛腱（蒙古）', company: '河南冰峰冷链股份有限公司', productId: 'MNG_SNJ_3191397', quantity: 5000, maxPrice: 76.00, validTo: '2026-07-31', delivery: '郑州', paymentMethod: '货到付款', contact: '韩志远 138 0000 1111', status: 'recruiting', participantCount: 5, publishTime: '2026-07-06' },
+    { id: 'SD002', type: '求购', title: '【求购】澳洲去骨牛心管 2 吨', company: '洛阳冷联食品贸易有限公司', productId: 'AU_QGNXG_1265', quantity: 2000, maxPrice: 75.00, validTo: '2026-07-20', delivery: '洛阳', paymentMethod: '银行转账', contact: '张明远 137 0000 2222', status: 'active', publishTime: '2026-07-07' },
+    { id: 'SD003', type: '集采', title: '【平台集采】羔羊肉+牛心管 8吨', company: '大河智链平台', productId: 'MIX_Multi', quantity: 8000, maxPrice: 32.00, validTo: '2026-07-25', delivery: '物流港二期', paymentMethod: '30 天账期', contact: '平台运营 - 王经理 139 0000 3333', status: 'recruiting', participantCount: 3, publishTime: '2026-07-05' },
+    { id: 'SD004', type: '寄售', title: '【寄售】蒙古水煮牛肉 Qq 3 吨', company: '郑州军牧源贸易有限公司', productId: 'MNG_SZNRQq_3191397', quantity: 3000, maxPrice: 78.00, validTo: '2026-08-15', delivery: '郑州', paymentMethod: '销售后结算', contact: '陈志强 138 0000 6688', status: 'active', publishTime: '2026-07-04' },
+    { id: 'SD005', type: '求购', title: '【紧急求购】新西兰羊排 1 吨', company: '郑州思念食品有限公司', productId: 'NZ_LDDGMYYJP_50', quantity: 1000, maxPrice: 47.00, validTo: '2026-07-15', delivery: '郑州', paymentMethod: '现款现货', contact: '王采购 136 0000 4444', status: 'urgent', publishTime: '2026-07-08' },
   ],
 
   // 订单
@@ -917,9 +917,9 @@ const MockData = {
 
   // ========== v1.7 新增：还款登记记录（货主上传电子回单） ==========
   repaymentRecords: [
-    { id: 'rr_001', bizNo: 'DHZL_JMY_2026012601', customer: '郑州军牧源', customerCode: 'JMY', product: '去骨牛心管', repayAmount: 215152, systemEstimate: 215152, offLineAmount: 215000, offLineMethod: '银行转账', payAccount: '6222 0208 0200 1234 567', recvAccount: '中国民生银行 6225 7800 1234 5678', repayDate: '2026-07-08', voucherCount: 2, voucherFiles: ['民生银行回单20260708.pdf', '电子签购单.png'], registeredBy: '陈志强', registeredAt: '2026-07-08 14:32', fundingConfirmed: true, confirmedBy: '王建国', confirmedAt: '2026-07-08 15:10', status: 'confirmed' },
-    { id: 'rr_002', bizNo: 'DHZL_JMY_2025120901', customer: '郑州军牧源', customerCode: 'JMY', product: '水煮牛肉Qq+Qh', repayAmount: 450000, systemEstimate: 450000, offLineAmount: 450000, offLineMethod: '银行转账', payAccount: '6222 0208 0200 1234 567', recvAccount: '中国民生银行 6225 7800 1234 5678', repayDate: '2026-06-25', voucherCount: 1, voucherFiles: ['还款回单20260625.pdf'], registeredBy: '陈志强', registeredAt: '2026-06-25 10:15', fundingConfirmed: true, confirmedBy: '王建国', confirmedAt: '2026-06-25 11:00', status: 'confirmed' },
-    { id: 'rr_003', bizNo: 'DHZL_GL_2026052501', customer: '郑州固联', customerCode: 'GL', product: '冷冻去骨牛7件套', repayAmount: 1500000, systemEstimate: 1500000, offLineAmount: 1500000, offLineMethod: '银行转账', payAccount: '6217 8888 8888 6666 999', recvAccount: '中国民生银行 6225 7800 1234 9999', repayDate: '2026-07-05', voucherCount: 1, voucherFiles: ['固联还款回单.pdf'], registeredBy: '吴建波', registeredAt: '2026-07-05 16:20', fundingConfirmed: false, status: 'pending_confirm' },
+    { id: 'rr_001', bizNo: 'DHZL_JMY_2026012601', customer: '郑州军牧源', customerCode: 'JMY', product: '去骨牛心管', repayAmount: 215152, systemEstimate: 215152, offLineAmount: 215000, offLineMethod: '银行转账', payAccount: '6222 XXXX XXXX 1234 567', recvAccount: '中国民生银行 6225 XXXX XXXX 5678', repayDate: '2026-07-08', voucherCount: 2, voucherFiles: ['民生银行回单20260708.pdf', '电子签购单.png'], registeredBy: '陈志强', registeredAt: '2026-07-08 14:32', fundingConfirmed: true, confirmedBy: '王建国', confirmedAt: '2026-07-08 15:10', status: 'confirmed' },
+    { id: 'rr_002', bizNo: 'DHZL_JMY_2025120901', customer: '郑州军牧源', customerCode: 'JMY', product: '水煮牛肉Qq+Qh', repayAmount: 450000, systemEstimate: 450000, offLineAmount: 450000, offLineMethod: '银行转账', payAccount: '6222 XXXX XXXX 1234 567', recvAccount: '中国民生银行 6225 XXXX XXXX 5678', repayDate: '2026-06-25', voucherCount: 1, voucherFiles: ['还款回单20260625.pdf'], registeredBy: '陈志强', registeredAt: '2026-06-25 10:15', fundingConfirmed: true, confirmedBy: '王建国', confirmedAt: '2026-06-25 11:00', status: 'confirmed' },
+    { id: 'rr_003', bizNo: 'DHZL_GL_2026052501', customer: '郑州固联', customerCode: 'GL', product: '冷冻去骨牛7件套', repayAmount: 1500000, systemEstimate: 1500000, offLineAmount: 1500000, offLineMethod: '银行转账', payAccount: '6217 XXXX XXXX 6666 999', recvAccount: '中国民生银行 6225 XXXX XXXX 9999', repayDate: '2026-07-05', voucherCount: 1, voucherFiles: ['固联还款回单.pdf'], registeredBy: '吴建波', registeredAt: '2026-07-05 16:20', fundingConfirmed: false, status: 'pending_confirm' },
   ],
 
   // ========== v1.7 新增：盖章记录（图片签章） ==========
@@ -942,8 +942,8 @@ const MockData = {
 
   // ========== v1.7 新增：放款凭证记录（资金方上传） ==========
   loanVoucherRecords: [
-    { id: 'lv_001', bizNo: 'DHZL_JMY_2026012601', loanAmount: 1624000, offLineMethod: '银行转账', payAccount: '民生银行 6225 7800 1234 5678', recvAccount: '6222 0208 0200 1234 567', loanDate: '2026-02-01', voucherCount: 2, voucherFiles: ['放款通知单.pdf', '电子回单.png'], uploadedBy: '王建国', uploadedAt: '2026-02-01 17:30', status: 'verified' },
-    { id: 'lv_002', bizNo: 'DHZL_JMY_2026050901', loanAmount: 1190000, offLineMethod: '银行转账', payAccount: '民生银行 6225 7800 1234 5678', recvAccount: '6222 0208 0200 1234 567', loanDate: '2026-05-10', voucherCount: 2, voucherFiles: ['放款通知单.pdf', '电子回单.png'], uploadedBy: '王建国', uploadedAt: '2026-05-10 16:45', status: 'verified' },
+    { id: 'lv_001', bizNo: 'DHZL_JMY_2026012601', loanAmount: 1624000, offLineMethod: '银行转账', payAccount: '民生银行 6225 XXXX XXXX 5678', recvAccount: '6222 XXXX XXXX 1234 567', loanDate: '2026-02-01', voucherCount: 2, voucherFiles: ['放款通知单.pdf', '电子回单.png'], uploadedBy: '王建国', uploadedAt: '2026-02-01 17:30', status: 'verified' },
+    { id: 'lv_002', bizNo: 'DHZL_JMY_2026050901', loanAmount: 1190000, offLineMethod: '银行转账', payAccount: '民生银行 6225 XXXX XXXX 5678', recvAccount: '6222 XXXX XXXX 1234 567', loanDate: '2026-05-10', voucherCount: 2, voucherFiles: ['放款通知单.pdf', '电子回单.png'], uploadedBy: '王建国', uploadedAt: '2026-05-10 16:45', status: 'verified' },
   ],
 };
 

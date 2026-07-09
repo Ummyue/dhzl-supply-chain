@@ -80,13 +80,13 @@
     ],
     'pending': [
       { label: '撤回申请', type: 'danger', onclick: "if(confirm('确认撤回？撤回后可重新编辑')){Utils.toast('已撤回','success');setTimeout(()=>history.back(),600)}" },
-      { label: '联系业务员', type: 'default', onclick: "Utils.toast('业务员：张丽 13900001234','info')" },
+      { label: '联系业务员', type: 'default', onclick: "Utils.toast('业务员：张丽 139 0000 1234','info')" },
       { label: '查看审批进度', type: 'default', onclick: "document.getElementById('progressSection').scrollIntoView({behavior:'smooth'})" },
     ],
     'reviewing': [
       { label: '查看审批进度', type: 'primary', onclick: "document.getElementById('progressSection').scrollIntoView({behavior:'smooth'})" },
       { label: '催办', type: 'default', onclick: "Utils.toast('已发送催办短信给担保方','success')" },
-      { label: '联系业务员', type: 'default', onclick: "Utils.toast('业务员：张丽 13900001234','info')" },
+      { label: '联系业务员', type: 'default', onclick: "Utils.toast('业务员：张丽 139 0000 1234','info')" },
     ],
     'approved': [
       { label: '查看授信额度', type: 'primary', onclick: "Utils.toast('已授信 ¥5,000万，期限 12 个月','info')" },
@@ -174,7 +174,7 @@
                 <div class="grid grid-cols-2 gap-4 text-sm">
                   <div><span class="text-slate-500">联系人姓名：</span>${Utils.randomName()}</div>
                   <div><span class="text-slate-500">联系电话：</span>${Utils.randomPhone()}</div>
-                  <div><span class="text-slate-500">电子邮箱：</span>chenzhiqiang@junmuyuan.com</div>
+                  <div><span class="text-slate-500">电子邮箱：</span>chenzhiqiang@example.com</div>
                   <div><span class="text-slate-500">联系地址：</span>郑州市惠济区大河惠济国际食品贸易港 A 座 18 层</div>
                 </div>
               </div>
