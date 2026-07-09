@@ -69,7 +69,7 @@
   }
 
   function renderTabs(currentTab, getFilteredCount) {
-    return FINANCING_TABS.map(t => {
+    const buttons = FINANCING_TABS.map(t => {
       const count = getFilteredCount(t.id);
       const active = t.id === currentTab;
       const sep = t.separator ? '<span class="mx-1 h-4 w-px bg-slate-300"></span>' : '';
@@ -85,6 +85,8 @@
         </button>
       `;
     }).join('');
+    // 关键：自己包一层 flex 容器，refresh() 整体替换才不会丢横向布局
+    return `<div class="flex items-center gap-1 min-w-max">${buttons}</div>`;
   }
 
   function renderFilterBar(f) {
@@ -327,7 +329,10 @@
         <!-- 列表卡片：外层有 border/bg，圆角；内部 tabs 和 table 由各自的 inner 容器管理 -->
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div class="border-b border-slate-200 px-4 bg-slate-50/50 overflow-x-auto" id="financingTabsInner">
-            ${renderTabs(state.currentTab, () => applyFilters(state).length)}
+            ${renderTabs(state.currentTab, (tabId) => {
+              const filtered = applyFilters(state);
+              return tabId === 'all' ? filtered.length : filtered.filter(r => r.status === tabId).length;
+            })}
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-sm min-w-[1800px]">
