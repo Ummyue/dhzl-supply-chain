@@ -171,6 +171,9 @@ const MockData = {
         { icon: 'box', label: '入库申请', path: '/customer/inbound' },
         { icon: 'package', label: '在库货物', path: '/customer/monitoring' },
       ]},
+      { group: '库存管理', items: [
+        { icon: 'list', label: '库存台账', path: '/customer/inventory-ledger' },
+      ]},
       { group: '融资管理', items: [
         { icon: 'file', label: '融资申请', path: '/customer/financing' },
         { icon: 'list', label: '质物清单', path: '/customer/pledge-list' },
@@ -1211,5 +1214,63 @@ MockData.getStatusColor = (status) => STATUS_COLORS[status] || 'gray';
 MockData.getStatusLabelEn = (status) => STATUS_LABELS_EN[status] || status;
 MockData.STATUS_LABELS = STATUS_LABELS;
 MockData.STATUS_COLORS = STATUS_COLORS;
+
+  // ========== 库存台账（v1.7.9 货主方库存管理菜单使用） ==========
+  // 库点 + 仓房/货位 + 货物名称（国家/品类/部位）+ 库存/质押/冻结数量重量
+  // 货物分类：4 大国 × 3 品类 × 多部位 = 12 种组合，分布在不同库点
+  inventoryLedger: (function() {
+    const countries = ['巴西', '澳大利亚', '美国', '新西兰'];
+    const categories = ['牛肉类', '羊肉类', '猪肉类'];
+    const parts = {
+      '牛肉类': ['牛胸肉', '牛腱子', '牛霖肉', '肥牛', '牛腩'],
+      '羊肉类': ['羊肋排', '羊后腿', '羔羊肉卷'],
+      '猪肉类': ['猪五花', '猪前腿', '猪肋排'],
+    };
+    const warehouses = [
+      { id: 'wh_001', name: '物流港二期大河智链监管库', locations: ['冻品一区-A 仓-01 货位', '冻品一区-A 仓-02 货位', '冻品一区-A 仓-03 货位', '冻品二区-B 仓-05 货位', '冻品二区-B 仓-06 货位'] },
+      { id: 'wh_002', name: '郑州融万冷链库', locations: ['冻品一区-A 仓-08 货位', '冻品一区-A 仓-09 货位', '冻品一区-A 仓-10 货位', '冻品二区-B 仓-12 货位'] },
+      { id: 'wh_003', name: '天津港国际冷链基地', locations: ['冻品三区-C 仓-12 货位', '冻品三区-C 仓-15 货位', '冻品三区-C 仓-18 货位'] },
+    ];
+    const banks = ['中原银行', '工商银行', '中融信托·冷链金融部', '招商银行'];
+    const records = [];
+    let id = 1;
+    // 生成 50 条覆盖多库点 / 多货品 / 多金融机构
+    for (let i = 0; i < 50; i++) {
+      const wh = warehouses[i % warehouses.length];
+      const country = countries[i % countries.length];
+      const cat = categories[i % categories.length];
+      const partList = parts[cat];
+      const part = partList[i % partList.length];
+      const loc = wh.locations[i % wh.locations.length];
+      const stockPieces = 80 + (i * 7) % 350;
+      const stockWeight = +(stockPieces * 18 + (i % 13) * 50).toFixed(0);
+      const unitValue = 50 + (i % 30) * 3.7;
+      const stockValue = +(stockPieces * unitValue).toFixed(2);
+      // 质押/冻结比例：前 40% 部分质押，前 20% 全部冻结
+      const pledgePieces = i % 5 < 2 ? Math.floor(stockPieces * 0.8) : 0;
+      const pledgeWeight = +(pledgePieces * 18 + (i % 11) * 50).toFixed(0);
+      const pledgeValue = +(pledgePieces * unitValue).toFixed(2);
+      const frozenPieces = i % 5 === 0 ? Math.floor(stockPieces * 0.05) : 0;
+      const frozenWeight = +(frozenPieces * 18).toFixed(0);
+      records.push({
+        id: `inv_${String(id++).padStart(3, '0')}`,
+        warehouseId: wh.id,
+        warehouseName: wh.name,
+        location: loc,
+        country,
+        category: cat,
+        part,
+        productFullName: `${country}-${cat.replace('类', '')}-${part}`,
+        stockPieces, stockWeight, stockValue,
+        pledgePieces, pledgeWeight, pledgeValue,
+        frozenPieces, frozenWeight,
+        piecesUnit: '箱',
+        weightUnit: '千克',
+        bank: banks[i % banks.length],
+        state: i % 5 === 0 ? 'frozen' : (i % 4 === 0 ? 'pledged' : 'normal'),
+      });
+    }
+    return records;
+  })(),
 
 window.MockData = MockData;
