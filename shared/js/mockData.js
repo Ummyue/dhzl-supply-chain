@@ -1376,27 +1376,67 @@ const MockData = {
       inboundList.push({
         id: `in_detail_${String(i + 1).padStart(3, '0')}`,
         type: 'inbound',
-        bizNo: num,
+        bizNo: i === 0 ? 'IN20231010000001' : `IN${ymd.replace(/-/g,'')}${String(i * 100 + 1).padStart(7, '0')}`,
         bizDate: ymd,
         bizTime: '12:33:34',
         productName: products[i % products.length],
         warehouseId: wh.id,
         warehouseName: wh.name,
         location: wh.location,
-        applyNo: applyNo,
-        stockPieces, stockWeight,
+        applyNo: i === 0 ? 'PREIN20231010000001' : applyNo,
+        // 入库专属字段（匹配甲方截图）
+        applicant: '河南军牧原国际贸易有限公司',
+        contactPerson: '张三',
+        contactPhone: '133238288889',
+        productType: '中原e贷',
+        pledgee: '郑州农业融资担保股份有限公司',
+        supervisor: '大河智链物流（郑州）有限公司',
+        applyDate: '2026-06-20',
+        creator: '张三',
+        createTime: '2022-08-12 12:22:32',
+        grossWeight: 3000, tareWeight: 500, netWeight: 2500,
+        stockPieces: 140 + i * 7, stockWeight: 2000 + i * 200,
+        planPieces: 140 + i * 7, planWeight: 2000 + i * 200,
+        actualPieces: 140 + i * 7, actualWeight: 2000 + i * 200,
         piecesUnit: '箱',
         bank: suppliers[i % suppliers.length],
         source: sources[i % sources.length],
+        products: [{
+          name: products[i % products.length],
+          country: '巴西',
+          factoryNo: '巴西',
+          planQty: 140 + i * 7, piecesUnit: '箱',
+          planWeight: 3000, weightUnit: '千克',
+          planDate: ymd, prodDate: '2026-01-01', batchNo: '2026-01-01',
+          actualQty: 140 + i * 7, actualWeight: 3000,
+        }],
+        attachments: [
+          { type: '入库单', filename: '44354657687.pdf', uploadedAt: '2023-12-12 12:23:32' },
+          { type: '磅单明细', filename: '明细1.pdf', uploadedAt: '2023-12-12 12:23:32' },
+          { type: '入库作业留痕', filename: '质检.png、称重.png、卸货.png', uploadedAt: '2023-12-12 12:23:32', multiFile: true, files: [
+            { filename: '质检.png', uploadedAt: '2023-12-12 12:23:32' },
+            { filename: '称重.png', uploadedAt: '2023-12-12 12:23:32' },
+            { filename: '卸货.png', uploadedAt: '2023-12-12 12:23:32' },
+          ]},
+        ],
       });
 
       // 出库用不同的编号前缀和字段
       const outNum = i === 0 ? '435646578990' : String(435646578990 + i * 13);
       const outApplyNo = i === 0 ? 'OUT20231010000001' : `OUT2026${String(i * 100 + 1).padStart(8, '0')}`;
+      const outBizNo = i === 0 ? 'OUT20231010000001' : `OUT${ymd.replace(/-/g,'')}${String(i * 100 + 1).padStart(7, '0')}`;
+      // 操作记录（只有出库详情才有操作记录 tab）
+      const operations = (i === 0 || i === 3 || i === 5) ? [
+        // 第一条（i=0）展示完整：新建 + 编辑 两条
+        ...(i === 0 ? [
+          { type: '新建', operator: '张三', company: 'XXXX公司', content: `新增出库, 出库编号: BX${Math.floor(Math.random() * 9000000 + 1000000)}`, time: '2021-11-15 12:22:32' },
+          { type: '编辑', operator: '张三', company: 'XXXX公司', content: '编辑出库信息, 出库数量, 变更前"1000"，变更后"2000"', time: '2021-11-15 12:22:32' },
+        ] : []),
+      ] : [];
       outboundList.push({
         id: `out_detail_${String(i + 1).padStart(3, '0')}`,
         type: 'outbound',
-        bizNo: outNum,
+        bizNo: outBizNo,
         bizDate: ymd,
         bizTime: '12:33:34',
         productName: products[i % products.length],
@@ -1405,10 +1445,42 @@ const MockData = {
         location: wh.location,
         applyNo: outApplyNo,
         contractNo: contractNo,
-        stockPieces, stockWeight,
+        // 出库专属字段
+        applicant: '河南军牧原国际贸易有限公司',
+        contactPerson: '张三',
+        contactPhone: '133238288889',
+        productType: '中原e贷',
+        pledgee: '郑州农业融资担保股份有限公司',
+        supervisor: '大河智链物流（郑州）有限公司',
+        applyDate: '2026-06-20',
+        creator: '张三',
+        createTime: '2022-08-12 12:22:32',
+        grossWeight: 3000 + i * 50, tareWeight: 500, netWeight: 2500 + i * 50,
+        stockPieces: 140 + (i * 13) % 100, stockWeight: 3000 + (i * 230) % 1500,
+        planPieces: 130 + (i * 13) % 100, planWeight: 2800 + (i * 230) % 1500,
+        actualPieces: 140 + (i * 13) % 100, actualWeight: 3000 + (i * 230) % 1500,
         piecesUnit: '箱',
         bank: suppliers[i % suppliers.length],
         source: sources[i % sources.length],
+        products: [{
+          name: products[i % products.length],
+          country: '巴西',
+          factoryNo: '巴西',
+          planQty: 130 + (i * 13) % 100, piecesUnit: '箱',
+          planWeight: 2800 + (i * 230) % 1500, weightUnit: '千克',
+          planDate: ymd, prodDate: '2026-01-01', batchNo: '2026-01-01',
+          actualQty: 140 + (i * 13) % 100, actualWeight: 3000 + (i * 230) % 1500,
+        }],
+        attachments: [
+          { type: '出库单', filename: '44354657687.pdf', uploadedAt: '2023-12-12 12:23:32' },
+          { type: '磅单明细', filename: '明细1.pdf', uploadedAt: '2023-12-12 12:23:32' },
+          { type: '出库作业留痕', filename: '质检.png、称重.png、卸货.png', uploadedAt: '2023-12-12 12:23:32', multiFile: true, files: [
+            { filename: '质检.png', uploadedAt: '2023-12-12 12:23:32' },
+            { filename: '称重.png', uploadedAt: '2023-12-12 12:23:32' },
+            { filename: '卸货.png', uploadedAt: '2023-12-12 12:23:32' },
+          ]},
+        ],
+        operations,  // 操作记录（仅 i=0,3,5 有数据演示）
       });
     }
     return { inboundList, outboundList };
