@@ -30,8 +30,9 @@
   const user = MockData.users[role] || MockData.users.customer;
 
   // v1.7.3 盖章人登录直接跳转入库申请页（不走 dashboard）
+  // v1.7.7 改用 Utils.nav() 自动适配 /pages/ 子目录
   if (role === 'customer_seal') {
-    window.location.replace('/customer/inbound');
+    window.location.replace(Utils.nav('/customer/inbound'));
     throw new Error('redirect to /customer/inbound');
   }
 

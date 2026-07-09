@@ -129,7 +129,7 @@ const Components = {
               ${group.items.map(item => {
                 const active = currentPath === item.path || currentPath.startsWith(item.path);
                 return `
-                  <a href="${item.path}" class="flex items-center gap-3 px-4 py-2.5 mx-2 rounded-md transition text-sm ${
+                  <a href="${Utils.nav(item.path)}" class="flex items-center gap-3 px-4 py-2.5 mx-2 rounded-md transition text-sm ${
                     active
                       ? 'bg-blue-50 text-blue-700 font-medium border-l-4 border-blue-500 -ml-1 pl-5'
                       : 'text-slate-700 hover:bg-slate-50'

@@ -273,18 +273,31 @@ const Utils = {
     return prefixes[Math.floor(Math.random() * prefixes.length)] + String(Math.floor(Math.random() * 1e8)).padStart(8, '0');
   },
 
-  // v1.7.6 新增：导航 URL 拼接（兼容 GitHub Pages 子路径部署 + Vercel 根路径部署）
+  // v1.7.7 升级：导航 URL 拼接（兼容 GitHub Pages 子路径 + Cloudflare Pages/Vercel 根路径）
   // 用法：window.location.href = Utils.nav('/customer/inbound')
-  // GitHub Pages 上：返回 '/dhzl-supply-chain/customer/inbound'
-  // Vercel 上：返回 '/customer/inbound'
+  // - 根级页面（/dashboard, /login, /）：保持不变
+  // - 子目录页面（/customer/xxx, /platform/xxx 等）：自动补 /pages/ 前缀
+  // - 已含 /shared/ /pages/ 的资源路径：原样返回
+  // GitHub Pages 上：返回 '/dhzl-supply-chain/pages/customer/inbound'
+  // Cloudflare Pages 上：返回 '/pages/customer/inbound'
   nav(path) {
     if (typeof path !== 'string') return path;
-    // 已经是完整 URL（含协议）的不处理
+    // 完整 URL / 协议相对 URL：原样返回
     if (/^https?:\/\//.test(path) || path.startsWith('//')) return path;
     const p = window.location.pathname;
     const base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain' : '';
     const cleanPath = path.startsWith('/') ? path : '/' + path;
-    return base + cleanPath;
+    // 已含 /pages/ 或 /shared/：原样返回（已包含完整目录）
+    if (cleanPath.startsWith('/pages/') || cleanPath.startsWith('/shared/')) {
+      return base + cleanPath;
+    }
+    // 根级页面：保持不变
+    const rootPages = ['/dashboard', '/login', '/', '/index.html'];
+    if (rootPages.includes(cleanPath)) {
+      return base + cleanPath;
+    }
+    // 子目录页面（customer/platform/bank/warehouse/guarantor/docs）：自动补 /pages/
+    return base + '/pages' + cleanPath;
   },
 };
 
