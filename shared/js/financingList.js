@@ -165,7 +165,8 @@
   }
 
   function renderRows(tabId, f, actionRenderer, statusLabelMap) {
-    const statusMap = statusLabelMap || DEFAULT_STATUS_LABEL;
+    // 状态机文本：默认 + 调用方覆盖（合并而非替换）
+    const statusMap = Object.assign({}, DEFAULT_STATUS_LABEL, statusLabelMap || {});
     const tabFiltered = tabId === 'all'
       ? applyFilters(f)
       : applyFilters(f).filter(rec => rec.status === tabId);
@@ -291,8 +292,13 @@
       const filterBarHtml = renderFilterBar(state);
       const rowsHtml = renderRows(state.currentTab, state, config.actionRenderer || defaultActionRenderer, config.statusLabelMap);
 
-      const container = document.getElementById('financingListContainer');
-      if (container) container.innerHTML = filterBarHtml + tabsHtml + rowsHtml;
+      // v1.7.8 修复：只更新各自的容器，保留外层布局样式（border / 背景 / 容器）
+      const barEl = document.getElementById('financingFilterBarInner');
+      const tabsEl = document.getElementById('financingTabsInner');
+      const rowsEl = document.getElementById('financingRowsBody');
+      if (barEl) barEl.innerHTML = filterBarHtml;
+      if (tabsEl) tabsEl.innerHTML = tabsHtml;
+      if (rowsEl) rowsEl.innerHTML = rowsHtml;
     }
 
     function defaultActionRenderer(rec) {
@@ -312,13 +318,17 @@
       getState: () => state,
     };
 
-    // 列表容器 + 顶部 structure（tabs + filter + table）
+    // 列表容器 + 顶部 structure（filter + tabs + table）
     // 返回 HTML 字符串（在 pageShell.content 里嵌入）
     return `
       <div id="financingListContainer">
-        ${renderFilterBar(state)}
+        <!-- 筛选条容器：保留外层间距 + 样式，innerHTML 替换内部 -->
+        <div id="financingFilterBarInner">${renderFilterBar(state)}</div>
+        <!-- 列表卡片：外层有 border/bg，圆角；内部 tabs 和 table 由各自的 inner 容器管理 -->
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div class="border-b border-slate-200 px-4 bg-slate-50/50" id="financingTabs">${renderTabs(state.currentTab, () => applyFilters(state).length)}</div>
+          <div class="border-b border-slate-200 px-4 bg-slate-50/50 overflow-x-auto" id="financingTabsInner">
+            ${renderTabs(state.currentTab, () => applyFilters(state).length)}
+          </div>
           <div class="overflow-x-auto">
             <table class="w-full text-sm min-w-[1800px]">
               <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
