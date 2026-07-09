@@ -172,7 +172,8 @@
         </div>
       </div>
     `;
-    modal.onclick = () => modal.remove();
+    // v1.7.8 表单类弹窗：屏蔽点击外面关闭
+    modal.onclick = () => {};
     document.body.appendChild(modal);
   }
 </script>

@@ -120,7 +120,7 @@
     const a = MockData.riskAlerts.find(x => x.id === id);
     if (!a) return;
     document.getElementById('alertModal').innerHTML = `
-      <div class="modal-backdrop" onclick="this.remove()">
+      <div class="modal-backdrop">
         <div class="bg-white rounded-xl w-[700px] shadow-2xl" onclick="event.stopPropagation()">
           <div class="px-6 py-4 border-b border-slate-200">
             <h3 class="font-bold text-slate-800 text-lg">处理预警 - ${a.bizNo}</h3>
