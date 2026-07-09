@@ -38,13 +38,13 @@
   if (urlParams.get('type') === 'financing') {
     const bizNo = urlParams.get('bizNo') || '';
     const seal = urlParams.get('seal') || '1';
-    window.location.href = `/customer/seal-flow.html?bizNo=${bizNo}&seal=${seal}`;
+    window.location.href = Utils.nav(`/customer/seal-flow.html?bizNo=${bizNo}&seal=${seal}`);
   }
 
   // 如果没有盖章权限，重定向回列表
   if (!user.sealPermission) {
     Utils.toast('⚠ 您无电子签章权限', 'error');
-    setTimeout(() => window.location.href = '/customer/admission', 1000);
+    setTimeout(() => window.location.href = Utils.nav('/customer/admission'), 1000);
   }
 
   document.getElementById('app').innerHTML = `
@@ -344,7 +344,7 @@
   function cancelSeal() {
     if (confirm('确认取消签章？取消后申请将保存为草稿。')) {
       Utils.toast('已取消签章，申请保存为草稿', 'info');
-      setTimeout(() => window.location.href = '/customer/admission', 1000);
+      setTimeout(() => window.location.href = Utils.nav('/customer/admission'), 1000);
     }
   }
 
@@ -360,7 +360,7 @@
     }
     Utils.toast('✓ 签章完成！准入申请已提交至监管方审核', 'success');
     setTimeout(() => {
-      window.location.href = '/customer/admission-detail?id=adm_001';
+      window.location.href = Utils.nav('/customer/admission-detail?id=adm_001');
     }, 1500);
   }
 </script>

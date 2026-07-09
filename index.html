@@ -40,9 +40,9 @@
   // 入口自动跳转
   setTimeout(() => {
     if (Utils.getUser()) {
-      window.location.href = '/dashboard';
+      window.location.href = Utils.nav('/dashboard');
     } else {
-      window.location.href = '/login';
+      window.location.href = Utils.nav('/login');
     }
   }, 600);
 </script>

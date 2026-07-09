@@ -84,7 +84,7 @@
               <div class="text-lg font-bold ${a.priceChangeRate > 0 ? 'text-rose-600' : 'text-emerald-600'} num-focus">${a.priceChangeRate > 0 ? '+' : ''}${a.priceChangeRate.toFixed(2)}%</div>
               <div class="flex gap-1 mt-1 justify-end">
                 <button onclick="Utils.toast('已发起补货流程（走 §4.2 入库子流程）','success')" class="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded">补货</button>
-                <button onclick="window.location.href='/customer/outbound'" class="px-2 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded">提前线下还款 →</button>
+                <button onclick="window.location.href = Utils.nav('/customer/outbound')" class="px-2 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded">提前线下还款 →</button>
               </div>
             </div>
           </div>

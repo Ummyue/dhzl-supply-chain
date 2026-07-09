@@ -160,7 +160,7 @@
     Utils.setRole(role);
     Utils.setUser(MockData.users[role]);
     Utils.toast(`欢迎，${MockData.users[role].name}`, 'success');
-    setTimeout(() => window.location.href = '/dashboard', 500);
+    setTimeout(() => window.location.href = Utils.nav('/dashboard'), 500);
   }
 </script>
 </body>

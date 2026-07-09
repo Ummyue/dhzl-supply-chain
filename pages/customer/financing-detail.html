@@ -102,13 +102,13 @@
       { label: '查看审批进度', type: 'primary', onclick: "document.getElementById('progressSection').scrollIntoView({behavior:'smooth'})" },
     ],
     'financing': [
-      { label: '查看质物清单', type: 'primary', onclick: "window.location.href='/customer/pledge-list'" },
+      { label: '查看质物清单', type: 'primary', onclick: "window.location.href = Utils.nav('/customer/pledge-list')" },
       { label: '查看放款详情', type: 'default', onclick: "Utils.toast('放款处理中...','info')" },
     ],
     'released': [
-      { label: '查看质物清单', type: 'primary', onclick: "window.location.href='/customer/pledge-list'" },
+      { label: '查看质物清单', type: 'primary', onclick: "window.location.href = Utils.nav('/customer/pledge-list')" },
       { label: '查看借据详情', type: 'default', onclick: "Utils.toast('展示借据详情','info')" },
-      { label: '发起解押/出库', type: 'success', onclick: "window.location.href='/customer/outbound'" },
+      { label: '发起解押/出库', type: 'success', onclick: "window.location.href = Utils.nav('/customer/outbound')" },
       { label: '下载放款凭证', type: 'default', onclick: "Utils.toast('下载中...','info')" },
     ],
   };

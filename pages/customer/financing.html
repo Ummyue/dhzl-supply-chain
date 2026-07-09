@@ -96,7 +96,7 @@
                 <td class="px-4 py-3 text-center">${Components.badge(f.status)}</td>
                 <td class="px-4 py-3 text-center">
                   <button onclick="viewFinancing('${f.id}')" class="text-blue-600 hover:underline text-xs mr-2 font-medium">查看详情 →</button>
-                  <button onclick="window.location.href='/customer/pledge-list'" class="text-emerald-600 hover:underline text-xs">质物清单</button>
+                  <button onclick="window.location.href = Utils.nav('/customer/pledge-list')" class="text-emerald-600 hover:underline text-xs">质物清单</button>
                 </td>
               </tr>
             `}).join('')}
@@ -407,7 +407,7 @@
     setTimeout(() => location.reload(), 800);
   }
 
-  function viewFinancing(id) { window.location.href = '/customer/financing-detail?id=' + id; }
+  function viewFinancing(id) { window.location.href = Utils.nav('/customer/financing-detail?id=') + id; }
 </script>
 </body>
 </html>

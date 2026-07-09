@@ -123,8 +123,8 @@
       { label: '查看货值评估', type: 'default', onclick: "document.getElementById('goodsSection').scrollIntoView({behavior:'smooth'})" },
     ],
     'inbound': [
-      { label: '发起融资申请', type: 'success', onclick: "window.location.href='/customer/financing'" },
-      { label: '查看质物清单', type: 'primary', onclick: "window.location.href='/customer/pledge-list'" },
+      { label: '发起融资申请', type: 'success', onclick: "window.location.href = Utils.nav('/customer/financing')" },
+      { label: '查看质物清单', type: 'primary', onclick: "window.location.href = Utils.nav('/customer/pledge-list')" },
       { label: '下载入库单', type: 'default', onclick: "Utils.toast('下载中...','info')" },
     ],
   };

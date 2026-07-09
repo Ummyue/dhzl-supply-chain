@@ -272,6 +272,20 @@ const Utils = {
     const prefixes = ['138', '139', '150', '151', '152', '158', '186', '188'];
     return prefixes[Math.floor(Math.random() * prefixes.length)] + String(Math.floor(Math.random() * 1e8)).padStart(8, '0');
   },
+
+  // v1.7.6 新增：导航 URL 拼接（兼容 GitHub Pages 子路径部署 + Vercel 根路径部署）
+  // 用法：window.location.href = Utils.nav('/customer/inbound')
+  // GitHub Pages 上：返回 '/dhzl-supply-chain/customer/inbound'
+  // Vercel 上：返回 '/customer/inbound'
+  nav(path) {
+    if (typeof path !== 'string') return path;
+    // 已经是完整 URL（含协议）的不处理
+    if (/^https?:\/\//.test(path) || path.startsWith('//')) return path;
+    const p = window.location.pathname;
+    const base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain' : '';
+    const cleanPath = path.startsWith('/') ? path : '/' + path;
+    return base + cleanPath;
+  },
 };
 
 window.Utils = Utils;

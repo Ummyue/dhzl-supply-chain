@@ -90,7 +90,7 @@
     ],
     'approved': [
       { label: '查看授信额度', type: 'primary', onclick: "Utils.toast('已授信 ¥5,000万，期限 12 个月','info')" },
-      { label: '发起入库申请', type: 'success', onclick: "window.location.href='/customer/inbound'" },
+      { label: '发起入库申请', type: 'success', onclick: "window.location.href = Utils.nav('/customer/inbound')" },
       { label: '下载准入通知书', type: 'default', onclick: "Utils.toast('正在生成 PDF...','info')" },
     ],
     'rejected': [

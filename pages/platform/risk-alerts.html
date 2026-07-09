@@ -180,7 +180,7 @@
   function submitAlert(id) {
     document.querySelector('.modal-backdrop')?.remove();
     Utils.toast('✓ 预警已处理，已发起追保流程', 'success');
-    setTimeout(() => window.location.href = '/platform/supplementary', 1200);
+    setTimeout(() => window.location.href = Utils.nav('/platform/supplementary'), 1200);
   }
 
   function viewAlert(id) { Utils.toast('查看预警详情 ' + id, 'info'); }

@@ -40,7 +40,7 @@
 
   if (!user.sealPermission) {
     Utils.toast('⚠ 您无电子签章权限', 'error');
-    setTimeout(() => window.location.href = '/customer/financing', 1000);
+    setTimeout(() => window.location.href = Utils.nav('/customer/financing'), 1000);
   }
 
   // 配置每一步盖章的单据
@@ -178,7 +178,7 @@
       return;
     }
     Utils.toast('✅ 第 ' + sealStep + ' 次签章完成！' + sealConfig[sealStep].afterApproval, 'success');
-    setTimeout(() => window.location.href = '/customer/financing-detail?bizNo=' + bizNo, 1500);
+    setTimeout(() => window.location.href = Utils.nav('/customer/financing-detail?bizNo=') + bizNo, 1500);
   }
 </script>
 </body>

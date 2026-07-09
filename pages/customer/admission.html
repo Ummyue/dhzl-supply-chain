@@ -217,7 +217,7 @@
       // 盖章人：跳转到签章流程页
       Utils.toast('正在进入签章流程...', 'info');
       setTimeout(() => {
-        window.location.href = '/customer/admission-seal';
+        window.location.href = Utils.nav('/customer/admission-seal');
       }, 600);
     } else {
       // 操作人：无签章权限，提交后保存为草稿
@@ -227,7 +227,7 @@
   }
 
   function viewDetail(id) {
-    window.location.href = '/customer/admission-detail?id=' + id;
+    window.location.href = Utils.nav('/customer/admission-detail?id=') + id;
   }
 </script>
 </body>
