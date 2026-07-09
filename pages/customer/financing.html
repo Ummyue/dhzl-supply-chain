@@ -24,14 +24,219 @@
 <script src="/shared/js/components.js"></script>
 <script>
   Components.bindGlobalClose();
+
+  // ============ v1.7.8 状态机 TAB ============
+  const FINANCING_TABS = [
+    { id: 'all', label: '全部' },
+    { id: 'pending_supervisor_eval', label: '监管评估' },
+    { id: 'pending_owner_confirm', label: '货方确认' },
+    { id: 'pending_supervisor', label: '监管审核' },
+    { id: 'pending_guarantor', label: '担保审核' },
+    { id: 'pending_funding', label: '资方审核' },
+    { id: 'pending_disbursement', label: '待放款' },
+    { id: 'released', label: '已放款' },
+    { id: 'settled', label: '已结清' },
+    { id: 'rejected', label: '已驳回', separator: true }, // 已驳回独立分类，最前加分隔线
+  ];
+  let currentFinancingTab = 'all';
+
+  function renderFinancingTabs() {
+    return FINANCING_TABS.map(t => {
+      const count = MockData.financingList.filter(f =>
+        t.id === 'all' ? true : f.status === t.id
+      ).length;
+      const active = t.id === currentFinancingTab;
+      const sep = t.separator ? '<span class="mx-1 h-4 w-px bg-slate-300"></span>' : '';
+      return `
+        ${sep}
+        <button onclick="switchFinancingTab('${t.id}')" class="px-3 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition flex items-center gap-1.5 ${
+          active
+            ? 'border-blue-600 text-blue-700'
+            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-200'
+        }">
+          ${t.label}
+          <span class="px-1.5 py-0.5 text-xs rounded ${active ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}">${count}</span>
+        </button>
+      `;
+    }).join('');
+  }
+
+  function switchFinancingTab(tabId) {
+    currentFinancingTab = tabId;
+    document.getElementById('financingTabs').innerHTML = renderFinancingTabs();
+    document.getElementById('financingTableBody').innerHTML = renderFinancingRows(tabId);
+  }
+
+  function renderFinancingRows(tabId) {
+    const list = tabId === 'all'
+      ? MockData.financingList
+      : MockData.financingList.filter(f => f.status === tabId);
+
+    if (list.length === 0) {
+      return `<tr><td colspan="20" class="py-12 text-center text-slate-400 text-sm">📭 当前状态机下暂无融资记录</td></tr>`;
+    }
+
+    // 状态机 → 状态文本映射
+    const statusLabel = {
+      'pending': { text: '未提交', color: 'text-slate-500' },
+      'pending_supervisor_eval': { text: '⏳ 监管评估', color: 'text-amber-600' },
+      'pending_owner_confirm': { text: '⏳ 货方确认', color: 'text-amber-600' },
+      'pending_supervisor': { text: '⏳ 监管审核', color: 'text-blue-600' },
+      'pending_guarantor': { text: '⏳ 担保审核', color: 'text-blue-600' },
+      'pending_funding': { text: '⏳ 资方审核', color: 'text-blue-600' },
+      'pending_disbursement': { text: '⏳ 待放款', color: 'text-violet-600' },
+      'released': { text: '✓ 已放款', color: 'text-emerald-600' },
+      'settled': { text: '✓ 已结清', color: 'text-emerald-600' },
+      'rejected': { text: '🔴 已驳回', color: 'text-red-600' },
+    };
+    // 盖章按钮应该出现的状态（v1.7 三次盖章）
+    const sealStatusSet = new Set(['pending_supervisor', 'pending_guarantor', 'pending_funding']);
+
+    return list.map(f => {
+      const s = statusLabel[f.status] || { text: f.status, color: 'text-slate-500' };
+      const showSeal = sealStatusSet.has(f.status);
+      const sealLabel = f.status === 'pending_supervisor' ? '盖章①'
+                      : f.status === 'pending_guarantor' ? '盖章②'
+                      : f.status === 'pending_funding' ? '盖章③' : '盖章';
+      return `
+        <tr class="border-t border-slate-100 hover:bg-blue-50/30">
+          <td class="px-3 py-3 font-mono text-xs text-blue-700 whitespace-nowrap">${f.bizNo}</td>
+          <td class="px-3 py-3 whitespace-nowrap">${f.applicant}</td>
+          <td class="px-3 py-3 whitespace-nowrap text-slate-700">${f.bank || '-'}</td>
+          <td class="px-3 py-3 text-slate-600 text-xs">${f.productName || '-'}</td>
+          <td class="px-3 py-3 text-slate-700 text-xs whitespace-nowrap">${f.guarantor || '-'}</td>
+          <td class="px-3 py-3 text-slate-700 text-xs whitespace-nowrap">${f.supervisor || '-'}</td>
+          <td class="px-3 py-3 text-right num-focus font-bold text-blue-700 whitespace-nowrap">${Utils.fmtMoney(f.applyAmount)}</td>
+          <td class="px-3 py-3 text-right num-focus ${f.disbursedAmount > 0 ? 'text-emerald-700 font-medium' : 'text-slate-300'} whitespace-nowrap">${f.disbursedAmount > 0 ? Utils.fmtMoney(f.disbursedAmount) : '—'}</td>
+          <td class="px-3 py-3 text-right num-focus whitespace-nowrap">${f.interestRate ? (f.interestRate * 100).toFixed(2) + '%' : '-'}</td>
+          <td class="px-3 py-3 whitespace-nowrap text-slate-700">${f.startDate || '—'}</td>
+          <td class="px-3 py-3 whitespace-nowrap text-slate-700">${f.maturityDate || '—'}</td>
+          <td class="px-3 py-3 font-mono text-xs whitespace-nowrap">${f.pledgeAssetNo || '—'}</td>
+          <td class="px-3 py-3 text-right num-focus whitespace-nowrap">${f.pledgeQty > 0 ? Utils.fmtNum(f.pledgeQty) : '—'}</td>
+          <td class="px-3 py-3 whitespace-nowrap text-slate-500 text-xs">${f.pledgeQty > 0 ? f.qtyUnit : ''}</td>
+          <td class="px-3 py-3 text-right num-focus whitespace-nowrap">${f.pledgeWeight > 0 ? Utils.fmtNum(f.pledgeWeight) : '—'}</td>
+          <td class="px-3 py-3 whitespace-nowrap text-slate-500 text-xs">${f.pledgeWeight > 0 ? f.weightUnit : ''}</td>
+          <td class="px-3 py-3 text-right num-focus whitespace-nowrap">${f.unitPrice ? f.unitPrice.toFixed(2) : '-'}</td>
+          <td class="px-3 py-3 text-right num-focus whitespace-nowrap">${Utils.fmtMoney(f.pledgeValue)}</td>
+          <td class="px-3 py-3 whitespace-nowrap">
+            <div class="flex flex-col gap-0.5">
+              <span class="text-xs font-medium ${s.color}">${s.text}</span>
+              ${f.status === 'rejected' && f.rejectedReason ? `<span class="text-[10px] text-red-500">${f.rejectedBy}：${f.rejectedReason.slice(0, 16)}${f.rejectedReason.length > 16 ? '…' : ''}</span>` : ''}
+            </div>
+          </td>
+          <td class="px-3 py-3 text-center whitespace-nowrap">
+            <div class="flex items-center justify-center gap-2">
+              <button onclick="viewFinancing('${f.id}')" class="text-blue-600 hover:underline text-xs font-medium">详情</button>
+              ${showSeal ? `<button onclick="sealFinancing('${f.id}', '${f.status}')" class="text-amber-600 hover:underline text-xs font-medium">${sealLabel}</button>` : ''}
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // 盖章按钮处理（占位）
+  function sealFinancing(id, status) {
+    const sealMap = {
+      'pending_supervisor': '盖章①（监管通过后的反担保合同 / 质物清单）',
+      'pending_guarantor': '盖章②（担保通过后的补充协议）',
+      'pending_funding': '盖章③（资金方通过后的放款承诺函）',
+    };
+    if (confirm(`即将对融资申请 ${id} 进行货主方电子${sealMap[status] || '签章'}，使用印章「河南某冷链股份有限公司 公章」？\n\n签章后将进入下一阶段审核，过程留痕不可篡改。`)) {
+      Utils.toast('签章已生效，系统自动流转到下一阶段', 'success');
+    }
+  }
+
+  // ============ v1.7.8 CSV 导出 ============
+  function exportFinancingCSV() {
+    // 1. 按当前 tab 筛选
+    const tabId = currentFinancingTab;
+    const tabLabel = FINANCING_TABS.find(t => t.id === tabId)?.label || '全部';
+    const list = tabId === 'all'
+      ? MockData.financingList
+      : MockData.financingList.filter(f => f.status === tabId);
+
+    if (list.length === 0) {
+      Utils.toast('当前筛选条件下无数据可导出', 'warning');
+      return;
+    }
+
+    // 2. 表头（18 列）
+    const headers = [
+      '融资申请编号', '融资方', '金融机构', '金融产品', '担保方', '监管方',
+      '拟融资金额（元）', '放款金额（元）', '融资利率', '融资起息日', '融资到期日',
+      '货押资产编号', '质押数量', '数量单位', '质押重量', '重量单位',
+      '评估单价（元/千克）', '质押货值（元）', '状态'
+    ];
+
+    // 3. 状态机 → 文本映射
+    const statusLabel = {
+      'pending': '未提交',
+      'pending_supervisor_eval': '监管评估',
+      'pending_owner_confirm': '货方确认',
+      'pending_supervisor': '监管审核',
+      'pending_guarantor': '担保审核',
+      'pending_funding': '资方审核',
+      'pending_disbursement': '待放款',
+      'released': '已放款',
+      'settled': '已结清',
+      'rejected': '已驳回',
+    };
+
+    // 4. 数据行
+    const rows = list.map(f => [
+      f.bizNo, f.applicant, f.bank || '', f.productName || '',
+      f.guarantor || '', f.supervisor || '',
+      f.applyAmount || 0, f.disbursedAmount || 0,
+      f.interestRate ? (f.interestRate * 100).toFixed(2) + '%' : '',
+      f.startDate || '', f.maturityDate || '',
+      f.pledgeAssetNo || '',
+      f.pledgeQty || 0, f.pledgeQty > 0 ? f.qtyUnit : '',
+      f.pledgeWeight || 0, f.pledgeWeight > 0 ? f.weightUnit : '',
+      f.unitPrice || 0, f.pledgeValue || 0,
+      statusLabel[f.status] || f.status
+    ]);
+
+    // 5. 转 CSV 字符串（UTF-8 BOM 防止 Excel 中文乱码）
+    const csv = [headers, ...rows].map(row =>
+      row.map(cell => {
+        const v = String(cell == null ? '' : cell);
+        // 含逗号/引号/换行 → 加引号
+        return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+      }).join(',')
+    ).join('\n');
+
+    const csvContent = '\uFEFF' + csv; // UTF-8 BOM
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    // 6. 下载
+    const link = document.createElement('a');
+    const date = new Date().toISOString().slice(0, 10);
+    link.href = url;
+    link.download = `融资申请列表_${tabLabel}_${date}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    Utils.toast(`已导出 ${list.length} 条记录（${tabLabel}）`, 'success');
+  }
+
   document.getElementById('app').innerHTML = Components.pageShell({
     title: '融资申请',
     currentPath: '/customer/financing',
     breadcrumb: [{ label: '融资管理', path: '/customer/financing' }, '融资申请'],
-    extra: `<button onclick="createFinancing()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium flex items-center gap-1">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-      新建融资申请
-    </button>`,
+    extra: `<div class="flex items-center gap-2">
+      <button onclick="exportFinancingCSV()" class="px-3 py-2 border border-slate-300 hover:border-emerald-500 hover:text-emerald-600 text-slate-700 rounded-md text-sm font-medium flex items-center gap-1 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        导出
+      </button>
+      <button onclick="createFinancing()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium flex items-center gap-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        新建融资申请
+      </button>
+    </div>`,
     content: `
       <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-800">
         <span class="font-medium">融资流程（v1.7 按甲方 drawio 调整）：</span>
@@ -58,50 +263,45 @@
       </div>
 
       <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
-            <tr>
-              <th class="text-left px-4 py-3">融资编号</th>
-              <th class="text-left px-4 py-3">关联入库单</th>
-              <th class="text-right px-4 py-3">评估货值</th>
-              <th class="text-right px-4 py-3">申请金额</th>
-              <th class="text-right px-4 py-3">融资期限</th>
-              <th class="text-center px-4 py-3">货主方盖章进度</th>
-              <th class="text-center px-4 py-3">状态</th>
-              <th class="text-center px-4 py-3">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${MockData.financingList.map(f => {
-              // v1.7 三次盖章进度
-              const sealMap = {
-                'pending': '<span class="text-xs text-slate-400">未提交</span>',
-                'pending_owner_seal': '<span class="text-xs text-amber-600">⏳ 待盖章①</span>',
-                'pending_guarantor': '<span class="text-xs text-blue-600">✓① 监管后 / 待担保</span>',
-                'pending_owner_seal_2': '<span class="text-xs text-amber-600">⏳ 待盖章②</span>',
-                'pending_funding': '<span class="text-xs text-blue-600">✓② 担保后 / 待资金</span>',
-                'pending_owner_seal_3': '<span class="text-xs text-amber-600">⏳ 待盖章③</span>',
-                'released': '<span class="text-xs text-emerald-600">✓ 三章齐全</span>',
-                'rejected': '<span class="text-xs text-red-600">🔴 驳回</span>',
-              };
-              const sealProgress = sealMap[f.status] || '<span class="text-xs text-slate-400">-</span>';
-              return `
-              <tr class="border-t border-slate-100 hover:bg-slate-50">
-                <td class="px-4 py-3 font-mono text-xs">${f.bizNo}</td>
-                <td class="px-4 py-3 font-mono text-xs">${f.inboundBizNo}</td>
-                <td class="px-4 py-3 text-right num-focus">${Utils.fmtMoney(f.evaluateValue)}</td>
-                <td class="px-4 py-3 text-right num-focus font-bold text-blue-600">${Utils.fmtMoney(f.applyAmount)}</td>
-                <td class="px-4 py-3 text-right">${f.duration} 天</td>
-                <td class="px-4 py-3 text-center">${sealProgress}</td>
-                <td class="px-4 py-3 text-center">${Components.badge(f.status)}</td>
-                <td class="px-4 py-3 text-center">
-                  <button onclick="viewFinancing('${f.id}')" class="text-blue-600 hover:underline text-xs mr-2 font-medium">查看详情 →</button>
-                  <button onclick="window.location.href = Utils.nav('/customer/pledge-list')" class="text-emerald-600 hover:underline text-xs">质物清单</button>
-                </td>
+        <!-- v1.7.8 状态机 TAB 条（已驳回放最后 + 分隔线） -->
+        <div class="border-b border-slate-200 px-4 bg-slate-50/50">
+          <div class="flex items-center gap-1 overflow-x-auto" id="financingTabs">
+            ${renderFinancingTabs()}
+          </div>
+        </div>
+
+        <!-- v1.7.8 全状态机列表（18 列 + 状态机 + 操作），横向滚动 -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm min-w-[1800px]">
+            <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+              <tr>
+                <th class="text-left px-3 py-3 whitespace-nowrap">融资申请编号</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">融资方</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">金融机构</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">金融产品</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">担保方</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">监管方</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">拟融资金额（元）</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">放款金额（元）</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">融资利率</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">融资起息日</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">融资到期日</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">货押资产编号</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">质押数量</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">数量单位</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">质押重量</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">重量单位</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">评估单价（元/千克）</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">质押货值（元）</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap min-w-[180px]">状态机</th>
+                <th class="text-center px-3 py-3 whitespace-nowrap">操作</th>
               </tr>
-            `}).join('')}
-          </tbody>
-        </table>
+            </thead>
+            <tbody id="financingTableBody">
+              ${renderFinancingRows(currentFinancingTab)}
+            </tbody>
+          </table>
+        </div>
       </div>
     `
   });
@@ -479,6 +679,13 @@
   }
 
   function viewFinancing(id) { window.location.href = Utils.nav('/customer/financing-detail?id=') + id; }
+
+  // 暴露给内联 onclick 的页面级函数
+  window.switchFinancingTab = switchFinancingTab;
+  window.sealFinancing = sealFinancing;
+  window.exportFinancingCSV = exportFinancingCSV;
+  window.createFinancing = createFinancing;
+  window.viewFinancing = viewFinancing;
 </script>
 </body>
 </html>
