@@ -115,25 +115,7 @@
         </div>
       </section>
 
-      <!-- 2. 状态机选择（按用户截图样式）-->
-      <section class="bg-white border border-slate-200 rounded-xl mb-4 p-3 flex items-center justify-center gap-3">
-        <select class="px-3 py-1.5 text-sm border border-slate-300 rounded bg-white">
-          <option>State1</option>
-          <option>State2</option>
-        </select>
-        <button onclick="prevState()" class="px-2 py-1 text-slate-500 hover:text-slate-800">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-        </button>
-        <button onclick="nextState()" class="px-2 py-1 text-slate-500 hover:text-slate-800">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-        </button>
-        <button onclick="viewAllStates()" class="px-3 py-1.5 text-sm text-blue-600 hover:underline">查看全部状态</button>
-        <button onclick="resetStateSelector()" class="px-2 py-1 text-slate-400 hover:text-slate-700">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-      </section>
-
-      <!-- 3. 质物明细信息（17 列：含新增【有效期】） -->
+      <!-- 2. 质物明细信息（17 列：含新增【有效期】，v1.7.16 去掉"State1 状态机选择"显示错误区块） -->
       <section class="bg-white border border-slate-200 rounded-xl mb-4">
         <div class="px-6 py-3 border-b border-slate-200 flex items-center justify-between">
           <h3 class="font-bold text-slate-800">质物明细信息 <span class="text-red-500">*</span></h3>
@@ -573,11 +555,6 @@
   };
 
   window.previewSubmit = () => Utils.toast('预览模式（占位）', 'info');
-
-  window.prevState = () => Utils.toast('上一步（占位）', 'info');
-  window.nextState = () => Utils.toast('下一步（占位）', 'info');
-  window.viewAllStates = () => Utils.toast('查看全部状态（占位）', 'info');
-  window.resetStateSelector = () => Utils.toast('状态选择器重置（占位）', 'info');
 
   // ============ v1.7.15 入库申请单概要视图 + 完整单据弹窗 ============
   function renderSummaryCards() {

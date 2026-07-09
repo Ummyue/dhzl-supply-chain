@@ -4,18 +4,17 @@
   <script>
 (function() {
   var p = window.location.pathname;
-  // GitHub Pages 子路径部署 vs Vercel 根路径部署
   var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
   document.write('<base href="' + base + '">');
 })();
 </script>
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>入库详情 - 大河智链</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
-<link rel="stylesheet" href="/shared/css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>入库详情 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
 </head>
 <body class="bg-slate-50">
 <div id="app"></div>
@@ -24,400 +23,339 @@
 <script src="/shared/js/components.js"></script>
 <script>
   Components.bindGlobalClose();
-  const urlParams = new URLSearchParams(window.location.search);
-  const id = urlParams.get('id') || 'in_001';
-  const i = MockData.inboundList.find(x => x.id === id) || MockData.inboundList[0];
-  const p = MockData.products.find(x => x.id === i.products[0].id) || MockData.products[0];
 
-  // v1.7.3 盖章人专属：判断当前角色 + 是否可盖章
-  const _role = Utils.getRole();
-  const _isSealer = _role === 'customer_seal';
-  const _sealable = _isSealer && ['pending_owner_seal', 'rejected'].includes(i.status);
-  const _sealer = MockData.users.customer_seal;
-  const _sealerName = _sealer.name;
-  // 可用印章（按 sealScope 过滤）
-  const _availableSeals = MockData.seals.filter(s => (_sealer.sealScope || []).includes(s.id));
-  // 当前驳回原因（仅 rejected 状态）
-  const _rejectReason = i.rejectReason || (i.status === 'rejected'
-    ? '货值评估下浮比例超出业务规则上限（建议 5%-10%），请重新提交并调整下浮比例至 8%。'
-    : '');
+  // ============ v1.7.16 入库详情页（5 级页面）============
+  // 基础信息卡（融入入库申请清单） + 审批进度步骤条 + 入库货物明细（含货物所在地） + 附件（含上传日期气泡）
+  // 用户明确要求：催办功能删除，步骤条展示审批进度
 
-  const progressMap = {
-    'draft': [
-      { node: '草稿保存', operator: '客户', time: i.applyDate, status: 'success', opinion: '草稿已保存' },
-      { node: '货主方盖章', operator: '—', time: '—', status: 'current', opinion: '请货主方（盖章人）前往签章页完成图片签章' },
-      { node: '担保方审核', operator: '—', time: '—', status: 'pending', opinion: '—' },
-      { node: '监管方审核', operator: '—', time: '—', status: 'pending', opinion: '—' },
-      { node: '仓库入库', operator: '—', time: '—', status: 'pending', opinion: '—' },
-      { node: '生成质物清单', operator: '—', time: '—', status: 'pending', opinion: '—' },
-    ],
-    'pending_owner_seal': [
-      { node: '草稿保存', operator: '客户', time: i.applyDate, status: 'success', opinion: '草稿已保存' },
-      { node: '货主方盖章', operator: '—', time: '—', status: 'current', opinion: '⏳ 等待货主方盖章人完成图片签章' },
-      { node: '担保方审核', operator: '—', time: '—', status: 'pending', opinion: '—' },
-      { node: '监管方审核', operator: '—', time: '—', status: 'pending', opinion: '—' },
-      { node: '仓库入库', operator: '—', time: '—', status: 'pending', opinion: '—' },
-      { node: '生成质物清单', operator: '—', time: '—', status: 'pending', opinion: '—' },
-    ],
-    'pending_guarantor': [
-      { node: '草稿保存', operator: '客户', time: i.applyDate, status: 'success', opinion: '草稿已保存' },
-      { node: '货主方盖章', operator: '李雪（盖章人）', time: '2026-07-05 14:32', status: 'success', opinion: '✓ 货主方已盖公章' },
-      { node: '担保方审核', operator: '—', time: '—', status: 'current', opinion: '⏳ 等待担保方审核反担保措施' },
-      { node: '监管方审核', operator: '—', time: '—', status: 'pending', opinion: '—' },
-      { node: '仓库入库', operator: '—', time: '—', status: 'pending', opinion: '—' },
-      { node: '生成质物清单', operator: '—', time: '—', status: 'pending', opinion: '—' },
-    ],
-    'pending_platform': [
-      { node: '草稿保存', operator: '客户', time: i.applyDate, status: 'success', opinion: '草稿已保存' },
-      { node: '货主方盖章', operator: '李雪（盖章人）', time: '2026-07-05 14:32', status: 'success', opinion: '✓ 货主方已盖公章' },
-      { node: '担保方审核', operator: '中原担保', time: '2026-07-05 16:20', status: 'success', opinion: '✓ 反担保措施到位，同意入库' },
-      { node: '监管方审核', operator: '—', time: '—', status: 'current', opinion: '⏳ 等待监管方审核货值评估' },
-      { node: '仓库入库', operator: '—', time: '—', status: 'pending', opinion: '—' },
-      { node: '生成质物清单', operator: '—', time: '—', status: 'pending', opinion: '—' },
-    ],
-    'inbound': [
-      { node: '草稿保存', operator: '客户', time: i.applyDate, status: 'success', opinion: '草稿已保存' },
-      { node: '货主方盖章', operator: '李雪（盖章人）', time: '2026-07-05 14:32', status: 'success', opinion: '✓ 货主方已盖公章' },
-      { node: '担保方审核', operator: '中原担保', time: '2026-07-05 16:20', status: 'success', opinion: '✓ 反担保措施到位，同意入库' },
-      { node: '监管方审核', operator: '李雪 (风控经理)', time: '2026-07-05 17:10', status: 'success', opinion: '✓ 货值 ¥' + Utils.fmtMoney(i.totalValue) + '，建议评估单价 ¥' + i.products[0].evaluatePrice.toFixed(2) },
-      { node: '仓库入库', operator: i.driver + '（' + i.vehicleNo + '）', time: i.inboundDate + ' 09:30', status: 'success', opinion: '✓ 车辆已到达仓库完成入库' },
-      { node: '生成质物清单', operator: '系统自动', time: i.inboundDate + ' 10:30', status: 'success', opinion: '✓ 已生成质物清单，等待三方电子签章' },
-    ],
-    'inbound_completed': [
-      { node: '草稿保存', operator: '客户', time: i.applyDate, status: 'success', opinion: '草稿已保存' },
-      { node: '货主方盖章', operator: '李雪（盖章人）', time: '2026-07-05 14:32', status: 'success', opinion: '✓ 货主方已盖公章' },
-      { node: '担保方审核', operator: '中原担保', time: '2026-07-05 16:20', status: 'success', opinion: '✓ 反担保措施到位' },
-      { node: '监管方审核', operator: '李雪 (风控经理)', time: '2026-07-05 17:10', status: 'success', opinion: '✓ 货值评估通过' },
-      { node: '仓库入库', operator: i.driver + '（' + i.vehicleNo + '）', time: i.inboundDate + ' 09:30', status: 'success', opinion: '✓ 入库完成' },
-      { node: '生成质物清单', operator: '系统自动', time: i.inboundDate + ' 10:30', status: 'success', opinion: '✓ 质物清单已生成 + 三方签章完成' },
-    ],
-    // 兼容旧值
-    'pending': [
-      { node: '草稿保存', operator: '客户', time: i.applyDate, status: 'success', opinion: '草稿已保存' },
-      { node: '货主方盖章', operator: '李雪（盖章人）', time: '2026-07-05 14:32', status: 'success', opinion: '✓ 货主方已盖公章' },
-      { node: '担保方审核', operator: '中原担保', time: '2026-07-05 16:20', status: 'success', opinion: '✓ 反担保措施到位' },
-      { node: '监管方审核', operator: '—', time: '—', status: 'current', opinion: '⏳ 等待监管方审核货值评估' },
-      { node: '仓库入库', operator: '—', time: '—', status: 'pending', opinion: '—' },
-      { node: '生成质物清单', operator: '—', time: '—', status: 'pending', opinion: '—' },
-    ],
-    'reviewing': [
-      { node: '草稿保存', operator: '客户', time: i.applyDate, status: 'success', opinion: '草稿已保存' },
-      { node: '货主方盖章', operator: '李雪（盖章人）', time: '2026-07-05 14:32', status: 'success', opinion: '✓ 货主方已盖公章' },
-      { node: '担保方审核', operator: '中原担保', time: '2026-07-05 16:20', status: 'success', opinion: '✓ 反担保措施到位' },
-      { node: '监管方审核', operator: '李雪 (风控经理)', time: Utils.relativeTime(i.applyDate), status: 'current', opinion: '已审核，建议评估单价 ¥' + i.products[0].evaluatePrice.toFixed(2) + '（市场价下浮 8%）' },
-      { node: '仓库入库', operator: '—', time: '—', status: 'pending', opinion: '—' },
-      { node: '生成质物清单', operator: '—', time: '—', status: 'pending', opinion: '—' },
+  // 从 URL 取 ?id= 决定当前详情数据，否则用默认 demo
+  const urlId = new URLSearchParams(window.location.search).get('id');
+
+  // v1.7.16 demo 默认数据（按用户截图：状态=待监管方确认）
+  const DEMO = {
+    bizNo: 'PREIN2023101000001',
+    status: 'pending_supervisor', statusLabel: '待监管方确认',
+    pledgeRows: [
+      { no: 1, name: '保乐肩', country: '巴西', factoryNo: '巴西', qty: 140, qtyUnit: '箱', weight: 3000, weightUnit: '千克', plannedInbound: '2026-01-01', produceDate: '2026-01-01', batchNo: '2026-01-01', contractNo: '2026-01-01', waybill: 'ZXT20260303', cabinet: '002', location: '河南省郑州市' },
+      { no: 2, name: '保乐肩', country: '巴西', factoryNo: '巴西', qty: 140, qtyUnit: '箱', weight: 3000, weightUnit: '千克', plannedInbound: '2026-01-01', produceDate: '2026-01-01', batchNo: '2026-01-01', contractNo: '2026-01-01', waybill: 'ZXT20260303', cabinet: '002', location: '河南省郑州市' },
+      { no: 3, name: '保乐肩', country: '巴西', factoryNo: '巴西', qty: 140, qtyUnit: '箱', weight: 3000, weightUnit: '千克', plannedInbound: '2026-01-01', produceDate: '2026-01-01', batchNo: '2026-01-01', contractNo: '2026-01-01', waybill: 'ZXT20260303', cabinet: '002', location: '河南省郑州市' },
+      { no: 4, name: '保乐肩', country: '巴西', factoryNo: '巴西', qty: 140, qtyUnit: '箱', weight: 3000, weightUnit: '千克', plannedInbound: '2026-01-01', produceDate: '2026-01-01', batchNo: '2026-01-01', contractNo: '2026-01-01', waybill: 'ZXT20260303', cabinet: '002', location: '河南省郑州市' },
     ],
   };
-  const progress = progressMap[i.status] || progressMap['pending'];
 
-  const actions = {
-    'pending': [
-      { label: '撤回申请', type: 'danger', onclick: "if(confirm('确认撤回？')){Utils.toast('已撤回','success');setTimeout(()=>history.back(),600)}" },
-      { label: '修改申请', type: 'default', onclick: "Utils.toast('打开修改表单','info')" },
-      { label: '联系业务员', type: 'default', onclick: "Utils.toast('业务员：张丽 139 0000 1234','info')" },
-    ],
-    'reviewing': [
-      { label: '查看审批进度', type: 'primary', onclick: "document.getElementById('progressSection').scrollIntoView({behavior:'smooth'})" },
-      { label: '催办', type: 'default', onclick: "Utils.toast('已催办监管方','success')" },
-      { label: '查看货值评估', type: 'default', onclick: "document.getElementById('goodsSection').scrollIntoView({behavior:'smooth'})" },
-    ],
-    'inbound': [
-      { label: '发起融资申请', type: 'success', onclick: "window.location.href = Utils.nav('/customer/financing')" },
-      { label: '查看质物清单', type: 'primary', onclick: "window.location.href = Utils.nav('/customer/pledge-list')" },
-      { label: '下载入库单', type: 'default', onclick: "Utils.toast('下载中...','info')" },
-    ],
+  // 入库申请单据（草稿/查看/下载）
+  const docRows = [
+    { no: 1, docName: '入库申请清单', status: '起草', uploadTime: '2026-06-11 14:23' },
+  ];
+
+  // 附件（每条记录带上传时间）
+  const attachments = [
+    { type: '合同及订单',     required: true,  files: [{ name: '采购合同.pdf', time: '2023-12-12 12:23:32' }, { name: '采购订单.pdf', time: '2023-12-12 12:25:18' }] },
+    { type: '报关单',         required: true,  files: [{ name: '明细1.pdf',    time: '2023-12-12 12:30:01' }] },
+    { type: '检验检疫证明',   required: true,  files: [{ name: '明细1.pdf',    time: '2023-12-12 12:35:22' }] },
+    { type: '其他附件',       required: false, files: [] },
+  ];
+
+  // 审批进度映射（v1.7.16 用户截图样式：提交 → 担保方确认 → 监管方确认 → 入库完成）
+  const STEP_DEFS = [
+    { key: 'submitted',       label: '提交' },
+    { key: 'pending_guarantor', label: '担保方确认' },
+    { key: 'pending_supervisor', label: '监管方确认' },
+    { key: 'inbound_completed', label: '入库完成' },
+  ];
+
+  // 状态 → 当前步骤（reviewing / pending_supervisor → 第 3 步）
+  function statusToStep(status) {
+    if (status === 'draft' || status === 'pending_submit') return 0;
+    if (status === 'pending_owner_seal' || status === 'pending_owner_seal_2' || status === 'pending_owner_seal_3') return 1;
+    if (status === 'pending_guarantor') return 1;
+    if (status === 'reviewing' || status === 'pending_supervisor') return 2;
+    if (status === 'pending_inbound' || status === 'inbound') return 2;
+    if (status === 'inbound_completed') return 3;
+    return 0;
+  }
+
+  // 当前详情数据
+  const data = (urlId && MockData.inboundList.find(i => i.id === urlId)) || {
+    id: 'demo',
+    bizNo: DEMO.bizNo,
+    applicant: '河南军牧原国际贸易有限公司',
+    contactPerson: '张三 — 13388883333',
+    financeProduct: '中原e贷',
+    supervisor: '大河智链物流（郑州）有限公司',
+    pledgee: '河南农担股份有限公司',
+    applyDate: '2026-06-11',
+    creator: '张三',
+    createdAt: '2022-08-12 12:22:32',
+    warehouse: '郑州仓',
+    status: 'pending_supervisor',
+    pledgeRows: DEMO.pledgeRows,
   };
-  const currentActions = actions[i.status] || actions['pending'];
 
-  // v1.7.3 盖章人视角：底部动作栏仅保留"返回列表"
-  const _displayActions = _isSealer ? [] : currentActions;
+  const currentStepIdx = statusToStep(data.status);
+  const isFinalized = ['rejected', 'voided', 'cancelled'].includes(data.status);
+  const isRejected = data.status === 'rejected';
+  const statusLabelMap = {
+    draft: '草稿', pending_submit: '待提交', pending_owner_seal: '待货主盖章',
+    pending_guarantor: '待担保确认', reviewing: '待监管确认', pending_supervisor: '待监管确认',
+    pending_inbound: '待入库', inbound: '待入库', inbound_completed: '已入库',
+    rejected: '已驳回', voided: '已作废', cancelled: '已作废',
+  };
 
-  document.getElementById('app').innerHTML = `
-    ${Components.topbar()}
-    <div class="flex">
-      ${Components.sidebar('/customer/inbound')}
-      <main class="flex-1 overflow-y-auto bg-slate-50">
-        <div class="p-6 page-enter">
-          ${Components.breadcrumb([{ label: '货物管理', path: '/customer/inbound' }, '入库详情'])}
-          <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6">
-            <div class="flex items-start justify-between mb-4">
-              <div>
-                <div class="flex items-center gap-3 mb-2">
-                  <h1 class="text-2xl font-bold text-slate-800">入库详情</h1>
-                  ${Components.badge(i.status)}
-                </div>
-                <div class="text-sm text-slate-500">入库单号: <span class="font-mono">${i.bizNo}</span> · 提交时间: ${i.applyDate}</div>
-              </div>
-              <button onclick="history.back()" class="px-3 py-2 border border-slate-300 rounded-md text-sm hover:bg-slate-50">← 返回列表</button>
-            </div>
-            <div class="bg-${i.status === 'inbound' ? 'green' : 'blue'}-50 border border-${i.status === 'inbound' ? 'green' : 'blue'}-200 rounded-lg p-3 mb-4">
-              <div class="text-sm font-medium text-${i.status === 'inbound' ? 'green' : 'blue'}-800">
-                ${i.status === 'inbound' ? '✅ 入库已完成，质物清单已生成。您可发起融资申请' :
-                  i.status === 'reviewing' ? '⏳ 监管方正在审核货值评估，预计 1 个工作日内反馈' :
-                  '⏳ 申请已提交，等待监管方审核'}
-              </div>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              ${_displayActions.map(act => `
-                <button onclick="${act.onclick.replace(/"/g, '&quot;')}" class="px-4 py-2 rounded-md text-sm font-medium ${
-                  act.type === 'primary' ? 'bg-blue-600 hover:bg-blue-700 text-white' :
-                  act.type === 'success' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' :
-                  act.type === 'danger' ? 'bg-white border border-rose-300 text-rose-600 hover:bg-rose-50' :
-                  'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50'
-                }">${act.label}</button>
-              `).join('')}
-              ${_isSealer ? `
-                <span class="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-100 text-amber-800 rounded-md text-sm font-medium border border-amber-300">
-                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v4a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
-                  仅查看模式 · 盖章动作请见下方工作区
-                </span>
-              ` : ''}
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '入库详情',
+    currentPath: '/customer/inbound',
+    breadcrumb: [
+      { label: '货物管理', path: '/customer/inbound' },
+      { label: '入库申请', path: '/customer/inbound' },
+      { label: '入库详情', path: '/customer/inbound-detail' },
+    ],
+    extra: '',
+    content: render(),
+  });
+
+  function render() {
+    return `
+      <!-- 顶部 header (返回 + 编号 + 复制 + 状态 badge) -->
+      <div class="flex items-center justify-between mb-4 bg-white border border-slate-200 rounded-xl px-5 py-3">
+        <div class="flex items-center gap-3">
+          <button onclick="goBack()" class="flex items-center gap-1 text-slate-600 hover:text-blue-600 text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            返回
+          </button>
+          <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">入</div>
+          <h2 class="text-lg font-bold text-slate-800">入库申请编号：<span class="font-mono">${data.bizNo}</span></h2>
+          <button onclick="copyBizNo()" title="复制编号" class="text-slate-400 hover:text-blue-600">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+          </button>
+          <span class="px-2 py-0.5 text-xs ${isRejected ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700'} rounded">${statusLabelMap[data.status] || data.status}</span>
+          ${isFinalized ? `<span class="px-2 py-0.5 text-xs bg-rose-100 text-rose-700 rounded">${data.rejectedReason ? '驳回原因：' + data.rejectedReason : (data.voidReason || '已作废')}</span>` : ''}
+        </div>
+        <div class="flex items-center gap-2 text-xs text-slate-500">
+          <span>最后更新：${data.createdAt || '2026-06-11 14:23'}</span>
+        </div>
+      </div>
+
+      <!-- 1. 基础信息卡 + 入库申请清单（融合） -->
+      <section class="bg-white border border-slate-200 rounded-xl mb-4 overflow-hidden">
+        <div class="flex">
+          <!-- 左侧：基础信息 3×3 -->
+          <div class="flex-1 p-6 border-r border-slate-200">
+            <div class="grid grid-cols-3 gap-x-6 gap-y-4">
+              <div><dt class="text-xs text-slate-500 mb-1">出质方</dt><dd class="text-sm font-medium text-slate-800">${data.applicant || '郑州某冷链贸易有限公司'}</dd></div>
+              <div><dt class="text-xs text-slate-500 mb-1">联系人</dt><dd class="text-sm text-slate-800">${data.contactPerson || '李雪 — 138 0000 1234'}</dd></div>
+              <div><dt class="text-xs text-slate-500 mb-1">金融产品</dt><dd class="text-sm text-slate-800">${data.financeProduct || '冷链现货质押融资（90天）'}</dd></div>
+
+              <div><dt class="text-xs text-slate-500 mb-1">监管方</dt><dd class="text-sm text-slate-800">${data.supervisor || '大河智链物流（郑州）有限公司'}</dd></div>
+              <div><dt class="text-xs text-slate-500 mb-1">质权方</dt><dd class="text-sm text-slate-800">${data.pledgee || '河南农担股份有限公司'}</dd></div>
+              <div><dt class="text-xs text-slate-500 mb-1">申请日期</dt><dd class="text-sm text-slate-800 font-mono">${data.applyDate || '2026-06-11'}</dd></div>
+
+              <div><dt class="text-xs text-slate-500 mb-1">创建人</dt><dd class="text-sm text-slate-800">${data.creator || '张三'}</dd></div>
+              <div><dt class="text-xs text-slate-500 mb-1">创建时间</dt><dd class="text-sm text-slate-800 font-mono">${data.createdAt || '2022-08-12 12:22:32'}</dd></div>
+              <div><dt class="text-xs text-slate-500 mb-1">仓库地点</dt><dd class="text-sm text-slate-800">${data.warehouse || '郑州仓'}</dd></div>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2 space-y-6">
-              <div class="bg-white rounded-xl border border-slate-200 p-6">
-                <h3 class="font-semibold text-slate-800 mb-4 pb-3 border-b">📦 入库基本信息</h3>
-                <div class="grid grid-cols-2 gap-4 text-sm">
-                  <div><span class="text-slate-500">入库仓库：</span><span class="font-medium">${i.warehouse}</span></div>
-                  <div><span class="text-slate-500">入库方式：</span>${i.id === 'in_001' ? '新货入库' : '货权转移'}</div>
-                  <div><span class="text-slate-500">车牌号：</span><span class="font-mono">${i.vehicleNo}</span></div>
-                  <div><span class="text-slate-500">司机：</span>${i.driver} · <span class="font-mono">${i.driverPhone}</span></div>
-                  <div><span class="text-slate-500">计划入库日期：</span>${i.inboundDate}</div>
-                  <div><span class="text-slate-500">实际入库日期：</span>${i.status === 'inbound' ? i.inboundDate + ' 09:30' : '待入库'}</div>
-                </div>
-              </div>
-
-              <div id="goodsSection" class="bg-white rounded-xl border border-slate-200 p-6">
-                <h3 class="font-semibold text-slate-800 mb-4 pb-3 border-b">💰 货物明细 & 货值评估</h3>
-                <table class="w-full text-sm border border-slate-200">
-                  <thead class="bg-slate-50 text-xs">
-                    <tr>
-                      <th class="text-left px-3 py-2">货品</th>
-                      <th class="text-right px-3 py-2">件数</th>
-                      <th class="text-right px-3 py-2">净重</th>
-                      <th class="text-right px-3 py-2">市场价</th>
-                      <th class="text-right px-3 py-2">评估单价</th>
-                      <th class="text-right px-3 py-2">评估货值</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td class="px-3 py-2">
-                        <div class="font-medium">${i.products[0].name}</div>
-                        <div class="text-xs text-slate-400 font-mono">${i.products[0].id || '-'}</div>
-                      </td>
-                      <td class="px-3 py-2 text-right num-focus">${Utils.fmtNum(i.products[0].pieces)}</td>
-                      <td class="px-3 py-2 text-right num-focus">${Utils.fmtNum(i.products[0].weight)} kg</td>
-                      <td class="px-3 py-2 text-right num-focus">¥${(p.currentPrice || 63.00).toFixed(2)}</td>
-                      <td class="px-3 py-2 text-right num-focus font-medium text-blue-700">¥${i.products[0].evaluatePrice.toFixed(2)}</td>
-                      <td class="px-3 py-2 text-right num-focus font-bold">${Utils.fmtMoney(i.products[0].evaluateValue)}</td>
-                    </tr>
-                  </tbody>
-                  <tfoot>
-                    <tr class="bg-blue-50 font-bold">
-                      <td colspan="5" class="px-3 py-2 text-right">合计评估货值：</td>
-                      <td class="px-3 py-2 text-right text-blue-700 num-focus">${Utils.fmtMoney(i.totalValue)}</td>
-                    </tr>
-                  </tfoot>
-                </table>
-                <div class="mt-3 text-xs text-slate-500">💡 评估单价 = 市场价 × (1 - 8%)，下浮比例由监管方审核确定</div>
-              </div>
-
-              <div class="bg-white rounded-xl border border-slate-200 p-6">
-                <h3 class="font-semibold text-slate-800 mb-4 pb-3 border-b">📎 入库随附单据</h3>
-                <div class="grid grid-cols-2 gap-3">
-                  ${['报关单.pdf', '检验检疫证.pdf', '入境货物检验检疫证明.pdf', '货权转移单.pdf'].map(d => `
-                    <div class="flex items-center justify-between p-3 border border-slate-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 cursor-pointer" onclick="Utils.toast('预览','info')">
-                      <div class="flex items-center gap-2">
-                        <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>
-                        <div>
-                          <div class="text-sm font-medium">${d}</div>
-                          <div class="text-xs text-slate-400">${(Math.random() * 3 + 0.5).toFixed(1)} MB · 已上传</div>
-                        </div>
-                      </div>
-                      <button class="text-xs text-blue-600 hover:underline">预览</button>
-                    </div>
-                  `).join('')}
-                </div>
-              </div>
+          <!-- 右侧：入库申请清单（融合在同一层级） -->
+          <div class="w-72 p-6 bg-slate-50/30">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-medium text-slate-700 flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4z" clip-rule="evenodd"/></svg>
+                入库申请清单
+              </h3>
+              <span class="text-xs text-slate-400">${docRows.length} 份</span>
             </div>
-
-            <div id="progressSection" class="space-y-6">
-              <div class="bg-white rounded-xl border border-slate-200 p-6 sticky top-4">
-                <h3 class="font-semibold text-slate-800 mb-4 pb-3 border-b">🕐 入库进度</h3>
-                <div class="mb-4">
-                  <div class="flex items-center justify-between text-xs text-slate-500 mb-2">
-                    <span>已完成 ${progress.filter(p => p.status === 'success').length} / 共 ${progress.length} 步</span>
-                    <span class="font-medium">${Math.round(progress.filter(p => p.status === 'success').length / progress.length * 100)}%</span>
-                  </div>
-                  <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div class="h-full bg-gradient-to-r from-blue-500 to-blue-600" style="width: ${progress.filter(p => p.status === 'success').length / progress.length * 100}%"></div>
-                  </div>
-                </div>
-                <div class="space-y-4 mt-6">
-                  ${progress.map((p, idx) => `
-                    <div class="flex gap-3">
-                      <div class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                        p.status === 'success' ? 'bg-green-500 text-white' :
-                        p.status === 'current' ? 'bg-blue-500 text-white animate-pulse' :
-                        'bg-slate-200 text-slate-400'
-                      }">${p.status === 'success' ? '✓' : idx + 1}</div>
-                      <div class="flex-1 ${p.status === 'pending' ? 'opacity-50' : ''}">
-                        <div class="flex items-center justify-between">
-                          <div class="text-sm font-medium text-slate-800">${p.node}</div>
-                          <div class="text-xs text-slate-400">${p.time}</div>
-                        </div>
-                        <div class="text-xs text-slate-500 mt-0.5">${p.operator}</div>
-                        ${p.opinion && p.opinion !== '—' ? `<div class="text-xs text-slate-600 mt-1 p-2 bg-slate-50 rounded">${p.opinion}</div>` : ''}
-                      </div>
-                    </div>
-                  `).join('')}
-                </div>
-              </div>
-            </div>
-
-            ${_isSealer ? `
-            <!-- v1.7.3 盖章工作区（盖章人专属内嵌） -->
-            <div class="lg:col-span-3 mt-2">
-              <div class="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl p-6 shadow-sm">
-                <div class="flex items-center justify-between mb-4 pb-3 border-b border-amber-300">
-                  <h3 class="font-bold text-amber-900 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                    📌 盖章工作区 · 仅盖章人可操作
-                  </h3>
+            <div class="space-y-2">
+              ${docRows.map(d => `
+                <div class="bg-white border border-slate-200 rounded-lg p-3">
                   <div class="flex items-center gap-2">
-                    <span class="px-2 py-1 text-xs rounded bg-amber-200 text-amber-800 font-medium">当前盖章人</span>
-                    <span class="font-medium text-amber-900">${_sealerName}（${_sealer.title}）</span>
+                    <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-xs grid place-items-center">${d.no}</span>
+                    <span class="text-sm font-medium text-slate-800 flex-1">${d.docName}</span>
                   </div>
-                </div>
-
-                ${i.status === 'rejected' ? `
-                <!-- 驳回原因提示 -->
-                <div class="mb-4 p-3 bg-red-50 border border-red-300 rounded-lg">
-                  <div class="flex items-start gap-2">
-                    <svg class="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
-                    <div class="flex-1">
-                      <div class="text-sm font-bold text-red-700 mb-1">🔴 此入库申请已被驳回，请重新盖章提交</div>
-                      <div class="text-xs text-red-600">驳回原因：${_rejectReason}</div>
-                      <div class="text-xs text-red-500 mt-1">驳回方：监管方 · 驳回时间：${i.rejectTime || '2026-07-08 16:45'}</div>
+                  <div class="flex items-center justify-between mt-2 text-xs">
+                    <span class="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded">${d.status}</span>
+                    <div class="flex items-center gap-3">
+                      <button onclick="viewDoc('${d.no}')" class="text-blue-600 hover:underline">查看</button>
+                      <button onclick="downloadDoc('${d.no}')" class="text-blue-600 hover:underline">下载</button>
                     </div>
                   </div>
+                  <div class="text-xs text-slate-400 mt-1.5">📅 ${d.uploadTime}</div>
                 </div>
-                ` : ''}
-
-                ${_sealable ? `
-                <!-- 印章选择 -->
-                <div class="mb-4">
-                  <label class="block text-sm font-semibold text-amber-900 mb-2">印章类型 <span class="text-red-500">*</span></label>
-                  <div class="flex flex-wrap gap-3">
-                    ${_availableSeals.map((s, idx) => `
-                      <label class="cursor-pointer">
-                        <input type="radio" name="sealType" value="${s.id}" class="peer sr-only" ${idx === 0 ? 'checked' : ''}>
-                        <div class="px-4 py-3 border-2 border-amber-300 rounded-lg peer-checked:border-amber-600 peer-checked:bg-amber-100 hover:border-amber-400 transition">
-                          <div class="flex items-center gap-2">
-                            <div class="w-10 h-10 rounded-full border-2 border-${s.color === 'red' ? 'red' : 'blue'}-600 flex items-center justify-center text-${s.color === 'red' ? 'red' : 'blue'}-700 font-bold text-xs bg-white">印</div>
-                            <div>
-                              <div class="font-medium text-sm text-amber-900">${s.name}</div>
-                              <div class="text-xs text-amber-700">${s.preview}</div>
-                            </div>
-                          </div>
-                        </div>
-                      </label>
-                    `).join('')}
-                  </div>
-                </div>
-
-                <!-- 单据预览 + 拖拽区 -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div class="bg-white border-2 border-slate-300 rounded-lg p-4 min-h-[280px]">
-                    <div class="flex items-center justify-between mb-3 pb-2 border-b">
-                      <div class="text-sm font-semibold text-slate-700">📄 单据预览</div>
-                      <span class="text-xs text-slate-400">《入库申请单》${i.bizNo}</span>
-                    </div>
-                    <div class="text-xs text-slate-600 space-y-1">
-                      <div class="font-bold text-center text-base text-slate-800 mb-2 pb-2 border-b">郑州某冷链贸易有限公司<br>入库申请单</div>
-                      <div><span class="text-slate-400">入库单号：</span>${i.bizNo}</div>
-                      <div><span class="text-slate-400">货品：</span>${i.products[0].name}</div>
-                      <div><span class="text-slate-400">件数：</span>${Utils.fmtNum(i.products[0].pieces)} 件</div>
-                      <div><span class="text-slate-400">净重：</span>${Utils.fmtNum(i.products[0].weight)} kg</div>
-                      <div><span class="text-slate-400">评估货值：</span><span class="font-bold text-blue-700">${Utils.fmtMoney(i.totalValue)}</span></div>
-                      <div><span class="text-slate-400">入库仓库：</span>${i.warehouse}</div>
-                      <div><span class="text-slate-400">车牌号：</span>${i.vehicleNo}</div>
-                      <div><span class="text-slate-400">司机：</span>${i.driver} · ${i.driverPhone}</div>
-                      <div class="pt-2 mt-2 border-t text-center text-slate-500">—— 盖章位置 ——</div>
-                      <div class="mt-8 mx-auto w-32 h-16 border-2 border-dashed border-amber-400 rounded flex items-center justify-center text-xs text-amber-600 bg-amber-50/50">拖拽印章到此处</div>
-                    </div>
-                  </div>
-                  <div class="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-400 border-dashed rounded-lg p-4 min-h-[280px] flex flex-col">
-                    <div class="text-sm font-semibold text-amber-800 mb-3 pb-2 border-b border-amber-300">🖱️ 盖章画布</div>
-                    <div class="flex-1 flex items-center justify-center">
-                      <div class="text-center">
-                        <div class="text-5xl mb-3">📋</div>
-                        <div class="text-sm text-amber-700">单据预览已就绪</div>
-                        <div class="text-xs text-amber-600 mt-2">请在左侧选择印章类型</div>
-                        <div class="mt-4 px-3 py-1 inline-block bg-amber-200 text-amber-900 rounded text-xs font-mono">印章已选中：<span id="selectedSealName">${_availableSeals[0]?.name || '—'}</span></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 法律声明 -->
-                <div class="mb-4 p-4 bg-white border border-amber-300 rounded-lg">
-                  <label class="flex items-start gap-2 cursor-pointer">
-                    <input type="checkbox" id="legalDecl" class="mt-1 w-4 h-4 accent-amber-600">
-                    <div class="flex-1 text-sm text-slate-700">
-                      <div class="font-medium">本人确认本签章具有法律效力 <span class="text-red-500">*</span></div>
-                      <div class="text-xs text-slate-500 mt-1">依据《电子签名法》第十四条，可靠的电子签名与手写签名或者盖章具有同等的法律效力。本人确认上述电子签章系本人真实意思表示，对本电子签章所涉全部法律文件承担相应法律责任。</div>
-                    </div>
-                  </label>
-                </div>
-
-                <!-- 按钮 -->
-                <div class="flex items-center justify-between">
-                  <div class="text-xs text-amber-700">💡 盖章完成后，状态将变更为「待担保方审核」，系统将自动站内信通知担保方</div>
-                  <div class="flex gap-2">
-                    <button onclick="history.back()" class="px-4 py-2 border border-slate-300 rounded-md text-sm hover:bg-slate-50">取消</button>
-                    <button onclick="submitSeal('${i.id}', '${i.bizNo}')" class="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-md text-sm font-bold flex items-center gap-2 shadow-md">
-                      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                      确认签章并提交
-                    </button>
-                  </div>
-                </div>
-                ` : `
-                <div class="text-center py-8 text-amber-700 text-sm">
-                  ${i.status === 'inbound' || i.status === 'inbound_completed' ? '✅ 此入库申请已完成盖章，无需再次操作' :
-                    i.status === 'pending_guarantor' || i.status === 'pending_platform' ? '⏳ 此入库申请已进入担保/监管审核阶段，无需盖章' :
-                    i.status === 'draft' ? '📝 此入库申请尚未提交盖章，无需盖章' :
-                    '📌 此入库申请当前状态无需盖章'}
-                </div>
-                `}
-              </div>
+              `).join('')}
             </div>
-            ` : ''}
           </div>
         </div>
-      </main>
-    </div>
-  `;
+      </section>
 
-  // v1.7.3 盖章提交函数（盖章人专用）
-  function submitSeal(inboundId, bizNo) {
-    if (!document.getElementById('legalDecl').checked) {
-      Utils.toast('请勾选法律声明', 'warning');
-      return;
-    }
-    const sealType = document.querySelector('input[name="sealType"]:checked')?.value;
-    if (!sealType) {
-      Utils.toast('请选择印章', 'warning');
-      return;
-    }
-    if (!confirm(`确认使用「${document.getElementById('selectedSealName')?.textContent || sealType}」对 ${bizNo} 完成签章？\n提交后将推送至担保方审核，不可撤回。`)) return;
-    Utils.toast('盖章完成，已推送至担保方审核', 'success');
-    setTimeout(() => history.back(), 800);
+      <!-- 2. 审批进度 → 4 步步骤条（v1.7.16 用户要求直接步骤条 + 删催办） -->
+      <section class="bg-white border border-slate-200 rounded-xl mb-4 p-6">
+        <h3 class="text-sm font-medium text-slate-700 mb-4">审批进度</h3>
+        <div class="flex items-center justify-between max-w-4xl mx-auto">
+          ${STEP_DEFS.map((s, i) => renderStep(s, i)).join('')}
+        </div>
+        ${isRejected ? `<div class="mt-4 text-center text-sm text-rose-600">⚠ 此申请已被驳回，相关流程已终止</div>` : ''}
+      </section>
+
+      <!-- 3. 入库货物明细（18 列含【货物所在地】） -->
+      <section class="bg-white border border-slate-200 rounded-xl mb-4 overflow-hidden">
+        <div class="px-6 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+          <h3 class="font-bold text-slate-800">入库货物明细</h3>
+          <div class="flex items-center gap-6 text-sm">
+            <div><span class="text-xs text-slate-500 mr-2">合计数量：</span><b class="text-slate-800 num-focus">${data.pledgeRows.reduce((a, r) => a + (Number(r.qty) || 0), 0).toFixed(0)}</b></div>
+            <div><span class="text-xs text-slate-500 mr-2">合计重量：</span><b class="text-slate-800 num-focus">${data.pledgeRows.reduce((a, r) => a + (Number(r.weight) || 0), 0).toFixed(4)}</b> <span class="text-xs text-slate-400">kg</span></div>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs min-w-[1600px]">
+            <thead class="bg-slate-50 text-slate-600">
+              <tr>
+                <th class="text-left px-2 py-3 whitespace-nowrap">序号</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">货品名称</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">国家</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">厂号</th>
+                <th class="text-right px-2 py-3 whitespace-nowrap">入库数量</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">数量单位</th>
+                <th class="text-right px-2 py-3 whitespace-nowrap">入库重量</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">重量单位</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">计划入库时间</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">生产日期</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">生产批号</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">合同号</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">提/运单号</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">柜号</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">${badgeV1716('货物所在地')}</th>
+              </tr>
+            </thead>
+            <tbody>${renderPledgeRows()}</tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 4. 附件（含上传日期气泡） -->
+      <section class="bg-white border border-slate-200 rounded-xl mb-6 overflow-hidden">
+        <div class="px-6 py-3 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="font-bold text-slate-800">附件</h3>
+          <button onclick="downloadAllAttachments()" class="text-sm text-blue-600 hover:underline">一键下载</button>
+        </div>
+        <div class="p-6">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-slate-600 border-b border-slate-200">
+                <th class="text-left py-2 px-3 w-40">单据类型</th>
+                <th class="text-left py-2 px-3">文件名（鼠标悬停查看上传日期）</th>
+                <th class="text-left py-2 px-3 w-32">操作</th>
+              </tr>
+            </thead>
+            <tbody>${renderAttachments()}</tbody>
+          </table>
+        </div>
+      </section>
+    `;
   }
+
+  // v1.7.16 新增小标签
+  function badgeV1716(text) {
+    return `<span>${text} <span class="ml-1 px-1 py-0.5 text-[10px] bg-emerald-100 text-emerald-700 rounded font-medium">新</span></span>`;
+  }
+
+  // 步骤渲染
+  function renderStep(step, idx) {
+    const isDone = idx < currentStepIdx;
+    const isCurrent = idx === currentStepIdx && !isRejected;
+    const isPending = idx > currentStepIdx;
+    let circleCls, textCls, lineCls;
+    if (isDone) {
+      circleCls = 'bg-blue-600 border-blue-600 text-white';
+      textCls = 'text-blue-700 font-medium';
+      lineCls = 'bg-blue-600';
+    } else if (isCurrent) {
+      circleCls = 'bg-blue-600 border-blue-600 text-white';
+      textCls = 'text-blue-700 font-medium';
+      lineCls = 'bg-slate-200';
+    } else {
+      circleCls = 'bg-slate-100 border-slate-300 text-slate-400';
+      textCls = 'text-slate-400';
+      lineCls = 'bg-slate-200';
+    }
+    const numIcon = isDone
+      ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>'
+      : `<span class="text-sm font-bold">${idx + 1}</span>`;
+    const connector = idx < STEP_DEFS.length - 1
+      ? `<div class="flex-1 h-0.5 ${idx < currentStepIdx ? 'bg-blue-600' : 'bg-slate-200'} mx-3 -mt-7"></div>`
+      : '';
+    return `
+      <div class="flex flex-col items-center min-w-0 relative" style="flex: 1">
+        <div class="relative flex items-center w-full">
+          <div class="w-14 h-14 rounded-full border-2 ${circleCls} grid place-items-center flex-shrink-0 transition-all">${numIcon}</div>
+          ${connector}
+        </div>
+        <div class="text-sm ${textCls} mt-2 whitespace-nowrap">${step.label}</div>
+      </div>
+    `;
+  }
+
+  function renderPledgeRows() {
+    return data.pledgeRows.map(r => `
+      <tr class="border-t border-slate-100 hover:bg-blue-50/30">
+        <td class="px-2 py-2">${r.no}</td>
+        <td class="px-2 py-2">${r.name}</td>
+        <td class="px-2 py-2">${r.country}</td>
+        <td class="px-2 py-2">${r.factoryNo}</td>
+        <td class="px-2 py-2 text-right num-focus">${r.qty}</td>
+        <td class="px-2 py-2">${r.qtyUnit}</td>
+        <td class="px-2 py-2 text-right num-focus">${r.weight}</td>
+        <td class="px-2 py-2">${r.weightUnit}</td>
+        <td class="px-2 py-2">${r.plannedInbound}</td>
+        <td class="px-2 py-2">${r.produceDate}</td>
+        <td class="px-2 py-2">${r.batchNo}</td>
+        <td class="px-2 py-2">${r.contractNo}</td>
+        <td class="px-2 py-2">${r.waybill}</td>
+        <td class="px-2 py-2">${r.cabinet}</td>
+        <td class="px-2 py-2"><span class="text-blue-700">${r.location}</span></td>
+      </tr>
+    `).join('');
+  }
+
+  function renderAttachments() {
+    return attachments.map(a => `
+      <tr class="border-t border-slate-100">
+        <td class="py-3 px-3 align-top">
+          <span class="${a.required ? 'text-rose-500' : 'text-slate-700'}">${a.required ? '* ' : ''}${a.type}</span>
+        </td>
+        <td class="py-3 px-3">
+          ${a.files.length === 0 ? '<span class="text-slate-300 text-xs">（暂无文件）</span>' : `
+            <div class="flex items-center gap-2 flex-wrap">
+              ${a.files.map(f => `
+                <div class="relative group">
+                  <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs cursor-pointer hover:bg-blue-100">
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>
+                    ${f.name}
+                  </span>
+                  <div class="absolute left-0 -top-9 hidden group-hover:block z-10 bg-slate-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap shadow-lg">
+                    📅 上传时间：${f.time}
+                    <div class="absolute top-full left-3 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-slate-800"></div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </td>
+        <td class="py-3 px-3 align-top">
+          ${a.files.length ? `<button onclick="downloadAttachment('${a.type}', this)" class="text-blue-600 hover:underline">下载</button>` : '<span class="text-slate-300">—</span>'}
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  // ============ Events ============
+  window.goBack = () => window.location.href = Utils.nav('/customer/inbound');
+  window.copyBizNo = () => {
+    navigator.clipboard.writeText(data.bizNo).then(() => Utils.toast('编号已复制：' + data.bizNo, 'success'));
+  };
+  window.viewDoc = (no) => Utils.toast(`查看入库申请清单 #${no}（占位）`, 'info');
+  window.downloadDoc = (no) => Utils.toast(`下载入库申请清单 #${no}（占位）`, 'info');
+  window.downloadAttachment = (type, btn) => Utils.toast(`下载 ${type}（占位）`, 'info');
+  window.downloadAllAttachments = () => Utils.toast('一键下载全部附件（占位）', 'info');
 </script>
 </body>
 </html>
