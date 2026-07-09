@@ -173,6 +173,7 @@ const MockData = {
       { group: '货物管理', items: [
         { icon: 'box', label: '入库申请', path: '/customer/inbound' },
         { icon: 'package', label: '在库货物', path: '/customer/monitoring' },
+        { icon: 'list', label: '出/入库详情', path: '/customer/in-out-detail' },
       ]},
       { group: '融资管理', items: [
         { icon: 'file', label: '融资申请', path: '/customer/financing' },
@@ -1346,6 +1347,71 @@ const MockData = {
       }
     });
     return out;
+  })(),
+
+  // ========== 出/入库详情（v1.7.11 货物管理 → 出/入库详情） ==========
+  // 两类记录：入库详情（inboundDetailList）+ 出库详情（outboundDetailList）
+  // 注：此字段必须在 MockData 对象内（line 1351 `};` 关闭之前），否则页面取不到数据导致空白
+  inOutDetails: (function() {
+    const suppliers = ['中原银行股份有限公司', '工商银行郑州分行', '中融信托·冷链金融部', '招商银行郑州分行'];
+    const warehouses = [
+      { id: 'wh_001', name: '郑州融万冷库', location: '智链监管仓-1号位' },
+      { id: 'wh_002', name: '物流港二期', location: '智链监管仓-2号位' },
+      { id: 'wh_003', name: '天津港国际冷链基地', location: '智链监管仓-3号位' },
+    ];
+    const products = ['保乐肩、牛肋条', '羔羊肉卷', '牛腩', '牛肋排', '牛腱子', '肥牛'];
+    const sources = ['手动添加', '数据同步', 'API导入'];
+
+    const inboundList = [];
+    const outboundList = [];
+    for (let i = 0; i < 12; i++) {
+      const wh = warehouses[i % warehouses.length];
+      const ymd = ['2026-05-10', '2026-05-08', '2026-04-22', '2026-04-15', '2026-04-02'][i % 5];
+      const num = i === 0 ? '435646578990' : String(435646578990 + i * 11);
+      const applyNo = i === 0 ? 'IN20231010000001' : `IN2026${String(i * 100 + 1).padStart(8, '0')}`;
+      const contractNo = i === 0 ? 'XJDYC-RHSY-202405-003' : `XJDYC-RHSY-2024${String((i%12)+1).padStart(2,'0')}-003`;
+      const stockPieces = 140 + i * 7;
+      const stockWeight = 2000 + i * 200;
+
+      inboundList.push({
+        id: `in_detail_${String(i + 1).padStart(3, '0')}`,
+        type: 'inbound',
+        bizNo: num,
+        bizDate: ymd,
+        bizTime: '12:33:34',
+        productName: products[i % products.length],
+        warehouseId: wh.id,
+        warehouseName: wh.name,
+        location: wh.location,
+        applyNo: applyNo,
+        stockPieces, stockWeight,
+        piecesUnit: '箱',
+        bank: suppliers[i % suppliers.length],
+        source: sources[i % sources.length],
+      });
+
+      // 出库用不同的编号前缀和字段
+      const outNum = i === 0 ? '435646578990' : String(435646578990 + i * 13);
+      const outApplyNo = i === 0 ? 'OUT20231010000001' : `OUT2026${String(i * 100 + 1).padStart(8, '0')}`;
+      outboundList.push({
+        id: `out_detail_${String(i + 1).padStart(3, '0')}`,
+        type: 'outbound',
+        bizNo: outNum,
+        bizDate: ymd,
+        bizTime: '12:33:34',
+        productName: products[i % products.length],
+        warehouseId: wh.id,
+        warehouseName: wh.name,
+        location: wh.location,
+        applyNo: outApplyNo,
+        contractNo: contractNo,
+        stockPieces, stockWeight,
+        piecesUnit: '箱',
+        bank: suppliers[i % suppliers.length],
+        source: sources[i % sources.length],
+      });
+    }
+    return { inboundList, outboundList };
   })(),
 };
 
