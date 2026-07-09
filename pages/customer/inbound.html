@@ -10,12 +10,12 @@
 })();
 </script>
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>入库申请 - 大河智链</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
-<link rel="stylesheet" href="/shared/css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>入库申请 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
 </head>
 <body class="bg-slate-50">
 <div id="app"></div>
@@ -25,112 +25,398 @@
 <script>
   Components.bindGlobalClose();
 
-  // v1.7.3 盖章人专属视图：根据当前登录角色决定列表过滤 + 顶部按钮
-  const _role = Utils.getRole();
-  const _isSealer = _role === 'customer_seal';
-  const _sealerName = MockData.users.customer_seal.name;
-  const _sealerCompany = MockData.users.customer_seal.company;
+  // ============ v1.7.12 入库申请：9 个状态机 tab + 11 列表格 ============
+  // 状态机映射：tab ID → 实际 status 值（兼容现有记录）
+  const INBOUND_TABS = [
+    { id: 'all', label: '全部' },
+    { id: 'pending_submit', label: '待提交', statusMatch: ['draft'] },
+    { id: 'pending_owner_seal', label: '待货主盖章', statusMatch: ['pending_owner_seal', 'pending_owner_seal_2', 'pending_owner_seal_3'] },
+    { id: 'pending_guarantor_confirm', label: '待担保确认', statusMatch: ['pending_guarantor', 'pending_guarantor_seal'] },
+    { id: 'pending_supervisor_confirm', label: '待监管确认', statusMatch: ['reviewing', 'pending_supervisor'] },
+    { id: 'pending_inbound', label: '待入库', statusMatch: ['inbound', 'pending_inbound'] },
+    { id: 'inbound', label: '已入库', statusMatch: ['inbound_completed'] },
+    { id: 'voided', label: '作废', statusMatch: ['voided', 'cancelled'] },
+    { id: 'rejected', label: '驳回', statusMatch: ['rejected'] },
+  ];
 
-  // 盖章人过滤：customerCode=JMY AND status ∈ {pending_owner_seal, rejected} AND sealUser=李雪
-  const _inboundList = _isSealer
-    ? MockData.inboundList.filter(i =>
-        i.customerCode === 'JMY' &&
-        ['pending_owner_seal', 'rejected'].includes(i.status) &&
-        (i.sealUser || _sealerName) === _sealerName
-      )
-    : MockData.inboundList;
+  let currentInboundTab = 'all';
 
+  // ============ 筛选条件 ============
+  const inboundFilters = {
+    applyNo: '',          // 入库申请编号
+    pledgor: '',          // 出质方
+    pledgee: '',          // 质权方
+    bank: '',             // 金融机构
+    productName: '',      // 金融产品
+    product: '',          // 货物名称
+    dateStart: '',        // 入库时间起
+    supervisor: '',       // 监管方
+    location: '',        // 货物所在地
+    state: '',            // 状态机（State1 截图里的）
+  };
+
+  // ============ 工具 ============
+  function _unique(field) {
+    return [...new Set((MockData.inboundList || []).map(i => i[field]).filter(Boolean))];
+  }
+
+  // 推导字段（匹配截图 11 列）
+  function deriveFields(r) {
+    const stockPieces = (r.products && r.products[0] && r.products[0].pieces) || 0;
+    const stockWeight = (r.products && r.products[0] && r.products[0].weight) || 0;
+    const productName = (r.products && r.products[0] && r.products[0].name) || '';
+    return {
+      bizNo: r.bizNo,
+      inboundDate: r.inboundDate || r.applyDate,
+      productName,
+      planPieces: stockPieces,
+      planWeight: stockWeight,
+      pledgor: r.applicant || '河南军牧原国际贸易有限公司',
+      pledgee: '中原再担保股份有限公司',
+      productType: '中原e贷',
+      bank: r.bank || '中原银行股份有限公司',
+      supervisor: '大河智链供应链管理有限公司',
+      location: '河南省郑州市',
+    };
+  }
+
+  // ============ 筛选逻辑 ============
+  function applyFilters() {
+    const f = inboundFilters;
+    const fuzzy = (val, kw) => !kw || (val || '').toLowerCase().includes(kw.toLowerCase().trim());
+    return (MockData.inboundList || []).filter(r => {
+      const d = deriveFields(r);
+      if (!fuzzy(r.bizNo, f.applyNo)) return false;
+      if (f.pledgor && r.applicant !== f.pledgor) return false;
+      if (f.pledgee && d.pledgee !== f.pledgee) return false;
+      if (f.bank && d.bank !== f.bank) return false;
+      if (f.productName && d.productType !== f.productName) return false;
+      if (f.product && d.productName !== f.product) return false;
+      if (f.supervisor && d.supervisor !== f.supervisor) return false;
+      if (f.location && d.location !== f.location) return false;
+      if (f.dateStart && r.inboundDate < f.dateStart) return false;
+      if (f.state && r.status !== f.state) return false;
+      return true;
+    });
+  }
+
+  // tab 过滤（在 filters 后再叠一层）
+  function applyTab(list, tabId) {
+    if (tabId === 'all') return list;
+    const tab = INBOUND_TABS.find(t => t.id === tabId);
+    if (!tab || !tab.statusMatch) return list;
+    return list.filter(r => tab.statusMatch.includes(r.status));
+  }
+
+  // ============ 页面渲染 ============
   document.getElementById('app').innerHTML = Components.pageShell({
-    title: _isSealer ? '我的待盖章入库申请' : '入库申请',
+    title: '入库申请',
     currentPath: '/customer/inbound',
-    breadcrumb: [{ label: '货物管理', path: '/customer/inbound' }, _isSealer ? '我的待盖章入库申请' : '入库申请'],
-    extra: _isSealer ? `
-      <span class="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-100 text-amber-800 rounded-md text-sm font-medium border border-amber-300">
-        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v4a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
-        货主方 · 盖章人 · ${_sealerName}
-      </span>
-    ` : `<button onclick="createInbound()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium flex items-center gap-1">
+    breadcrumb: [
+      { label: '智慧仓储', path: '/customer/monitoring' },
+      { label: '入库管理', path: '/customer/inbound' },
+      '入库申请',
+    ],
+    extra: `<button onclick="createInbound()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium flex items-center gap-1">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-      新建入库申请
+      新增入库申请
     </button>`,
-    content: `
-      ${_isSealer ? `
-        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-sm text-amber-800">
-          <span class="font-medium">📌 盖章人专属视图：</span>当前显示 ${_sealerCompany}（客户编码 JMY）<strong>待盖章</strong>与<strong>已驳回</strong>的入库申请，共 <strong>${_inboundList.length}</strong> 条。点击「查看详情」进入详情页执行盖章。
-        </div>
-      ` : `
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-800">
-          <span class="font-medium">入库流程（v1.7 按甲方 drawio 调整）：</span>
-          新建申请 → <strong>货主方盖章</strong>（图片签章）→ <strong>担保方审核</strong> → <strong>监管方审核</strong>（货值评估）→ 仓库入库验货 → 出具《质物清单》
-        </div>
-      `}
-
-      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
-            <tr>
-              <th class="text-left px-4 py-3">入库单号</th>
-              <th class="text-left px-4 py-3">货品</th>
-              <th class="text-right px-4 py-3">件数</th>
-              <th class="text-right px-4 py-3">净重(kg)</th>
-              <th class="text-right px-4 py-3">评估货值</th>
-              <th class="text-left px-4 py-3">入库仓库</th>
-              <th class="text-left px-4 py-3">车牌号</th>
-              <th class="text-center px-4 py-3 ${_isSealer ? 'text-amber-700 font-bold' : ''}">盖章进度</th>
-              <th class="text-center px-4 py-3">状态</th>
-              <th class="text-left px-4 py-3 ${_isSealer ? 'text-amber-700 font-bold' : ''}">创建人</th>
-              <th class="text-center px-4 py-3">操作</th>
-            </tr>
-          </thead>
-          <tbody class="table-row-hover">
-            ${_inboundList.length === 0 ? `
-              <tr><td colspan="11" class="text-center py-12 text-slate-400 text-sm">
-                ${_isSealer ? '🎉 当前没有需要盖章的入库申请' : '暂无入库申请'}
-              </td></tr>
-            ` : _inboundList.map(i => {
-              // v1.7 盖章进度计算
-              const sealMap = {
-                'draft': '<span class="text-xs text-slate-400">未提交</span>',
-                'pending_owner_seal': '<span class="text-xs font-bold text-amber-600">⏳ 待盖章</span>',
-                'pending_guarantor': '<span class="text-xs text-blue-600">✓ 货主已盖 / 待担保</span>',
-                'pending_platform': '<span class="text-xs text-blue-600">✓ 担保已审 / 待监管</span>',
-                'inbound_completed': '<span class="text-xs text-emerald-600">✓ 三级审核通过</span>',
-                'rejected': '<span class="text-xs font-bold text-red-600">🔴 驳回</span>',
-                'voided': '<span class="text-xs text-slate-400">作废</span>',
-              };
-              const sealProgress = sealMap[i.status] || '<span class="text-xs text-slate-400">-</span>';
-              // v1.7.3 创建人角色徽标
-              const creatorRole = (i.creatorUserRole === 'sealUser')
-                ? '<span class="ml-1 px-1.5 py-0.5 text-[10px] rounded bg-amber-100 text-amber-700 font-medium">盖章人</span>'
-                : '<span class="ml-1 px-1.5 py-0.5 text-[10px] rounded bg-slate-100 text-slate-600 font-medium">操作人</span>';
-              return `
-              <tr class="border-t border-slate-100 ${i.status === 'rejected' ? 'bg-red-50/30' : ''}">
-                <td class="px-4 py-3 font-mono text-xs">${i.bizNo}</td>
-                <td class="px-4 py-3">
-                  <div class="font-medium text-slate-800">${i.products[0].name}</div>
-                  <div class="text-xs text-slate-400">${i.products[0].id || '-'}</div>
-                </td>
-                <td class="px-4 py-3 text-right num-focus">${Utils.fmtNum(i.products[0].pieces)}</td>
-                <td class="px-4 py-3 text-right num-focus">${Utils.fmtWithUnit(i.products[0].weight, ' kg')}</td>
-                <td class="px-4 py-3 text-right num-focus font-medium">${Utils.fmtMoney(i.totalValue)}</td>
-                <td class="px-4 py-3 text-xs">${i.warehouse}</td>
-                <td class="px-4 py-3 font-mono text-xs">${i.vehicleNo}</td>
-                <td class="px-4 py-3 text-center ${_isSealer ? 'font-bold' : ''}">${sealProgress}</td>
-                <td class="px-4 py-3 text-center">${Components.badge(i.status)}</td>
-                <td class="px-4 py-3 text-xs">
-                  <div>${i.creator || '—'}${creatorRole}</div>
-                </td>
-                <td class="px-4 py-3 text-center">
-                  <button onclick="viewInbound('${i.id}')" class="text-blue-600 hover:underline text-xs font-medium">查看详情 →</button>
-                </td>
-              </tr>
-            `}).join('')}
-          </tbody>
-        </table>
-      </div>
-    `
+    content: renderPage(),
   });
 
+  function renderPage() {
+    const filtered = applyFilters();
+    const tabFiltered = applyTab(filtered, currentInboundTab);
+    return `
+      <!-- 筛选区 -->
+      <div class="bg-white rounded-xl border border-slate-200 p-4 mb-3">
+        <!-- 当前搜索 + 清除全部 -->
+        <div class="flex items-center justify-between mb-3 text-sm">
+          <div class="flex items-center flex-wrap gap-1.5 min-h-[24px]">
+            <span class="text-slate-500">当前搜索：</span>
+            ${renderActiveTags()}
+            ${hasAnyFilter() ? `<button onclick="resetAllFilters()" class="text-xs text-rose-500 hover:text-rose-700 ml-2">清除全部</button>` : ''}
+          </div>
+        </div>
+
+        <!-- 3 行 × 3 列筛选 + 末行 State1 + 操作 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">入库申请编号</label>
+            <input type="text" placeholder="请输入入库申请编号" value="${inboundFilters.applyNo}" oninput="updateFilter('applyNo', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">出质方</label>
+            <select onchange="updateFilter('pledgor', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+              <option value="">请选择</option>
+              ${_unique('applicant').map(v => `<option value="${v}" ${inboundFilters.pledgor === v ? 'selected' : ''}>${v}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">质权方</label>
+            <select onchange="updateFilter('pledgee', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+              <option value="">请选择</option>
+              <option value="中原再担保股份有限公司" ${inboundFilters.pledgee === '中原再担保股份有限公司' ? 'selected' : ''}>中原再担保股份有限公司</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">金融机构</label>
+            <select onchange="updateFilter('bank', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+              <option value="">请选择</option>
+              <option value="中原银行股份有限公司" ${inboundFilters.bank === '中原银行股份有限公司' ? 'selected' : ''}>中原银行股份有限公司</option>
+              <option value="工商银行郑州分行" ${inboundFilters.bank === '工商银行郑州分行' ? 'selected' : ''}>工商银行郑州分行</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">金融产品</label>
+            <select onchange="updateFilter('productName', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+              <option value="">请选择</option>
+              <option value="中原e贷" ${inboundFilters.productName === '中原e贷' ? 'selected' : ''}>中原e贷</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">货物名称</label>
+            <select onchange="updateFilter('product', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+              <option value="">请选择</option>
+              ${(MockData.products_market || []).map(p => `<option value="${p.name}" ${inboundFilters.product === p.name ? 'selected' : ''}>${p.name}</option>`).join('')}
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">入库时间</label>
+            <div class="flex items-center gap-1">
+              <input type="date" value="${inboundFilters.dateStart}" onchange="updateFilter('dateStart', this.value)" class="w-full px-1.5 py-1.5 text-xs border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              <span class="text-slate-400 text-xs">~</span>
+              <input type="date" onchange="updateFilter('dateEnd', this.value)" class="w-full px-1.5 py-1.5 text-xs border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">监管方</label>
+            <select onchange="updateFilter('supervisor', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+              <option value="">请选择</option>
+              <option value="大河智链供应链管理有限公司" ${inboundFilters.supervisor === '大河智链供应链管理有限公司' ? 'selected' : ''}>大河智链供应链管理有限公司</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">货物所在地</label>
+            <select onchange="updateFilter('location', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+              <option value="">请选择</option>
+              <option value="河南省郑州市" ${inboundFilters.location === '河南省郑州市' ? 'selected' : ''}>河南省郑州市</option>
+              <option value="天津市" ${inboundFilters.location === '天津市' ? 'selected' : ''}>天津市</option>
+            </select>
+          </div>
+
+          <!-- 末行：State1（状态机单选，截图里这个不是 tab，是另一栏筛选）+ 查看全部状态 + 数据导出 -->
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">状态</label>
+            <select onchange="updateFilter('state', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+              <option value="">State1</option>
+              ${[...new Set((MockData.inboundList || []).map(i => i.status))].filter(Boolean).map(s => `<option value="${s}" ${inboundFilters.state === s ? 'selected' : ''}>${s}</option>`).join('')}
+            </select>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="viewAllInboundStates()" class="px-3 py-1.5 text-sm border border-slate-200 rounded text-blue-600 hover:bg-slate-50">
+              查看全部状态
+            </button>
+            <button onclick="exportInboundCSV()" class="px-3 py-1.5 text-sm text-blue-600 hover:underline">
+              数据导出
+            </button>
+          </div>
+          <div></div>
+        </div>
+      </div>
+
+      <!-- 9 个状态机 TAB 条 -->
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="border-b border-slate-200 px-4 bg-slate-50/50 overflow-x-auto">
+          <div class="flex items-center gap-1">
+            ${renderInboundTabs()}
+          </div>
+        </div>
+
+        <!-- 11 列表格 -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm min-w-[1600px]">
+            <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+              <tr>
+                <th class="text-left px-3 py-3 whitespace-nowrap">入库申请编号</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">最新入库时间</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">货物名称</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">计划入库数量</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">计划入库重量</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">出质方</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">质权方</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">金融产品</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">金融机构</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">监管方</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">货物所在地</th>
+              </tr>
+            </thead>
+            <tbody>${renderRows(tabFiltered)}</tbody>
+          </table>
+        </div>
+        <!-- 简单分页（400 条） -->
+        ${renderPagination(tabFiltered.length)}
+      </div>
+    `;
+  }
+
+  function renderInboundTabs() {
+    const filtered = applyFilters();
+    return INBOUND_TABS.map(t => {
+      const count = t.id === 'all'
+        ? filtered.length
+        : filtered.filter(r => (t.statusMatch || []).includes(r.status)).length;
+      const active = t.id === currentInboundTab;
+      return `
+        <button onclick="switchInboundTab('${t.id}')" class="px-3 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition flex items-center gap-1.5 ${
+          active
+            ? 'border-blue-600 text-blue-700'
+            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-200'
+        }">
+          ${t.label}${count > 0 ? `<span class="px-1.5 py-0.5 text-xs rounded ${active ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}">${count}</span>` : ''}
+        </button>
+      `;
+    }).join('');
+  }
+
+  function renderRows(items) {
+    if (!items.length) {
+      return `<tr><td colspan="11" class="py-12 text-center text-slate-400 text-sm">📭 当前筛选/状态下无入库申请</td></tr>`;
+    }
+    return items.map(r => {
+      const d = deriveFields(r);
+      return `
+        <tr class="border-t border-slate-100 hover:bg-blue-50/30 cursor-pointer" onclick="viewInbound('${r.id}')">
+          <td class="px-3 py-2.5 font-mono text-xs text-blue-700 whitespace-nowrap">${d.bizNo}</td>
+          <td class="px-3 py-2.5 text-slate-700 whitespace-nowrap text-xs">${d.inboundDate || '-'}</td>
+          <td class="px-3 py-2.5 text-slate-700 whitespace-nowrap text-xs">${d.productName || '-'}</td>
+          <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap">${Utils.fmtNum(d.planPieces)}</td>
+          <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap">${Utils.fmtMoney(d.planWeight, false)}</td>
+          <td class="px-3 py-2.5 text-slate-700 text-xs whitespace-nowrap">${d.pledgor}</td>
+          <td class="px-3 py-2.5 text-slate-700 text-xs whitespace-nowrap">${d.pledgee}</td>
+          <td class="px-3 py-2.5">
+            <span class="px-2 py-0.5 text-xs bg-amber-100 text-amber-700 rounded font-medium">${d.productType}</span>
+          </td>
+          <td class="px-3 py-2.5 text-slate-700 text-xs whitespace-nowrap">${d.bank}</td>
+          <td class="px-3 py-2.5 text-slate-700 text-xs whitespace-nowrap">${d.supervisor}</td>
+          <td class="px-3 py-2.5 text-slate-700 text-xs whitespace-nowrap">${d.location}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function renderPagination(total) {
+    if (total === 0) return '';
+    return `
+      <div class="px-4 py-3 border-t border-slate-200 flex items-center justify-between">
+        <div class="text-sm text-slate-500">共 <span class="font-medium text-slate-800">${total}</span> 条记录</div>
+        <div class="flex items-center gap-2 text-xs text-slate-400">
+          <span>点击表格行可进入详情页</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // ============ 筛选 tag 区 ============
+  function hasAnyFilter() {
+    return Object.values(inboundFilters).some(v => v && String(v).trim());
+  }
+
+  function renderActiveTags() {
+    const tags = [];
+    if (inboundFilters.applyNo) tags.push({ key: 'applyNo', label: `申请编号：${inboundFilters.applyNo}` });
+    if (inboundFilters.pledgor) tags.push({ key: 'pledgor', label: `出质方：${inboundFilters.pledgor}` });
+    if (inboundFilters.pledgee) tags.push({ key: 'pledgee', label: `质权方：${inboundFilters.pledgee}` });
+    if (inboundFilters.bank) tags.push({ key: 'bank', label: `金融机构：${inboundFilters.bank}` });
+    if (inboundFilters.productName) tags.push({ key: 'productName', label: `金融产品：${inboundFilters.productName}` });
+    if (inboundFilters.product) tags.push({ key: 'product', label: `货物名称：${inboundFilters.product}` });
+    if (inboundFilters.supervisor) tags.push({ key: 'supervisor', label: `监管方：${inboundFilters.supervisor}` });
+    if (inboundFilters.location) tags.push({ key: 'location', label: `所在地：${inboundFilters.location}` });
+    if (inboundFilters.state) tags.push({ key: 'state', label: `状态：${inboundFilters.state}` });
+    if (inboundFilters.dateStart) tags.push({ key: '_date', label: `入库时间 ≥ ${inboundFilters.dateStart}` });
+    if (!tags.length) return '<span class="text-slate-400 text-xs">（无筛选条件）</span>';
+    return tags.map(t => `
+      <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-slate-100 text-slate-700 rounded">
+        ${t.label}
+        <button onclick="removeTag('${t.key}')" class="text-slate-400 hover:text-slate-700">×</button>
+      </span>
+    `).join('');
+  }
+
+  // ============ Refresh ============
+  function refresh() {
+    document.getElementById('app').innerHTML = Components.pageShell({
+      title: '入库申请',
+      currentPath: '/customer/inbound',
+      breadcrumb: [
+        { label: '智慧仓储', path: '/customer/monitoring' },
+        { label: '入库管理', path: '/customer/inbound' },
+        '入库申请',
+      ],
+      extra: `<button onclick="createInbound()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium flex items-center gap-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        新增入库申请
+      </button>`,
+      content: renderPage(),
+    });
+  }
+
+  // ============ 事件 ============
+  window.switchInboundTab = function(id) {
+    currentInboundTab = id;
+    refresh();
+  };
+  window.updateFilter = function(key, val) {
+    inboundFilters[key] = val;
+    refresh();
+  };
+  window.removeTag = function(key) {
+    if (key === '_date') inboundFilters.dateStart = '';
+    else inboundFilters[key] = '';
+    refresh();
+  };
+  window.resetAllFilters = function() {
+    Object.keys(inboundFilters).forEach(k => inboundFilters[k] = '');
+    refresh();
+  };
+  window.viewAllInboundStates = function() {
+    // 跳到 State1 第一个非空状态选项（演示）
+    const firstState = [...new Set((MockData.inboundList || []).map(i => i.status))].filter(Boolean)[0];
+    if (firstState) {
+      inboundFilters.state = firstState;
+      refresh();
+    }
+  };
+  window.exportInboundCSV = function() {
+    const items = applyTab(applyFilters(), currentInboundTab);
+    if (!items.length) return Utils.toast('当前无数据可导出', 'warning');
+    const headers = ['入库申请编号','最新入库时间','货物名称','计划入库数量','计划入库重量','出质方','质权方','金融产品','金融机构','监管方','货物所在地','状态'];
+    const stateLabel = { draft:'草稿', pending_owner_seal:'待货主方盖章', pending_owner_seal_2:'待货主方二次盖章', pending_guarantor:'待担保方审核', pending_platform:'待监管方审核', inbound:'已入库', inbound_completed:'已入库', reviewing:'审核中', rejected:'驳回', voided:'作废' };
+    const rows = items.map(r => {
+      const d = deriveFields(r);
+      return [d.bizNo, d.inboundDate, d.productName, d.planPieces, d.planWeight, d.pledgor, d.pledgee, d.productType, d.bank, d.supervisor, d.location, stateLabel[r.status] || r.status];
+    });
+    const csv = [headers, ...rows].map(row => row.map(c => {
+      const v = String(c == null ? '' : c);
+      return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+    }).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `入库申请_${currentInboundTab}_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    Utils.toast(`已导出 ${items.length} 条记录`, 'success');
+  };
+
+  function viewInbound(id) { window.location.href = Utils.nav('/customer/inbound-detail?id=') + id; }
+
+  // ============ 保留 v1.7.5 的 createInbound() —— 新建入库申请弹窗 ============
   function createInbound() {
     const modal = document.createElement('div');
     modal.className = 'modal-backdrop';
@@ -157,7 +443,6 @@
               <div><label class="block text-xs text-slate-600 mb-1">司机姓名/电话</label><input type="text" placeholder="如：张大伟 138 0000 5678" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"></div>
             </div>
           </div>
-
           <div>
             <h4 class="text-sm font-semibold text-slate-700 mb-3 pb-2 border-b flex items-center justify-between">
               <span>二、货物明细 <span class="text-red-500">*</span></span>
@@ -177,7 +462,7 @@
                 <tr>
                   <td class="px-3 py-2">
                     <select class="w-full px-2 py-1 border border-slate-300 rounded text-sm">
-                      ${MockData.products.map(p => `<option>${p.id} | ${p.name} (${p.country})</option>`).join('')}
+                      ${(MockData.products_market || []).map(p => `<option>${p.id} | ${p.name} (${p.country})</option>`).join('')}
                     </select>
                   </td>
                   <td class="px-3 py-2"><input type="number" value="1190" class="w-24 px-2 py-1 border border-slate-300 rounded text-sm text-right num-focus"></td>
@@ -193,9 +478,7 @@
                 </tr>
               </tfoot>
             </table>
-            <div class="mt-2 text-xs text-slate-500">💡 系统将根据第三方网站价格（牧集/肉交所）自动建议评估单价，下浮 5%-10%</div>
           </div>
-
           <div>
             <h4 class="text-sm font-semibold text-slate-700 mb-3 pb-2 border-b">三、随附单据</h4>
             <div class="grid grid-cols-2 gap-3">
@@ -212,7 +495,7 @@
         <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-2 sticky bottom-0 bg-white">
           <button onclick="this.closest('.modal-backdrop').remove()" class="px-4 py-2 border border-slate-300 rounded-md text-sm hover:bg-slate-50">取消</button>
           <button onclick="Utils.toast('入库申请已保存为草稿','info'); this.closest('.modal-backdrop').remove(); setTimeout(()=>location.reload(),600)" class="px-4 py-2 border border-slate-300 rounded-md text-sm hover:bg-slate-50">保存草稿</button>
-          <button onclick="Utils.toast('已提交，请货主方（盖章人）前往【准入申请/我的入库】点击【查看详情】完成图片签章','success'); this.closest('.modal-backdrop').remove(); setTimeout(()=>location.href = Utils.nav('/customer/admission-seal'),800)" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium">提交并去盖章 →</button>
+          <button onclick="Utils.toast('已提交，请货主方（盖章人）前往盖章','success'); this.closest('.modal-backdrop').remove(); setTimeout(()=>location.reload(),800)" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium">提交并去盖章 →</button>
         </div>
       </div>
     `;
@@ -220,8 +503,7 @@
     modal.onclick = () => {};
     document.body.appendChild(modal);
   }
-
-  function viewInbound(id) { window.location.href = Utils.nav('/customer/inbound-detail?id=') + id; }
+  window.createInbound = createInbound;
 </script>
 </body>
 </html>
