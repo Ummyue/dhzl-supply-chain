@@ -222,6 +222,9 @@ const MockData = {
       { group: '工作台', items: [
         { icon: 'home', label: '首页概览', path: '/dashboard' },
       ]},
+      { group: '融资审核', items: [
+        { icon: 'shield-check', label: '融资审核', path: '/bank/approval-financing' },
+      ]},
       { group: '授信与放款', items: [
         { icon: 'shield-check', label: '授信录入', path: '/bank/approval-credit' },
         { icon: 'cash', label: '放款审核', path: '/bank/approval-loan' },
