@@ -40,11 +40,158 @@
   ];
   let currentFinancingTab = 'all';
 
+  // ============ v1.7.8 筛选条件（输入即筛，无 Apply 按钮） ============
+  // 顺序按金融从业者使用习惯：业务编号 → 客户 → 资方 → 产品 → 担保 → 监管 → 资产 → 时间
+  const financingFilters = {
+    bizNo: '',          // 融资申请编号（模糊）
+    applicant: '',      // 融资方（下拉单选）
+    bank: '',           // 金融机构（下拉单选）
+    productName: '',    // 金融产品（下拉单选）
+    guarantor: '',      // 担保方（下拉单选）
+    supervisor: '',     // 监管方（下拉单选）
+    pledgeAssetNo: '',  // 货押资产编号（模糊）
+    startDate: '',      // 融资期限 起始日
+    endDate: '',        // 融资期限 截止日
+  };
+
+  // 提取唯一值供下拉框选项（从 financingList 数据中动态抽出）
+  function _unique(field) {
+    return [...new Set(MockData.financingList.map(f => f[field]).filter(v => v))];
+  }
+
+  // 应用筛选条件（在 tab 过滤之后再叠加）
+  function applyFilters() {
+    const f = financingFilters;
+    // 模糊搜索：英文/数字/常规标点都支持，不区分大小写
+    const fuzzy = (val, kw) => !kw || (val || '').toLowerCase().includes(kw.toLowerCase().trim());
+    // 日期范围：记录起息日在 [start, end] 内即匹配
+    const inDateRange = (rec) => {
+      if (!f.startDate && !f.endDate) return true;
+      if (!rec.startDate) return false;
+      if (f.startDate && rec.startDate < f.startDate) return false;
+      if (f.endDate && rec.startDate > f.endDate) return false;
+      return true;
+    };
+    return MockData.financingList.filter(rec =>
+      fuzzy(rec.bizNo, f.bizNo) &&
+      (!f.applicant || rec.applicant === f.applicant) &&
+      (!f.bank || rec.bank === f.bank) &&
+      (!f.productName || rec.productName === f.productName) &&
+      (!f.guarantor || rec.guarantor === f.guarantor) &&
+      (!f.supervisor || rec.supervisor === f.supervisor) &&
+      fuzzy(rec.pledgeAssetNo, f.pledgeAssetNo) &&
+      inDateRange(rec)
+    );
+  }
+
+  function renderFilterBar() {
+    const applicants = _unique('applicant');
+    const banks = _unique('bank');
+    const products = _unique('productName');
+    const guarantors = _unique('guarantor');
+    const supervisors = _unique('supervisor');
+    const activeCount = Object.values(financingFilters).filter(v => v && v.trim()).length;
+    const f = financingFilters;
+    return `
+      <div class="bg-white rounded-xl border border-slate-200 p-4 mb-3">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2 text-sm font-medium text-slate-700">
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+            筛选条件
+            ${activeCount > 0 ? `<span class="px-1.5 py-0.5 text-xs rounded bg-blue-100 text-blue-700">${activeCount}</span>` : ''}
+          </div>
+          <button onclick="resetFilters()" class="text-xs text-slate-500 hover:text-rose-600 flex items-center gap-1 ${activeCount > 0 ? '' : 'opacity-40 cursor-not-allowed'}" ${activeCount === 0 ? 'disabled' : ''}>
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            重置筛选
+          </button>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+          <!-- 1. 融资申请编号（模糊搜索）-->
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">融资申请编号</label>
+            <input type="text" placeholder="模糊搜索" value="${f.bizNo}" oninput="updateFilter('bizNo', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+          <!-- 2. 融资方（下拉）-->
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">融资方</label>
+            <select onchange="updateFilter('applicant', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+              <option value="">全部</option>
+              ${applicants.map(v => `<option value="${v}" ${f.applicant === v ? 'selected' : ''}>${v}</option>`).join('')}
+            </select>
+          </div>
+          <!-- 3. 金融机构（下拉）-->
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">金融机构</label>
+            <select onchange="updateFilter('bank', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+              <option value="">全部</option>
+              ${banks.map(v => `<option value="${v}" ${f.bank === v ? 'selected' : ''}>${v}</option>`).join('')}
+            </select>
+          </div>
+          <!-- 4. 金融产品（下拉）-->
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">金融产品</label>
+            <select onchange="updateFilter('productName', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+              <option value="">全部</option>
+              ${products.map(v => `<option value="${v}" ${f.productName === v ? 'selected' : ''}>${v}</option>`).join('')}
+            </select>
+          </div>
+          <!-- 5. 担保方（下拉）-->
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">担保方</label>
+            <select onchange="updateFilter('guarantor', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+              <option value="">全部</option>
+              ${guarantors.map(v => `<option value="${v}" ${f.guarantor === v ? 'selected' : ''}>${v}</option>`).join('')}
+            </select>
+          </div>
+          <!-- 6. 监管方（下拉）-->
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">监管方</label>
+            <select onchange="updateFilter('supervisor', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+              <option value="">全部</option>
+              ${supervisors.map(v => `<option value="${v}" ${f.supervisor === v ? 'selected' : ''}>${v}</option>`).join('')}
+            </select>
+          </div>
+          <!-- 7. 货押资产编号（模糊搜索）-->
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">货押资产编号</label>
+            <input type="text" placeholder="模糊搜索" value="${f.pledgeAssetNo}" oninput="updateFilter('pledgeAssetNo', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+          <!-- 8. 融资期限（起止日期范围）-->
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">融资期限</label>
+            <div class="flex items-center gap-1">
+              <input type="date" value="${f.startDate}" onchange="updateFilter('startDate', this.value)" class="w-full px-1.5 py-1.5 text-xs border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              <span class="text-slate-400 text-xs">~</span>
+              <input type="date" value="${f.endDate}" onchange="updateFilter('endDate', this.value)" class="w-full px-1.5 py-1.5 text-xs border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function updateFilter(key, value) {
+    financingFilters[key] = value;
+    // 重算 tab 上的数字 + 重渲染表格 + 更新筛选条（重置按钮状态会变）
+    document.getElementById('financingTabs').innerHTML = renderFinancingTabs();
+    document.getElementById('financingTableBody').innerHTML = renderFinancingRows(currentFinancingTab);
+    document.getElementById('financingFilterBar').innerHTML = renderFilterBar();
+  }
+
+  function resetFilters() {
+    Object.keys(financingFilters).forEach(k => financingFilters[k] = '');
+    document.getElementById('financingTabs').innerHTML = renderFinancingTabs();
+    document.getElementById('financingTableBody').innerHTML = renderFinancingRows(currentFinancingTab);
+    document.getElementById('financingFilterBar').innerHTML = renderFilterBar();
+    Utils.toast('已重置筛选条件', 'info');
+  }
+
   function renderFinancingTabs() {
+    const filtered = applyFilters();
     return FINANCING_TABS.map(t => {
-      const count = MockData.financingList.filter(f =>
-        t.id === 'all' ? true : f.status === t.id
-      ).length;
+      const count = t.id === 'all'
+        ? filtered.length
+        : filtered.filter(f => f.status === t.id).length;
       const active = t.id === currentFinancingTab;
       const sep = t.separator ? '<span class="mx-1 h-4 w-px bg-slate-300"></span>' : '';
       return `
@@ -68,9 +215,11 @@
   }
 
   function renderFinancingRows(tabId) {
-    const list = tabId === 'all'
-      ? MockData.financingList
-      : MockData.financingList.filter(f => f.status === tabId);
+    // 先按 tab 过滤，再叠加筛选条件
+    const tabFiltered = tabId === 'all'
+      ? applyFilters()
+      : applyFilters().filter(f => f.status === tabId);
+    const list = tabFiltered;
 
     if (list.length === 0) {
       return `<tr><td colspan="20" class="py-12 text-center text-slate-400 text-sm">📭 当前状态机下暂无融资记录</td></tr>`;
@@ -149,12 +298,13 @@
 
   // ============ v1.7.8 CSV 导出 ============
   function exportFinancingCSV() {
-    // 1. 按当前 tab 筛选
+    // 1. 筛选条件 + 当前 tab 叠加
     const tabId = currentFinancingTab;
     const tabLabel = FINANCING_TABS.find(t => t.id === tabId)?.label || '全部';
+    const filtered = applyFilters();
     const list = tabId === 'all'
-      ? MockData.financingList
-      : MockData.financingList.filter(f => f.status === tabId);
+      ? filtered
+      : filtered.filter(f => f.status === tabId);
 
     if (list.length === 0) {
       Utils.toast('当前筛选条件下无数据可导出', 'warning');
@@ -263,6 +413,11 @@
       </div>
 
       <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <!-- v1.7.8 筛选条件条（输入即筛，无 Apply 按钮） -->
+        <div class="border-b border-slate-200 px-4 pt-4 bg-slate-50/50" id="financingFilterBar">
+          ${renderFilterBar()}
+        </div>
+
         <!-- v1.7.8 状态机 TAB 条（已驳回放最后 + 分隔线） -->
         <div class="border-b border-slate-200 px-4 bg-slate-50/50">
           <div class="flex items-center gap-1 overflow-x-auto" id="financingTabs">
@@ -687,6 +842,8 @@
   window.exportFinancingCSV = exportFinancingCSV;
   window.createFinancing = createFinancing;
   window.viewFinancing = viewFinancing;
+  window.updateFilter = updateFilter;
+  window.resetFilters = resetFilters;
 </script>
 </body>
 </html>
