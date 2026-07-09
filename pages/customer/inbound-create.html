@@ -204,33 +204,63 @@
         </div>
       </section>
 
-      <!-- 5. 入库申请清单 -->
-      <section class="bg-white border border-slate-200 rounded-xl mb-6">
-        <div class="px-6 py-3 border-b border-slate-200">
-          <h3 class="font-bold text-slate-800">入库申请清单</h3>
+      <!-- 5. 入库申请清单（v1.7.15：概要视图，承载整页信息集合） -->
+      <section class="bg-white border border-slate-200 rounded-xl mb-6 overflow-hidden">
+        <!-- 业务头部 -->
+        <div class="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <div class="flex items-center gap-3">
+              <h3 class="font-bold text-slate-800 text-lg">入库申请单（概要）</h3>
+              <span class="px-2 py-0.5 text-xs bg-slate-200 text-slate-700 rounded font-mono">${bizNo}</span>
+              <span class="px-2 py-0.5 text-xs bg-amber-100 text-amber-700 rounded">📝 起草</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">本表汇总当前页所有模块信息，提交后可生成包含 基础信息+质物明细+附件 的入库申请单文档</p>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-slate-500">
+            <div class="w-14 h-14 bg-white border border-slate-200 rounded grid place-items-center font-mono text-[8px] text-slate-400">二维码</div>
+            <span>防伪识别<br>扫码验真</span>
+          </div>
         </div>
-        <div class="p-6">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="bg-slate-50 text-slate-600">
-                <th class="text-left py-2 px-3 w-20">序号</th>
-                <th class="text-left py-2 px-3">单据名称</th>
-                <th class="text-left py-2 px-3 w-32">状态</th>
-                <th class="text-left py-2 px-3 w-40">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr class="border-t border-slate-100">
-                <td class="py-3 px-3">1</td>
-                <td class="py-3 px-3">入库申请清单</td>
-                <td class="py-3 px-3"><span class="px-2 py-0.5 text-xs bg-slate-100 text-slate-700 rounded">起草</span></td>
-                <td class="py-3 px-3">
-                  <button class="text-blue-600 hover:underline mr-3" onclick="Utils.toast('查看入库申请清单（占位）','info')">查看</button>
-                  <button class="text-blue-600 hover:underline" onclick="Utils.toast('下载入库申请清单（占位）','info')">下载</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+
+        <!-- 参与方 4 卡 -->
+        <div class="px-6 py-4 grid grid-cols-2 md:grid-cols-5 gap-3 border-b border-slate-200">
+          ${renderSummaryCards()}
+        </div>
+
+        <!-- 质物汇总 -->
+        <div class="px-6 py-4 border-b border-slate-200">
+          <h4 class="text-sm font-medium text-slate-700 mb-3 flex items-center gap-1.5">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            质物汇总（按货品聚合）
+          </h4>
+          ${renderPledgeSummary()}
+        </div>
+
+        <!-- 附件清单状态 -->
+        <div class="px-6 py-4 border-b border-slate-200">
+          <h4 class="text-sm font-medium text-slate-700 mb-3 flex items-center gap-1.5">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            附件清单状态
+          </h4>
+          ${renderAttachmentsSummary()}
+        </div>
+
+        <!-- 操作区 -->
+        <div class="px-6 py-4 flex items-center justify-between bg-slate-50/50">
+          <div class="text-xs text-slate-500">
+            <span>最后更新：<span class="text-slate-700 font-medium">${new Date().toLocaleString('zh-CN').replace(/\//g, '-')}</span></span>
+            <span class="mx-2 text-slate-300">|</span>
+            <span>当前会话：<span class="text-slate-700">陈志强</span>（货主方·操作人）</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="openFullDocModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              查看完整单据
+            </button>
+            <button onclick="Utils.toast('生成 PDF 中（占位）','info')" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">下载 PDF</button>
+            <button onclick="window.print()" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">打印</button>
+            <button onclick="Utils.toast('复制分享链接（占位）','info')" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">分享</button>
+          </div>
         </div>
       </section>
 
@@ -548,6 +578,296 @@
   window.nextState = () => Utils.toast('下一步（占位）', 'info');
   window.viewAllStates = () => Utils.toast('查看全部状态（占位）', 'info');
   window.resetStateSelector = () => Utils.toast('状态选择器重置（占位）', 'info');
+
+  // ============ v1.7.15 入库申请单概要视图 + 完整单据弹窗 ============
+  function renderSummaryCards() {
+    const items = [
+      { label: '出质方', value: form.pledgor, icon: '🏢' },
+      { label: '联系人', value: form.contact, icon: '👤' },
+      { label: '监管方', value: form.supervisor, icon: '🛡️' },
+      { label: '质权方', value: form.pledgee, icon: '🔐' },
+      { label: '金融产品', value: form.financeProduct || '（未选）', icon: '💰' },
+    ];
+    return items.map(it => `
+      <div class="bg-white border border-slate-200 rounded-lg p-3">
+        <div class="text-xs text-slate-500 mb-1">${it.icon} ${it.label}</div>
+        <div class="text-sm font-medium text-slate-800 truncate">${it.value}</div>
+      </div>
+    `).join('');
+  }
+
+  function renderPledgeSummary() {
+    // 按货品聚合
+    const map = new Map();
+    pledgeRows.forEach(r => {
+      const key = r.name + '|' + r.country + '/' + r.factoryNo;
+      if (!map.has(key)) map.set(key, { name: r.name, country: r.country, factoryNo: r.factoryNo, qty: 0, weight: 0, value: 0 });
+      const cur = map.get(key);
+      cur.qty += parseFloat(r.qty) || 0;
+      cur.weight += parseFloat(r.weight) || 0;
+      // 评估货值：mock — 22元/kg
+      cur.value += (parseFloat(r.weight) || 0) * 22;
+    });
+    const grouped = [...map.values()];
+    const totals = grouped.reduce((a, c) => ({ qty: a.qty + c.qty, weight: a.weight + c.weight, value: a.value + c.value }), { qty: 0, weight: 0, value: 0 });
+    const estimateLoan = Math.round(totals.value * 0.8); // 80% 质押率
+
+    if (grouped.length === 0) {
+      return '<div class="text-sm text-slate-400 text-center py-4">暂无质物数据</div>';
+    }
+    return `
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-slate-50 text-slate-600 text-xs">
+            <th class="text-left py-2 px-3">货品名称</th>
+            <th class="text-left py-2 px-3">原产地</th>
+            <th class="text-left py-2 px-3">厂号</th>
+            <th class="text-right py-2 px-3">总件数</th>
+            <th class="text-right py-2 px-3">总重量 (kg)</th>
+            <th class="text-right py-2 px-3">评估货值 (元)</th>
+            <th class="text-right py-2 px-3">拟融资金额 (元)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${grouped.map(g => `
+            <tr class="border-t border-slate-100">
+              <td class="py-2 px-3">${g.name}</td>
+              <td class="py-2 px-3">${g.country}</td>
+              <td class="py-2 px-3">${g.factoryNo}</td>
+              <td class="py-2 px-3 text-right num-focus">${Utils.fmtNum(g.qty)}</td>
+              <td class="py-2 px-3 text-right num-focus">${Utils.fmtNum(g.weight)}</td>
+              <td class="py-2 px-3 text-right num-focus">${Utils.fmtMoney(g.value)}</td>
+              <td class="py-2 px-3 text-right num-focus text-slate-400">${Utils.fmtMoney(Math.round(g.value * 0.8))}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+        <tfoot>
+          <tr class="border-t-2 border-slate-300 bg-slate-50 font-medium">
+            <td colspan="3" class="py-2 px-3">合计</td>
+            <td class="py-2 px-3 text-right num-focus">${Utils.fmtNum(totals.qty)}</td>
+            <td class="py-2 px-3 text-right num-focus">${Utils.fmtNum(totals.weight)}</td>
+            <td class="py-2 px-3 text-right num-focus text-blue-700">${Utils.fmtMoney(totals.value)}</td>
+            <td class="py-2 px-3 text-right num-focus text-blue-700">${Utils.fmtMoney(estimateLoan)} <span class="text-xs text-slate-400">（80%）</span></td>
+          </tr>
+        </tfoot>
+      </table>
+    `;
+  }
+
+  function renderAttachmentsSummary() {
+    // 4 类附件
+    const attachments = [
+      { type: '合同及订单',     required: true,  files: ['采购合同.pdf', '采购订单.pdf'], status: 'ok' },
+      { type: '报关单',         required: true,  files: ['明细1.pdf'],                  status: 'ok' },
+      { type: '检验检疫证明',   required: true,  files: [],                              status: 'missing' },
+      { type: '其他附件',       required: false, files: [],                              status: 'empty' },
+    ];
+    return `
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        ${attachments.map(a => {
+          let cls, icon, fileHtml;
+          if (a.status === 'ok') {
+            cls = 'border-emerald-200 bg-emerald-50/30';
+            icon = '✓';
+            fileHtml = a.files.length ? `<div class="flex items-center gap-1 flex-wrap mt-1">${a.files.map(f => `<span class="px-1.5 py-0.5 text-xs bg-white border border-slate-200 rounded">${f}</span>`).join('')}</div>` : '';
+          } else if (a.status === 'missing') {
+            cls = 'border-rose-300 bg-rose-50';
+            icon = '✗';
+            fileHtml = `<div class="text-xs text-rose-600 mt-1">⚠ 缺失${a.required ? '（必传）' : ''}</div>`;
+          } else {
+            cls = 'border-slate-200 bg-slate-50';
+            icon = '−';
+            fileHtml = `<div class="text-xs text-slate-400 mt-1">暂无文件（选填）</div>`;
+          }
+          return `
+            <div class="border ${cls} rounded-lg p-3">
+              <div class="flex items-center gap-2">
+                <span class="${a.status === 'ok' ? 'text-emerald-600' : a.status === 'missing' ? 'text-rose-600' : 'text-slate-400'} text-lg">${icon}</span>
+                <span class="font-medium text-slate-800 text-sm flex-1">${a.type}</span>
+                <span class="text-xs ${a.required ? 'text-red-500' : 'text-slate-400'}">${a.required ? '必传' : '选传'}</span>
+                <span class="text-xs ${a.status === 'ok' ? 'text-emerald-700' : a.status === 'missing' ? 'text-rose-700' : 'text-slate-500'} font-medium">${a.files.length} 个文件</span>
+              </div>
+              ${fileHtml}
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  // ============ 完整单据弹窗（承载长图，含缩放/旋转/缩略图） ============
+  function openFullDocModal() {
+    if (pledgeRows.length === 0) return Utils.toast('请先添加至少一条质物明细', 'error');
+    if (!form.financeProduct) return Utils.toast('请选择金融产品', 'error');
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-backdrop';
+    modal.innerHTML = `
+      <div class="bg-white rounded-xl w-[1280px] max-w-[96vw] h-[92vh] flex flex-col overflow-hidden shadow-2xl" onclick="event.stopPropagation()">
+        <!-- 顶部 bar -->
+        <div class="px-5 py-3 border-b border-slate-200 flex items-center justify-between bg-white">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <div class="min-w-0">
+              <h3 class="font-bold text-slate-800 truncate">入库申请单 — 完整版（${bizNo}）</h3>
+              <p class="text-xs text-slate-500">含：基础信息 + 质物明细 + 强检证明 + 购销合同（4 页合一）</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1 flex-shrink-0">
+            <!-- 缩放 -->
+            <div class="inline-flex items-center border border-slate-200 rounded overflow-hidden mr-2">
+              <button onclick="zoomImage(-0.25)" class="px-2 py-1 text-slate-600 hover:bg-slate-50" title="缩小">−</button>
+              <span id="zoomLabel" class="px-2 py-1 text-xs text-slate-700 font-mono min-w-[48px] text-center border-l border-r border-slate-200">100%</span>
+              <button onclick="zoomImage(+0.25)" class="px-2 py-1 text-slate-600 hover:bg-slate-50" title="放大">+</button>
+            </div>
+            <button onclick="resetImage()" class="px-2 py-1 text-xs border border-slate-200 rounded hover:bg-slate-50" title="还原">还原</button>
+            <button onclick="rotateImage()" class="px-2 py-1 text-xs border border-slate-200 rounded hover:bg-slate-50" title="旋转 90°">↻</button>
+            <button onclick="Utils.toast('打印功能（占位）','info')" class="px-2 py-1 text-xs border border-slate-200 rounded hover:bg-slate-50" title="打印">🖨</button>
+            <a href="/shared/img/inbound-application-full.jpg" download="入库申请单_${bizNo}.jpg" class="px-2 py-1 text-xs border border-slate-200 rounded hover:bg-slate-50" title="下载原图">⬇</a>
+            <button onclick="closeFullDocModal()" class="ml-1 px-2 py-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded" title="关闭">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- 主体：左图片 + 右缩略图导航 -->
+        <div class="flex-1 flex overflow-hidden bg-slate-100">
+          <!-- 图片区（滚动容器，承载放大/旋转） -->
+          <div id="imgScrollArea" class="flex-1 overflow-auto cursor-grab active:cursor-grabbing" onwheel="onImgWheel(event)">
+            <div id="imgWrap" style="display:inline-block; transform-origin: 0 0; transition: transform 0.15s; will-change: transform;">
+              <img id="fullDocImg" src="/shared/img/inbound-application-full.jpg" alt="入库申请单完整版" draggable="false" class="block max-w-none select-none" onload="onImgLoad(this)">
+            </div>
+          </div>
+
+          <!-- 右缩略图导航 -->
+          <aside class="w-36 bg-white border-l border-slate-200 flex flex-col">
+            <div class="px-3 py-2 border-b border-slate-200 text-xs text-slate-600 font-medium">
+              页面导航（4 页）
+            </div>
+            <div class="flex-1 overflow-y-auto p-2 space-y-2" id="thumbNav">
+              ${[
+                { idx: 1, title: '入库申请单申报表', desc: '海关申报表头' },
+                { idx: 2, title: '入境货物检验检疫证明', desc: '入境证明' },
+                { idx: 3, title: '出入境检验检疫', desc: '入境检疫详情' },
+                { idx: 4, title: '强制牛肉购销合同', desc: '购销合同（A4）' },
+              ].map((p, i) => `
+                <div onclick="jumpToPage(${i})" class="border border-slate-200 rounded p-2 cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition group">
+                  <div class="aspect-[3/4] bg-slate-100 rounded mb-1 grid place-items-center text-xs text-slate-400 font-mono relative">
+                    第 ${p.idx} 页
+                    <div class="absolute inset-0 grid place-items-center opacity-0 group-hover:opacity-100 transition">
+                      <span class="w-6 h-6 rounded-full bg-blue-600 text-white grid place-items-center">▶</span>
+                    </div>
+                  </div>
+                  <div class="text-xs text-slate-700 truncate">${p.title}</div>
+                  <div class="text-[10px] text-slate-400 truncate">${p.desc}</div>
+                </div>
+              `).join('')}
+            </div>
+            <div class="px-3 py-2 border-t border-slate-200 text-xs text-slate-500">
+              <div>原图：1812 × 10254 px</div>
+              <div>压缩：1400 × 7924 px（92KB）</div>
+            </div>
+          </aside>
+        </div>
+
+        <!-- 底部 tip -->
+        <div class="px-5 py-2 border-t border-slate-200 text-xs text-slate-500 flex items-center justify-between bg-white">
+          <span>💡 鼠标滚轮可缩放（Ctrl+滚轮）/ 拖拽图片平移 / 点击右侧页码跳转</span>
+          <span>来源：实测 ${new Date().toLocaleDateString('zh-CN')} 申报样本</span>
+        </div>
+      </div>
+    `;
+    modal.onclick = () => {};
+    document.body.appendChild(modal);
+
+    // 缩放/旋转状态
+    window._imgState = { zoom: 1, rotation: 0 };
+    applyImageTransform();
+
+    // 拖拽
+    const scroll = document.getElementById('imgScrollArea');
+    let isDown = false, startX = 0, startY = 0, scrollLeft = 0, scrollTop = 0;
+    scroll.addEventListener('mousedown', e => {
+      isDown = true;
+      scroll.style.cursor = 'grabbing';
+      startX = e.pageX - scroll.offsetLeft;
+      startY = e.pageY - scroll.offsetTop;
+      scrollLeft = scroll.scrollLeft;
+      scrollTop = scroll.scrollTop;
+    });
+    scroll.addEventListener('mouseleave', () => { isDown = false; scroll.style.cursor = ''; });
+    scroll.addEventListener('mouseup', () => { isDown = false; scroll.style.cursor = ''; });
+    scroll.addEventListener('mousemove', e => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - scroll.offsetLeft;
+      const y = e.pageY - scroll.offsetTop;
+      scroll.scrollLeft = scrollLeft - (x - startX);
+      scroll.scrollTop  = scrollTop  - (y - startY);
+    });
+  }
+
+  function closeFullDocModal() {
+    const m = document.querySelector('.modal-backdrop');
+    if (m) m.remove();
+    window._imgState = null;
+  }
+
+  function applyImageTransform() {
+    const wrap = document.getElementById('imgWrap');
+    const lbl = document.getElementById('zoomLabel');
+    if (!wrap || !lbl || !window._imgState) return;
+    const { zoom, rotation } = window._imgState;
+    wrap.style.transform = `scale(${zoom}) rotate(${rotation}deg)`;
+    lbl.textContent = Math.round(zoom * 100) + '%';
+  }
+
+  window.zoomImage = (delta) => {
+    if (!window._imgState) return;
+    window._imgState.zoom = Math.max(0.25, Math.min(3, window._imgState.zoom + delta));
+    applyImageTransform();
+  };
+
+  window.resetImage = () => {
+    if (!window._imgState) return;
+    window._imgState = { zoom: 1, rotation: 0 };
+    applyImageTransform();
+    const s = document.getElementById('imgScrollArea');
+    if (s) { s.scrollLeft = 0; s.scrollTop = 0; }
+  };
+
+  window.rotateImage = () => {
+    if (!window._imgState) return;
+    window._imgState.rotation = (window._imgState.rotation + 90) % 360;
+    applyImageTransform();
+  };
+
+  window.onImgWheel = (e) => {
+    if (!e.ctrlKey && Math.abs(e.deltaY) < 5) return; // 只在 Ctrl + 滚轮 或 触控板双指缩放
+    e.preventDefault();
+    const delta = e.ctrlKey ? (e.deltaY > 0 ? -0.1 : 0.1) : (e.deltaY > 0 ? -0.05 : 0.05);
+    zoomImage(delta);
+  };
+
+  window.onImgLoad = (img) => {
+    // 图片加载完后，重置滚动到顶部
+    const s = document.getElementById('imgScrollArea');
+    if (s) { s.scrollLeft = 0; s.scrollTop = 0; }
+  };
+
+  window.jumpToPage = (idx) => {
+    // 4 页等分跳转
+    const s = document.getElementById('imgScrollArea');
+    if (!s) return;
+    const img = document.getElementById('fullDocImg');
+    if (!img) return;
+    // 用图片完整高度 × zoom 估算每页高度
+    const totalHeight = img.naturalHeight * (window._imgState?.zoom || 1);
+    const pageHeight = totalHeight / 4;
+    s.scrollTop = pageHeight * idx;
+  };
 
   function refresh() {
     document.getElementById('app').innerHTML = Components.pageShell({
