@@ -176,8 +176,7 @@ const MockData = {
         { icon: 'list', label: '出/入库详情', path: '/customer/in-out-detail' },
       ]},
       { group: '视频监控', items: [
-        { icon: 'video', label: '视频监控', path: '/customer/video' },
-        { icon: 'treeview', label: '监控详情', path: '/customer/video-detail' },
+        { icon: 'video', label: '监控概览', path: '/customer/video' },
       ]},
       { group: '融资管理', items: [
         { icon: 'file', label: '融资申请', path: '/customer/financing' },
@@ -207,8 +206,7 @@ const MockData = {
         { icon: 'logistics', label: '解押/出库审批', path: '/platform/approval-outbound' },
       ]},
       { group: '视频监控', items: [
-        { icon: 'video', label: '视频监控', path: '/customer/video' },
-        { icon: 'treeview', label: '监控详情', path: '/customer/video-detail' },
+        { icon: 'video', label: '监控概览', path: '/customer/video' },
       ]},
       { group: '数据中心', items: [
         { icon: 'alert', label: '风险预警', path: '/platform/risk-alerts' },
@@ -230,8 +228,7 @@ const MockData = {
         { icon: 'alert', label: '风险监控', path: '/guarantor/risk-monitoring' },
       ]},
       { group: '视频监控', items: [
-        { icon: 'video', label: '视频监控', path: '/customer/video' },
-        { icon: 'treeview', label: '监控详情', path: '/customer/video-detail' },
+        { icon: 'video', label: '监控概览', path: '/customer/video' },
       ]},
     ],
     bank: [
@@ -252,8 +249,7 @@ const MockData = {
         { icon: 'chart', label: '额度管理', path: '/bank/limit-management' },
       ]},
       { group: '视频监控', items: [
-        { icon: 'video', label: '视频监控', path: '/customer/video' },
-        { icon: 'treeview', label: '监控详情', path: '/customer/video-detail' },
+        { icon: 'video', label: '监控概览', path: '/customer/video' },
       ]},
     ],
     warehouse: [
@@ -270,8 +266,7 @@ const MockData = {
         { icon: 'package', label: '库存台账', path: '/warehouse/inventory' },
       ]},
       { group: '视频监控', items: [
-        { icon: 'video', label: '视频监控', path: '/customer/video' },
-        { icon: 'treeview', label: '监控详情', path: '/customer/video-detail' },
+        { icon: 'video', label: '监控概览', path: '/customer/video' },
       ]},
     ],
   },

@@ -11,7 +11,7 @@
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>视频监控 - 大河智链</title>
+  <title>监控概览 - 大河智链</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
   <link rel="stylesheet" href="/shared/css/style.css">
@@ -24,7 +24,7 @@
 <script>
   Components.bindGlobalClose();
 
-  // ============ v1.7.13 一级【视频监控】仓库卡片总览 ============
+  // ============ v1.7.13 一级【监控概览】仓库卡片总览 ============
   // 4 张 stats 卡 + 区域/状态/类型筛选 + 仓库卡片网格（参考用户截图1）
   const filters = { region: '', type: '', status: '' };
 
@@ -64,17 +64,13 @@
   }
 
   document.getElementById('app').innerHTML = Components.pageShell({
-    title: '视频监控',
+    title: '监控概览',
     currentPath: '/customer/video',
     breadcrumb: [
       { label: '工作台', path: '/dashboard' },
-      { label: '视频监控', path: '/customer/video' },
+      { label: '监控概览', path: '/customer/video' },
     ],
-    extra: `
-      <div class="flex items-center gap-2">
-        <button onclick="quickJumpDetail()" class="px-3 py-1.5 text-sm border border-blue-500 text-blue-600 rounded hover:bg-blue-50">进入监控详情 →</button>
-      </div>
-    `,
+    extra: '',
     content: renderPage(),
   });
 
@@ -212,14 +208,10 @@
 
   function refresh() {
     document.getElementById('app').innerHTML = Components.pageShell({
-      title: '视频监控',
+      title: '监控概览',
       currentPath: '/customer/video',
-      breadcrumb: [{ label: '工作台', path: '/dashboard' }, { label: '视频监控', path: '/customer/video' }],
-      extra: `
-        <div class="flex items-center gap-2">
-          <button onclick="quickJumpDetail()" class="px-3 py-1.5 text-sm border border-blue-500 text-blue-600 rounded hover:bg-blue-50">进入监控详情 →</button>
-        </div>
-      `,
+      breadcrumb: [{ label: '工作台', path: '/dashboard' }, { label: '监控概览', path: '/customer/video' }],
+      extra: '',
       content: renderPage(),
     });
   }
