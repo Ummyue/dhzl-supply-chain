@@ -1,7 +1,6 @@
 name = "dhzl-supply-chain"
 compatibility_date = "2024-09-23"
 
-# 静态资源目录（必须配置，wrangler deploy 需要这个）
+# 静态资源目录（不能加 binding，否则报错）
 [assets]
 directory = "./"
-binding = "ASSETS"
