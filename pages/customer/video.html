@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>视频监控 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.13 一级【视频监控】仓库卡片总览 ============
+  // 4 张 stats 卡 + 区域/状态/类型筛选 + 仓库卡片网格（参考用户截图1）
+  const filters = { region: '', type: '', status: '' };
+
+  function overallStats() {
+    const list = MockData.monitorSites || [];
+    return list.reduce((acc, s) => {
+      acc.total += s.totalCameras;
+      acc.online += s.onlineCameras;
+      acc.offline += s.offlineCameras;
+      return acc;
+    }, { total: 0, online: 0, offline: 0 });
+  }
+
+  function healthColor(site) {
+    if (site.onlineCameras === site.totalCameras) return 'border-emerald-300 bg-emerald-50/30';
+    if (site.onlineCameras === 0) return 'border-rose-300 bg-rose-50/30';
+    return 'border-amber-300 bg-amber-50/30';
+  }
+
+  function statusBadge(site) {
+    if (site.onlineCameras === site.totalCameras) return { text: '正常', cls: 'bg-emerald-100 text-emerald-700' };
+    if (site.onlineCameras === 0) return { text: '全部掉线', cls: 'bg-rose-100 text-rose-700' };
+    return { text: '部分异常', cls: 'bg-amber-100 text-amber-700' };
+  }
+
+  function applyFilters(list) {
+    return list.filter(s => {
+      if (filters.region && !s.region.includes(filters.region)) return false;
+      if (filters.type && s.type !== filters.type) return false;
+      if (filters.status) {
+        if (filters.status === 'healthy' && s.onlineCameras !== s.totalCameras) return false;
+        if (filters.status === 'partial' && !(s.onlineCameras > 0 && s.onlineCameras < s.totalCameras)) return false;
+        if (filters.status === 'offline' && s.onlineCameras !== 0) return false;
+      }
+      return true;
+    });
+  }
+
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '视频监控',
+    currentPath: '/customer/video',
+    breadcrumb: [
+      { label: '工作台', path: '/dashboard' },
+      { label: '视频监控', path: '/customer/video' },
+    ],
+    extra: `
+      <div class="flex items-center gap-2">
+        <button onclick="quickJumpDetail()" class="px-3 py-1.5 text-sm border border-blue-500 text-blue-600 rounded hover:bg-blue-50">进入监控详情 →</button>
+      </div>
+    `,
+    content: renderPage(),
+  });
+
+  function renderPage() {
+    const stats = overallStats();
+    const list = applyFilters(MockData.monitorSites || []);
+    return `
+      <!-- 4 张 stats 卡 -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        ${Components.statCard({ label: '监控总数', value: stats.total, hint: '所有仓库/园区摄像头总数（含掉线）', color: 'text-blue-700', gradient: true })}
+        ${Components.statCard({ label: '在线数',   value: stats.online, hint: '当前心跳正常可在平台拉流的摄像头', color: 'text-emerald-700' })}
+        ${Components.statCard({ label: '掉线数',   value: stats.offline, hint: '≥30min 未上报心跳的设备（红框卡片可见）', color: 'text-rose-700' })}
+        ${Components.statCard({ label: '在线率',   value: stats.total ? ((stats.online/stats.total)*100).toFixed(1) + '%' : '-', hint: '在线摄像头 / 监控总数', color: stats.online === stats.total && stats.total > 0 ? 'text-emerald-700' : 'text-amber-700' })}
+      </div>
+
+      <!-- 筛选区 -->
+      <div class="bg-white rounded-xl border border-slate-200 p-4 mb-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">所在区域</label>
+            <select onchange="setFilter('region', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+              <option value="">全部</option>
+              <option value="河南" ${filters.region === '河南' ? 'selected' : ''}>河南</option>
+              <option value="天津" ${filters.region === '天津' ? 'selected' : ''}>天津</option>
+              <option value="山西" ${filters.region === '山西' ? 'selected' : ''}>山西</option>
+              <option value="宁夏" ${filters.region === '宁夏' ? 'selected' : ''}>宁夏</option>
+              <option value="陕西" ${filters.region === '陕西' ? 'selected' : ''}>陕西</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">业务类型</label>
+            <select onchange="setFilter('type', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+              <option value="">全部</option>
+              <option value="冷链" ${filters.type === '冷链' ? 'selected' : ''}>冷链</option>
+              <option value="煤炭" ${filters.type === '煤炭' ? 'selected' : ''}>煤炭</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">健康状态</label>
+            <select onchange="setFilter('status', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+              <option value="">全部</option>
+              <option value="healthy" ${filters.status === 'healthy' ? 'selected' : ''}>全部在线</option>
+              <option value="partial" ${filters.status === 'partial' ? 'selected' : ''}>部分异常</option>
+              <option value="offline" ${filters.status === 'offline' ? 'selected' : ''}>全部掉线</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="resetFilters()" class="px-3 py-1.5 text-sm border border-slate-200 rounded hover:bg-slate-50">重置</button>
+            <span class="text-xs text-slate-500 ml-auto">共 <b class="text-slate-800">${list.length}</b> / ${(MockData.monitorSites||[]).length} 个站点</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 仓库监控卡片网格（参考用户截图1） -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        ${list.map(renderSiteCard).join('')}
+      </div>
+
+      <!-- 命名规范 / 接入说明 -->
+      <details class="mt-6 bg-white rounded-xl border border-slate-200 p-4 text-xs text-slate-500">
+        <summary class="cursor-pointer text-slate-700 font-medium">📋 命名规范 + 接入说明（v1.7.13）</summary>
+        <div class="mt-3 space-y-2 leading-relaxed">
+          <p><b>位置树 5 级</b>：集团 → 园区 → 仓库 → 区域 → 摄像头点位；监控详情页左侧位置树按此展示，支持折叠/展开/统计。</p>
+          <p><b>状态 4 类</b>：🟢 在线 / 🟡 视频丢失（链路断开、画面黑屏）/ 🔴 掉线（设备≥30min 未上报）/ ⚫ 遮挡（镜头被遮挡）。</p>
+          <p><b>接入说明（占位）</b>：本期为高保真原型，摄像头点位数据为 mock；生产环境对接海康/大华/萤石/RTSP/WebRTC/NVR，按点位拉 RTSP 流，前端 canvas/mse/webcodecs 解码。</p>
+          <p><b>权限</b>：仓库经理看自己仓库点位，监管方看权限范围内全部，资金方/担保方按准入业务看关联仓库。</p>
+        </div>
+      </details>
+    `;
+  }
+
+  function renderSiteCard(s) {
+    const badge = statusBadge(s);
+    return `
+      <div class="bg-white border-2 ${healthColor(s)} rounded-xl p-5 hover:shadow-lg transition cursor-pointer" onclick="jumpToDetail('${s.siteId}','${s.id}')">
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex items-center gap-2.5">
+            <!-- 蓝色相机图标（用户截图同款） -->
+            <div class="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center">
+              <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+              </svg>
+            </div>
+            <h3 class="font-bold text-slate-800">${s.siteName}</h3>
+          </div>
+          <span class="text-xs ${badge.cls} px-2 py-0.5 rounded">${badge.text}</span>
+        </div>
+
+        <!-- 监控统计 3 列：总数 / 在线 / 掉线 -->
+        <div class="grid grid-cols-3 gap-2 text-center text-sm mb-3 pb-3 border-b border-slate-200">
+          <div>
+            <div class="text-slate-400 text-xs">监控总数</div>
+            <div class="font-bold text-slate-800">${s.totalCameras}</div>
+          </div>
+          <div>
+            <div class="text-slate-400 text-xs">在线数</div>
+            <div class="font-bold ${s.onlineCameras > 0 ? 'text-emerald-700' : 'text-slate-400'}">${s.onlineCameras}</div>
+          </div>
+          <div>
+            <div class="text-slate-400 text-xs">掉线数</div>
+            <div class="font-bold ${s.offlineCameras > 0 ? 'text-rose-700' : 'text-slate-400'}">${s.offlineCameras}</div>
+          </div>
+        </div>
+
+        <div class="text-xs text-slate-600 space-y-1">
+          <div><span class="text-slate-400">核心企业：</span>${s.coreCompany}</div>
+          <div><span class="text-slate-400">所在区域：</span>${s.region} · ${s.type}</div>
+          <div><span class="text-slate-400">在线率：</span><b class="${s.healthRate === '100%' ? 'text-emerald-700' : s.healthRate === '0%' ? 'text-rose-700' : 'text-amber-700'}">${s.healthRate}</b></div>
+          <div><span class="text-slate-400">当前库存：</span><span class="${s.currentStockTons < 0 ? 'text-rose-700 font-medium' : 'text-slate-700'}">${s.currentStockTons.toFixed(2)} 吨${s.currentStockTons < 0 ? '（差额）' : ''}</span></div>
+          ${s.remark ? `<div class="text-slate-400 italic pt-1">📌 ${s.remark}</div>` : ''}
+        </div>
+
+        <!-- 查看监控按钮 -->
+        <div class="mt-4 text-center">
+          <button class="px-6 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">
+            查看监控 →
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  // ============ Events ============
+  window.setFilter = (k, v) => { filters[k] = v; refresh(); };
+  window.resetFilters = () => { filters.region = filters.type = filters.status = ''; refresh(); };
+  window.jumpToDetail = (siteId, monitorId) => {
+    // 优先按 monitorSite 的 siteId 跳；非仓库库位的 ms_xxx 也支持
+    window.location.href = `${Utils.nav('/customer/video-detail')}?site=${encodeURIComponent(siteId)}&ms=${encodeURIComponent(monitorId)}`;
+  };
+  window.quickJumpDetail = () => {
+    // 默认跳第一个监控站点
+    const first = (MockData.monitorSites||[])[0];
+    if (first) jumpToDetail(first.siteId, first.id);
+  };
+
+  function refresh() {
+    document.getElementById('app').innerHTML = Components.pageShell({
+      title: '视频监控',
+      currentPath: '/customer/video',
+      breadcrumb: [{ label: '工作台', path: '/dashboard' }, { label: '视频监控', path: '/customer/video' }],
+      extra: `
+        <div class="flex items-center gap-2">
+          <button onclick="quickJumpDetail()" class="px-3 py-1.5 text-sm border border-blue-500 text-blue-600 rounded hover:bg-blue-50">进入监控详情 →</button>
+        </div>
+      `,
+      content: renderPage(),
+    });
+  }
+</script>
+</body>
+</html>

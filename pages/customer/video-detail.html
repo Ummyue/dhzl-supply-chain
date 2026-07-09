@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>监控详情 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+  <style>
+    .cam-thumb {
+      aspect-ratio: 16/9;
+      background:
+        radial-gradient(circle at 30% 20%, rgba(255,255,255,0.06), transparent 60%),
+        radial-gradient(circle at 70% 80%, rgba(255,255,255,0.04), transparent 50%),
+        linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      position: relative;
+    }
+    .cam-thumb::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        repeating-linear-gradient(0deg, rgba(0,0,0,0.04) 0px, rgba(0,0,0,0.04) 1px, transparent 1px, transparent 3px),
+        repeating-linear-gradient(90deg, rgba(0,0,0,0.04) 0px, rgba(0,0,0,0.04) 1px, transparent 1px, transparent 3px);
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    .cam-thumb-time {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      font-family: monospace;
+      font-size: 11px;
+      color: rgba(255,255,255,0.85);
+      background: rgba(0,0,0,0.45);
+      padding: 1px 6px;
+      border-radius: 3px;
+      backdrop-filter: blur(2px);
+    }
+  </style>
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.13 二级【监控详情】左位置树 + 右摄像头网格 ============
+  // 从 URL 取 ?site= 决定当前选中的站点
+  const urlSite = new URLSearchParams(window.location.search).get('site');
+
+  const state = {
+    currentSiteId: urlSite || 'wh_001',           // 当前选中站点（仓库）
+    currentZone: '',                              // 当前区域内筛选
+    layoutCols: 4,                                // 1/4/9/16 宫格
+    statusFilter: '',                             // ''/online/offline/signal_lost/occluded
+    keyword: '',
+    expandedNodes: new Set(['g_zcool', 'p_zz', 'wh_001']), // 默认展开到第一站点
+  };
+
+  function getSites() { return MockData.monitorSites || []; }
+  function getZones() { return MockData.cameraZones || []; }
+  function getCameras() { return MockData.cameras || []; }
+  function getGroups() { return MockData.monitorGroups || []; }
+  function getMsBySite(siteId) { return getSites().find(s => s.siteId === siteId); }
+  function getZoneName(zoneId) { const z = getZones().find(z => z.id === zoneId); return z ? z.name : '其他'; }
+
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '监控详情',
+    currentPath: '/customer/video-detail',
+    breadcrumb: [
+      { label: '工作台', path: '/dashboard' },
+      { label: '视频监控', path: '/customer/video' },
+      '监控详情',
+    ],
+    content: render(),
+  });
+
+  function render() {
+    const ms = getMsBySite(state.currentSiteId) || getSites()[0];
+    if (ms && ms.siteId !== state.currentSiteId) state.currentSiteId = ms.siteId;
+    const cams = getCameras().filter(c => c.siteId === state.currentSiteId);
+    const stats = cams.reduce((a, c) => { a.total++; a[c.status] = (a[c.status]||0) + 1; return a; }, { total: 0 });
+    const visibleCams = cams.filter(c => {
+      if (state.currentZone && c.zoneId !== state.currentZone) return false;
+      if (state.statusFilter && c.status !== state.statusFilter) return false;
+      if (state.keyword && !c.name.includes(state.keyword)) return false;
+      return true;
+    });
+
+    return `
+      <!-- 顶部 4 stats 卡：仓库核心信息 -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <div class="bg-white border border-slate-200 rounded-xl p-4">
+          <div class="text-xs text-slate-500 mb-1">仓库名称</div>
+          <div class="font-bold text-slate-800 text-base">${ms ? ms.siteName : '-'}</div>
+          <div class="text-xs text-slate-400 mt-1">${ms ? ms.region : ''} · ${ms ? ms.type : ''}</div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4">
+          <div class="text-xs text-slate-500 mb-1">核心企业</div>
+          <div class="font-medium text-slate-800 text-sm">${ms ? ms.coreCompany : '-'}</div>
+          <div class="text-xs text-slate-400 mt-1">${ms ? `当前库存 ${ms.currentStockTons.toFixed(2)} 吨${ms.currentStockTons < 0 ? '（差额）' : ''}` : ''}</div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4">
+          <div class="text-xs text-slate-500 mb-1">监控总数 / 在线</div>
+          <div class="font-bold text-blue-700 text-2xl num-focus">${stats.total}<span class="text-base text-slate-400"> / </span><span class="text-emerald-700">${stats.online || 0}</span></div>
+          <div class="text-xs text-slate-400 mt-1">在线率 ${stats.total ? (((stats.online||0)/stats.total)*100).toFixed(0) : 0}%</div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4">
+          <div class="text-xs text-slate-500 mb-1">异常点位</div>
+          <div class="font-bold text-rose-700 text-2xl num-focus">${(stats.offline||0) + (stats.signal_lost||0) + (stats.occluded||0)}</div>
+          <div class="text-xs text-slate-400 mt-1 flex items-center gap-2">
+            <span>掉线 <b class="text-rose-700">${stats.offline||0}</b></span>
+            <span>·</span>
+            <span>失联 <b class="text-amber-700">${stats.signal_lost||0}</b></span>
+            <span>·</span>
+            <span>遮挡 <b class="text-slate-700">${stats.occluded||0}</b></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 主区：左 280px 位置树 + 右 摄像头网格 -->
+      <div class="flex gap-4">
+
+        <!-- ====== 左：位置树 5 级 ====== -->
+        <aside class="w-72 flex-shrink-0 bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <div class="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+            <h3 class="font-medium text-slate-800 text-sm flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 6v12M16 6v12"/></svg>
+              位置树
+            </h3>
+            <button onclick="expandAll()" class="text-xs text-blue-600 hover:underline">全部展开</button>
+          </div>
+          <div class="overflow-y-auto" style="max-height: calc(100vh - 16rem);">
+            ${renderTree()}
+          </div>
+        </aside>
+
+        <!-- ====== 右：摄像头矩阵 ====== -->
+        <main class="flex-1 min-w-0">
+          <!-- 工具栏 -->
+          <div class="bg-white border border-slate-200 rounded-xl p-3 mb-3 flex flex-wrap items-center gap-2 text-sm">
+            <span class="text-slate-500">区域筛选：</span>
+            <button onclick="setZone('')" class="px-3 py-1 rounded ${state.currentZone === '' ? 'bg-blue-100 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-50'}">
+              全部区域
+            </button>
+            ${getZones().filter(z => z.siteId === state.currentSiteId).map(z => `
+              <button onclick="setZone('${z.id}')" class="px-3 py-1 rounded ${state.currentZone === z.id ? 'bg-blue-100 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-50'}">
+                ${z.name}
+              </button>
+            `).join('')}
+
+            <div class="w-px h-5 bg-slate-200 mx-1"></div>
+
+            <span class="text-slate-500">状态：</span>
+            ${[
+              ['', '全部'],
+              ['online', '🟢 在线'],
+              ['signal_lost', '🟡 失联'],
+              ['offline', '🔴 掉线'],
+              ['occluded', '⚫ 遮挡'],
+            ].map(([v, l]) => `
+              <button onclick="setStatus('${v}')" class="px-3 py-1 rounded ${state.statusFilter === v ? 'bg-blue-100 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-50'}">
+                ${l}
+              </button>
+            `).join('')}
+
+            <div class="ml-auto flex items-center gap-2">
+              <input type="text" placeholder="🔍 搜索点位名称" value="${state.keyword}" oninput="setKeyword(this.value)" class="px-2 py-1 border border-slate-200 rounded text-sm w-32 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              <div class="inline-flex border border-slate-200 rounded overflow-hidden">
+                ${[1, 4, 9, 16].map(n => `
+                  <button onclick="setLayout(${n})" class="px-2 py-1 text-xs ${state.layoutCols === n ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50'}">${n === 1 ? '1×1' : (n === 4 ? '2×2' : (n === 9 ? '3×3' : '4×4'))}</button>
+                `).join('')}
+              </div>
+              <button onclick="Utils.toast('已下发截图指令（占位）', 'success')" class="px-2 py-1 text-xs border border-slate-200 rounded hover:bg-slate-50">📷 全场截图</button>
+              <button onclick="Utils.toast('已切换到录像回放模式（占位）', 'info')" class="px-2 py-1 text-xs border border-slate-200 rounded hover:bg-slate-50">🕒 录像回放</button>
+            </div>
+          </div>
+
+          <!-- 摄像头网格 -->
+          <div class="grid gap-3 ${layoutGridClass()}">
+            ${visibleCams.length === 0 ? '<div class="col-span-full py-16 text-center text-slate-400 bg-white border border-slate-200 rounded-xl">📭 当前筛选条件下无摄像头</div>' : visibleCams.map((c, i) => renderCameraCard(c, i)).join('')}
+          </div>
+
+          <div class="mt-3 text-xs text-slate-400 text-center">
+            显示 ${visibleCams.length} / ${cams.length} 个摄像头 · 点击卡片查看实时视频
+          </div>
+        </main>
+      </div>
+    `;
+  }
+
+  // ============ 位置树渲染 ============
+  function renderTree() {
+    const groups = getGroups();
+    return `<div class="p-2">${groups.map(g => renderTreeNode(g, 0)).join('')}</div>`;
+  }
+
+  function renderTreeNode(node, level) {
+    if (!node) return '';
+    const indent = `style="padding-left:${level * 14 + 8}px"`;
+    const expanded = state.expandedNodes.has(node.id);
+    const hasChildren = node.children && node.children.length > 0;
+
+    // 不同类型图标
+    const icon = {
+      group: `<svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1V10.93l-1-.428V17a1 1 0 001 1z"/></svg>`,
+      park: `<svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4z" clip-rule="evenodd"/></svg>`,
+      site: `<svg class="w-4 h-4 text-violet-500" fill="currentColor" viewBox="0 0 20 20"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3z"/></svg>`,
+      zone: `<svg class="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>`,
+      camera: `<svg class="w-4 h-4 text-slate-400" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM12.553 7.106A1 1 0 0114 8v4a1 1 0 01-1.447.894L10 11V9l2.553-1.894z"/></svg>`,
+    }[node.type] || '';
+
+    // 树行
+    let rowExtra = '';
+    if (node.type === 'site') {
+      // 站点行：带在线/总数 badge
+      const siteInfo = getMsBySite(node.siteId);
+      if (siteInfo) {
+        rowExtra = `<span class="ml-auto flex items-center gap-1 text-xs">
+          <span class="text-emerald-700 font-medium">${siteInfo.onlineCameras}</span><span class="text-slate-400">/</span><span class="text-slate-500">${siteInfo.totalCameras}</span>
+        </span>`;
+      }
+    }
+
+    if (!hasChildren && node.type !== 'site' && node.type !== 'zone') {
+      // 叶子
+      return `
+        <div ${indent} class="flex items-center gap-1.5 py-1 text-xs text-slate-500 hover:bg-slate-50 rounded cursor-default">
+          ${icon}<span>${node.name}</span>
+        </div>
+      `;
+    }
+
+    if (node.type === 'site') {
+      // 站点行：可点击切换
+      const isActive = state.currentSiteId === node.siteId;
+      const cams = getCameras().filter(c => c.siteId === node.siteId);
+      const online = cams.filter(c => c.status === 'online').length;
+      const total = cams.length;
+      const dotColor = total === 0 ? 'bg-slate-300' : (online === total ? 'bg-emerald-500' : (online === 0 ? 'bg-rose-500' : 'bg-amber-500'));
+      return `
+        <div ${indent} class="flex items-center gap-1.5 py-1.5 text-xs ${isActive ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-700 hover:bg-slate-50'} rounded cursor-pointer" onclick="selectSite('${node.siteId}')">
+          <span class="w-2 h-2 rounded-full ${dotColor} flex-shrink-0"></span>
+          <svg class="w-3 h-3 transition ${expanded ? '' : '-rotate-90'}" fill="currentColor" viewBox="0 0 20 20" onclick="event.stopPropagation(); toggleNode('${node.id}')"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+          ${icon}
+          <span class="truncate flex-1">${node.name}</span>
+          <span class="text-xs ${online === total ? 'text-emerald-700' : (online === 0 ? 'text-rose-700' : 'text-amber-700')} font-medium">${online}/${total}</span>
+        </div>
+        ${expanded ? renderSiteChildren(node) : ''}
+      `;
+    }
+
+    if (node.type === 'zone') {
+      // 区域内已展开：列出摄像头
+      const cams = getCameras().filter(c => c.zoneId === node.id);
+      return `
+        <div ${indent} class="flex items-center gap-1.5 py-1 text-xs text-slate-600 cursor-default">
+          <span class="w-2 h-2 rounded-full border ${state.currentZone === node.id ? 'bg-blue-600 border-blue-600' : 'border-slate-300'} flex-shrink-0"></span>
+          <span class="flex-1">${node.name}</span>
+          <span class="text-xs text-slate-400">${cams.length}</span>
+        </div>
+      `;
+    }
+
+    // group/park 容器
+    return `
+      <div ${indent} class="flex items-center gap-1.5 py-1.5 text-xs text-slate-700 cursor-pointer hover:bg-slate-50 rounded" onclick="toggleNode('${node.id}')">
+        <svg class="w-3 h-3 transition ${expanded ? '' : '-rotate-90'}" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        ${icon}
+        <span class="font-medium flex-1 truncate">${node.name}</span>
+        ${rowExtra}
+      </div>
+      ${expanded && hasChildren ? `<div>${node.children.map(c => renderTreeNode(c, level + 1)).join('')}</div>` : ''}
+    `;
+  }
+
+  function renderSiteChildren(siteNode) {
+    // 站点下：先列"全部摄像头"虚拟节点，再列区域，再列摄像头
+    const cams = getCameras().filter(c => c.siteId === siteNode.siteId);
+    const zones = getZones().filter(z => z.siteId === siteNode.siteId);
+    return `
+      <div style="padding-left:14px">
+        <div class="flex items-center gap-1.5 py-1 text-xs text-blue-700 cursor-pointer hover:bg-blue-50 rounded" onclick="setZone('')">
+          <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+          <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+          <span class="font-medium flex-1">全部摄像头</span>
+          <span class="text-xs">${cams.length}</span>
+        </div>
+        ${zones.map(z => {
+          const zCams = cams.filter(c => c.zoneId === z.id);
+          const zOnline = zCams.filter(c => c.status === 'online').length;
+          const isActive = state.currentZone === z.id;
+          return `
+            <div class="flex items-center gap-1.5 py-1 text-xs ${isActive ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-50'} rounded cursor-pointer" onclick="setZone('${z.id}')">
+              <span class="w-2 h-2 rounded-full ${zOnline === zCams.length ? 'bg-emerald-500' : (zOnline === 0 ? 'bg-rose-500' : 'bg-amber-500')}"></span>
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+              <span class="flex-1 truncate">${z.name}</span>
+              <span class="text-xs">${zOnline}/${zCams.length}</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  // ============ 摄像头卡片 ============
+  function layoutGridClass() {
+    return state.layoutCols === 1 ? 'grid-cols-1' :
+           state.layoutCols === 4 ? 'grid-cols-4' :
+           state.layoutCols === 9 ? 'grid-cols-3' :
+           'grid-cols-4';
+  }
+
+  function statusBadge4Cam(c) {
+    if (c.status === 'online') return { text: '在线', cls: 'bg-emerald-500', dotCls: 'bg-emerald-500' };
+    if (c.status === 'offline') return { text: '掉线', cls: 'bg-rose-500', dotCls: 'bg-rose-500' };
+    if (c.status === 'signal_lost') return { text: '失联', cls: 'bg-amber-500', dotCls: 'bg-amber-500' };
+    if (c.status === 'occluded') return { text: '遮挡', cls: 'bg-slate-700', dotCls: 'bg-slate-700' };
+    return { text: '未知', cls: 'bg-slate-400', dotCls: 'bg-slate-400' };
+  }
+
+  function renderCameraCard(c) {
+    const b = statusBadge4Cam(c);
+    const isOnline = c.status === 'online';
+    const ts = c.lastHeartbeat || '未上报';
+    const isLarge = state.layoutCols === 1;
+
+    return `
+      <div class="bg-white border ${isOnline ? 'border-slate-200' : 'border-rose-200'} rounded-lg overflow-hidden hover:shadow-md transition cursor-pointer ${isOnline ? '' : 'opacity-80'}" onclick="openCamera('${c.id}')">
+        <!-- 缩略图 -->
+        <div class="cam-thumb">
+          <span class="cam-thumb-time">${ts.split(' ')[1] || ''}</span>
+          <span class="absolute top-2 right-2 text-xs px-1.5 py-0.5 rounded ${b.cls} text-white font-medium">${b.text}</span>
+          ${isOnline ? `
+            <div class="absolute inset-0 flex items-center justify-center">
+              <div class="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center backdrop-blur transition group-hover:scale-110">
+                <svg class="w-6 h-6 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+            </div>
+          ` : `
+            <div class="absolute inset-0 flex flex-col items-center justify-center text-white/70 text-xs">
+              <svg class="w-8 h-8 mb-1 text-rose-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+              <span>${b.text === '失联' ? '画面黑屏（链路断开）' : b.text === '遮挡' ? '镜头被遮挡' : '设备掉线'}</span>
+            </div>
+          `}
+          ${c.ptz ? '<span class="absolute bottom-2 left-2 text-xs px-1.5 py-0.5 rounded bg-black/40 text-white/80">PTZ</span>' : ''}
+          ${c.resolution === '4K' ? '<span class="absolute bottom-2 right-2 text-xs px-1.5 py-0.5 rounded bg-amber-500/80 text-white font-medium">4K</span>' : ''}
+        </div>
+
+        <!-- 信息条 -->
+        <div class="p-2 ${isLarge ? 'p-3' : ''}">
+          <div class="flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full ${b.dotCls} flex-shrink-0"></span>
+            <span class="text-xs font-medium text-slate-800 truncate flex-1">${c.name}</span>
+          </div>
+          <div class="flex items-center justify-between mt-1">
+            <span class="text-xs text-slate-400 truncate">${getZoneName(c.zoneId)}</span>
+            <span class="text-xs text-slate-400 ml-2 whitespace-nowrap">${ts.split(' ')[0] || ''}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ============ 点位查看弹窗（替代独立三级页面） ============
+  function openCamera(id) {
+    const c = getCameras().find(c => c.id === id);
+    if (!c) return;
+    const ms = getMsBySite(c.siteId);
+    const b = statusBadge4Cam(c);
+    const isOnline = c.status === 'online';
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-backdrop';
+    modal.innerHTML = `
+      <div class="bg-slate-900 rounded-xl w-[1200px] max-w-[95vw] max-h-[92vh] overflow-hidden shadow-2xl flex flex-col" onclick="event.stopPropagation()">
+        <!-- 顶部 bar -->
+        <div class="px-5 py-3 border-b border-slate-700 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center">
+              <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            </div>
+            <div>
+              <div class="font-medium text-white">${c.name}</div>
+              <div class="text-xs text-slate-400">${ms ? ms.siteName : ''} · ${getZoneName(c.zoneId)} · ${c.resolution}${c.ptz ? ' · 支持PTZ' : ''}</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs px-2 py-0.5 rounded ${b.cls} text-white font-medium">${b.text}</span>
+            <span class="text-xs text-slate-400 font-mono">${c.lastHeartbeat}</span>
+            <button onclick="this.closest('.modal-backdrop').remove()" class="text-slate-400 hover:text-white p-1"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+          </div>
+        </div>
+
+        <!-- 主区：左视频右控制 -->
+        <div class="flex flex-1 overflow-hidden">
+          <!-- 左侧视频区 -->
+          <div class="flex-1 bg-black relative flex items-center justify-center" style="min-height: 480px;">
+            ${isOnline ? `
+              <div class="text-center text-slate-400">
+                <svg class="w-20 h-20 mx-auto mb-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <div class="text-sm mb-1">实时视频流（占位）</div>
+                <div class="text-xs text-slate-500">rtsp://camera-${c.id}.local/stream · 通道 ${c.id.slice(-3)}</div>
+                <div class="mt-4 flex items-center justify-center gap-2 text-xs">
+                  <button class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">▶ 播放</button>
+                  <button class="px-3 py-1 bg-slate-700 text-white rounded hover:bg-slate-600">⏸</button>
+                  <button class="px-3 py-1 bg-slate-700 text-white rounded hover:bg-slate-600">⛶ 全屏</button>
+                </div>
+              </div>
+            ` : `
+              <div class="text-center text-slate-500">
+                <svg class="w-20 h-20 mx-auto mb-3 text-rose-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                <div class="text-base mb-1 text-rose-400">无法获取实时画面</div>
+                <div class="text-xs">${b.text === '失联' ? '链路断开：请检查网络/NVR' : b.text === '遮挡' ? '镜头被遮挡：请现场检查' : '设备掉线：请检查电源'}</div>
+              </div>
+            `}
+            <!-- 视频上叠加水印 -->
+            <div class="absolute top-3 left-3 text-xs font-mono text-white/70 bg-black/40 px-2 py-1 rounded">${c.lastHeartbeat}</div>
+            <div class="absolute bottom-3 left-3 text-xs font-mono text-white/70 bg-black/40 px-2 py-1 rounded">${c.id.toUpperCase()}</div>
+            <!-- PTZ 浮层 -->
+            ${isOnline && c.ptz ? `
+              <div class="absolute bottom-3 right-3 flex flex-col items-center gap-1 bg-black/50 rounded-full p-2">
+                <button class="w-7 h-7 rounded-full hover:bg-white/20 text-white text-xs">↑</button>
+                <div class="flex gap-1">
+                  <button class="w-7 h-7 rounded-full hover:bg-white/20 text-white text-xs">←</button>
+                  <button class="w-7 h-7 rounded-full hover:bg-white/20 text-white text-xs">●</button>
+                  <button class="w-7 h-7 rounded-full hover:bg-white/20 text-white text-xs">→</button>
+                </div>
+                <button class="w-7 h-7 rounded-full hover:bg-white/20 text-white text-xs">↓</button>
+                <div class="flex gap-1 mt-1">
+                  <button class="px-2 py-0.5 text-xs text-white/80 hover:text-white" onclick="Utils.toast('已拉近镜头','info')">+</button>
+                  <button class="px-2 py-0.5 text-xs text-white/80 hover:text-white" onclick="Utils.toast('已拉远镜头','info')">−</button>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- 右侧操作面板 -->
+          <div class="w-72 bg-slate-800 text-slate-200 overflow-y-auto p-4 space-y-4">
+            <div>
+              <h4 class="text-xs text-slate-400 mb-2 uppercase tracking-wider">设备信息</h4>
+              <div class="space-y-1.5 text-xs">
+                <div class="flex justify-between"><span class="text-slate-400">编号</span><span>${c.id.toUpperCase()}</span></div>
+                <div class="flex justify-between"><span class="text-slate-400">类型</span><span>${({loading:'卸货月台/装卸',indoor:'库内抓拍',perimeter:'周界监控',machine:'机房/设备'}[c.type] || c.type)}</span></div>
+                <div class="flex justify-between"><span class="text-slate-400">分辨率</span><span>${c.resolution}</span></div>
+                <div class="flex justify-between"><span class="text-slate-400">云台</span><span>${c.ptz ? '支持' : '球机/固定'}</span></div>
+                <div class="flex justify-between"><span class="text-slate-400">心跳</span><span class="font-mono">${c.lastHeartbeat.split(' ')[1] || c.lastHeartbeat}</span></div>
+              </div>
+            </div>
+            <div class="border-t border-slate-700 pt-4">
+              <h4 class="text-xs text-slate-400 mb-2 uppercase tracking-wider">实时操作</h4>
+              <div class="grid grid-cols-2 gap-2">
+                <button onclick="Utils.toast('已抓拍截图至云端','success')" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded text-xs">📷 截图</button>
+                <button onclick="Utils.toast('已开始录制 30 秒片段','success')" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded text-xs">⏺ 录制</button>
+                <button onclick="Utils.toast('已发起对讲请求','info')" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded text-xs">🎙 对讲</button>
+                <button onclick="Utils.toast('已开启语音监听','info')" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded text-xs">🔊 监听</button>
+                <button onclick="Utils.toast('已下发巡检指令','info')" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded text-xs">🔁 巡检</button>
+                <button onclick="Utils.toast('已开启补光','info')" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded text-xs">💡 补光</button>
+              </div>
+            </div>
+            <div class="border-t border-slate-700 pt-4">
+              <h4 class="text-xs text-slate-400 mb-2 uppercase tracking-wider">历史回放</h4>
+              <div class="space-y-2 text-xs">
+                <div class="flex items-center gap-2">
+                  <input type="date" value="2026-07-09" class="flex-1 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-xs">
+                  <select class="px-2 py-1 bg-slate-700 border border-slate-600 rounded text-xs">
+                    <option>最近 1 小时</option><option>最近 6 小时</option><option>最近 24 小时</option><option>最近 7 天</option>
+                  </select>
+                </div>
+                <div class="bg-slate-700 rounded p-2">
+                  <div class="flex items-center justify-between text-xs mb-1">
+                    <span class="text-slate-400">00:00 - 现在</span>
+                    <span class="text-slate-500">24h</span>
+                  </div>
+                  <div class="h-2 bg-slate-900 rounded overflow-hidden flex">
+                    <div class="bg-blue-500 h-full" style="width:60%"></div>
+                    <div class="bg-rose-500 h-full" style="width:5%"></div>
+                    <div class="bg-blue-500 h-full" style="width:35%"></div>
+                  </div>
+                  <div class="flex items-center gap-3 mt-1 text-xs text-slate-400">
+                    <span><span class="inline-block w-2 h-2 bg-blue-500 rounded mr-1"></span>正常</span>
+                    <span><span class="inline-block w-2 h-2 bg-rose-500 rounded mr-1"></span>事件</span>
+                  </div>
+                </div>
+                <button onclick="Utils.toast('已加载历史回放（占位）','info')" class="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded text-xs font-medium">▶ 加载回放</button>
+              </div>
+            </div>
+            <div class="border-t border-slate-700 pt-4">
+              <h4 class="text-xs text-slate-400 mb-2 uppercase tracking-wider">告警日志</h4>
+              <div class="space-y-1.5 text-xs">
+                ${[
+                  { t: '18:23:45', msg: '检测到移动物体', cls: 'text-amber-400' },
+                  { t: '16:02:13', msg: '常规巡检完成', cls: 'text-slate-400' },
+                  { t: '14:55:00', msg: c.status === 'offline' ? '设备掉线' : '设备恢复在线', cls: c.status === 'offline' ? 'text-rose-400' : 'text-emerald-400' },
+                ].map(a => `<div class="flex gap-2"><span class="text-slate-500 font-mono">${a.t}</span><span class="${a.cls} flex-1">${a.msg}</span></div>`).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    // 表单/查看类弹窗：屏蔽点击外面关闭
+    modal.onclick = () => {};
+    document.body.appendChild(modal);
+  }
+
+  // ============ Events ============
+  window.selectSite = (siteId) => {
+    state.currentSiteId = siteId;
+    state.currentZone = '';
+    state.expandedNodes.add(siteId);
+    refresh();
+  };
+  window.toggleNode = (id) => {
+    if (state.expandedNodes.has(id)) state.expandedNodes.delete(id);
+    else state.expandedNodes.add(id);
+    refresh();
+  };
+  window.expandAll = () => {
+    const walk = (nodes) => nodes.forEach(n => { state.expandedNodes.add(n.id); if (n.children) walk(n.children); });
+    walk(getGroups());
+    // 同时把仓库下的"全部摄像头"虚拟节点也加上 → 用仓库 ID 即可
+    refresh();
+  };
+  window.setZone = (z) => { state.currentZone = z; refresh(); };
+  window.setStatus = (s) => { state.statusFilter = s; refresh(); };
+  window.setKeyword = (v) => { state.keyword = v; refresh(); };
+  window.setLayout = (n) => { state.layoutCols = n; refresh(); };
+  window.openCamera = openCamera;
+
+  function refresh() {
+    document.getElementById('app').innerHTML = Components.pageShell({
+      title: '监控详情',
+      currentPath: '/customer/video-detail',
+      breadcrumb: [
+        { label: '工作台', path: '/dashboard' },
+        { label: '视频监控', path: '/customer/video' },
+        '监控详情',
+      ],
+      content: render(),
+    });
+  }
+</script>
+</body>
+</html>

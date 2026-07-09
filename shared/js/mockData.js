@@ -175,6 +175,10 @@ const MockData = {
         { icon: 'package', label: '在库货物', path: '/customer/monitoring' },
         { icon: 'list', label: '出/入库详情', path: '/customer/in-out-detail' },
       ]},
+      { group: '视频监控', items: [
+        { icon: 'video', label: '视频监控', path: '/customer/video' },
+        { icon: 'treeview', label: '监控详情', path: '/customer/video-detail' },
+      ]},
       { group: '融资管理', items: [
         { icon: 'file', label: '融资申请', path: '/customer/financing' },
         { icon: 'list', label: '质物清单', path: '/customer/pledge-list' },
@@ -202,6 +206,10 @@ const MockData = {
       { group: '出库审批', items: [
         { icon: 'logistics', label: '解押/出库审批', path: '/platform/approval-outbound' },
       ]},
+      { group: '视频监控', items: [
+        { icon: 'video', label: '视频监控', path: '/customer/video' },
+        { icon: 'treeview', label: '监控详情', path: '/customer/video-detail' },
+      ]},
       { group: '数据中心', items: [
         { icon: 'alert', label: '风险预警', path: '/platform/risk-alerts' },
         { icon: 'cash', label: '追保管理', path: '/platform/supplementary' },
@@ -221,6 +229,10 @@ const MockData = {
         { icon: 'list', label: '质押货物台账', path: '/guarantor/pledge-ledger' },
         { icon: 'alert', label: '风险监控', path: '/guarantor/risk-monitoring' },
       ]},
+      { group: '视频监控', items: [
+        { icon: 'video', label: '视频监控', path: '/customer/video' },
+        { icon: 'treeview', label: '监控详情', path: '/customer/video-detail' },
+      ]},
     ],
     bank: [
       { group: '工作台', items: [
@@ -239,6 +251,10 @@ const MockData = {
         { icon: 'alert', label: '到期预警', path: '/bank/due-alerts' },
         { icon: 'chart', label: '额度管理', path: '/bank/limit-management' },
       ]},
+      { group: '视频监控', items: [
+        { icon: 'video', label: '视频监控', path: '/customer/video' },
+        { icon: 'treeview', label: '监控详情', path: '/customer/video-detail' },
+      ]},
     ],
     warehouse: [
       { group: '工作台', items: [
@@ -252,6 +268,10 @@ const MockData = {
       ]},
       { group: '在库管理', items: [
         { icon: 'package', label: '库存台账', path: '/warehouse/inventory' },
+      ]},
+      { group: '视频监控', items: [
+        { icon: 'video', label: '视频监控', path: '/customer/video' },
+        { icon: 'treeview', label: '监控详情', path: '/customer/video-detail' },
       ]},
     ],
   },
@@ -279,6 +299,174 @@ const MockData = {
     { id: 'wh_001', name: '物流港二期大河智链监管库', type: '自有仓', address: '郑州市惠济区大河惠济国际食品贸易港', manager: '赵德昌', phone: '139 0000 2222', capacity: 5000 },
     { id: 'wh_002', name: '郑州融万冷链库', type: '第三方', address: '郑州市中牟县万邦物流园A区', manager: '孙浩', phone: '137 0000 4444', capacity: 8000 },
     { id: 'wh_003', name: '天津港国际冷链基地', type: '第三方', address: '天津市东疆保税港区', manager: '钱志远', phone: '136 0000 6666', capacity: 12000 },
+  ],
+
+  // ========== v1.7.13 视频监控 ==========
+  // 监控仓库总览（仓库/园区级看板，参考截图1）
+  monitorSites: [
+    {
+      id: 'ms_001', siteId: 'wh_001', siteName: '物流港二期大河智链监管库',
+      region: '河南省郑州市', type: '冷链', coreCompany: '郑州某冷链贸易有限公司',
+      currentStockTons: 1190.45, totalCameras: 13, onlineCameras: 13, offlineCameras: 0,
+      healthRate: '100%', remark: '冷链监管库主力园区', groupId: 'g_zcool', parkId: 'p_zz',
+    },
+    {
+      id: 'ms_002', siteId: 'wh_002', siteName: '郑州融万冷链库',
+      region: '河南省郑州市', type: '冷链', coreCompany: '郑州某冷链贸易有限公司',
+      currentStockTons: 856.32, totalCameras: 8, onlineCameras: 5, offlineCameras: 3,
+      healthRate: '62.5%', remark: '万邦物流园配套库', groupId: 'g_zcool', parkId: 'p_zz',
+    },
+    {
+      id: 'ms_003', siteId: 'wh_003', siteName: '天津港国际冷链基地',
+      region: '天津市东疆保税港区', type: '冷链', coreCompany: '天津港国际物流',
+      currentStockTons: 2845.18, totalCameras: 16, onlineCameras: 16, offlineCameras: 0,
+      healthRate: '100%', remark: '进口冻品主要监管基地', groupId: 'g_zcool', parkId: 'p_tj',
+    },
+    {
+      id: 'ms_004', siteId: 'ms_004', siteName: '汾阳亨利洗煤厂',
+      region: '山西省吕梁市汾阳市', type: '煤炭', coreCompany: '企查查科技有限公司',
+      currentStockTons: -1106.57, totalCameras: 13, onlineCameras: 13, offlineCameras: 0,
+      healthRate: '100%', remark: '山西洗煤厂标杆点位', groupId: 'g_coal', parkId: 'p_fy',
+    },
+    {
+      id: 'ms_005', siteId: 'ms_005', siteName: '坤厚选煤厂',
+      region: '山西省吕梁市', type: '煤炭', coreCompany: '企查查科技有限公司',
+      currentStockTons: 0, totalCameras: 6, onlineCameras: 0, offlineCameras: 6,
+      healthRate: '0%', remark: '全网维护中（v1.7.13）', groupId: 'g_coal', parkId: 'p_fy',
+    },
+    {
+      id: 'ms_006', siteId: 'ms_006', siteName: '宁东储运港',
+      region: '宁夏宁东基地', type: '煤炭', coreCompany: '企查查科技有限公司',
+      currentStockTons: 0, totalCameras: 8, onlineCameras: 5, offlineCameras: 3,
+      healthRate: '62.5%', remark: '3 路掉线疑似光模块故障', groupId: 'g_coal', parkId: 'p_nx',
+    },
+    {
+      id: 'ms_007', siteId: 'ms_007', siteName: '宁夏聚宝煤站',
+      region: '宁夏银川', type: '煤炭', coreCompany: '德盛瑞茂通（上海）供应链管理有限公司',
+      currentStockTons: 47760.32, totalCameras: 16, onlineCameras: 0, offlineCameras: 16,
+      healthRate: '0%', remark: '全部掉线：等待电源维修', groupId: 'g_coal', parkId: 'p_nx',
+    },
+    {
+      id: 'ms_008', siteId: 'ms_008', siteName: '新密下庄河煤场',
+      region: '河南省新密市', type: '煤炭', coreCompany: '企查查科技有限公司',
+      currentStockTons: -237, totalCameras: 13, onlineCameras: 0, offlineCameras: 13,
+      healthRate: '0%', remark: '全部掉线：网络中断', groupId: 'g_coal', parkId: 'p_xm',
+    },
+  ],
+
+  // 区域定义（每个仓库的物理分区）
+  cameraZones: [
+    { id: 'z_zz_1', siteId: 'wh_001', name: '卸货月台',     icon: 'truck' },
+    { id: 'z_zz_2', siteId: 'wh_001', name: '库内-冻品一区', icon: 'snowflake' },
+    { id: 'z_zz_3', siteId: 'wh_001', name: '库内-冻品二区', icon: 'snowflake' },
+    { id: 'z_zz_4', siteId: 'wh_001', name: '称重台',       icon: 'weight' },
+    { id: 'z_zz_5', siteId: 'wh_001', name: '库外周界',     icon: 'shield' },
+    { id: 'z_zz_6', siteId: 'wh_001', name: '机房机柜',     icon: 'server' },
+
+    { id: 'z_rw_1', siteId: 'wh_002', name: '卸货月台',     icon: 'truck' },
+    { id: 'z_rw_2', siteId: 'wh_002', name: '库内-A 仓',    icon: 'snowflake' },
+    { id: 'z_rw_3', siteId: 'wh_002', name: '库外周界',     icon: 'shield' },
+    { id: 'z_rw_4', siteId: 'wh_002', name: '机房',         icon: 'server' },
+
+    { id: 'z_tj_1', siteId: 'wh_003', name: '装卸码头',     icon: 'anchor' },
+    { id: 'z_tj_2', siteId: 'wh_003', name: '查验平台',     icon: 'search' },
+    { id: 'z_tj_3', siteId: 'wh_003', name: '保税冷库一区', icon: 'snowflake' },
+    { id: 'z_tj_4', siteId: 'wh_003', name: '保税冷库二区', icon: 'snowflake' },
+    { id: 'z_tj_5', siteId: 'wh_003', name: '库外周界',     icon: 'shield' },
+    { id: 'z_tj_6', siteId: 'wh_003', name: '机房',         icon: 'server' },
+  ],
+
+  // 摄像头点位（~50 个，含多种状态）
+  cameras: [
+    // ========== wh_001 物流港二期（13 个，全在线）==========
+    { id: 'cam_001', siteId: 'wh_001', zoneId: 'z_zz_1', name: '1号抓拍相机1', type: 'loading', status: 'online', lastHeartbeat: '2026-07-09 18:30:13', resolution: '1080p', ptz: true },
+    { id: 'cam_002', siteId: 'wh_001', zoneId: 'z_zz_1', name: '1号抓拍相机2', type: 'loading', status: 'online', lastHeartbeat: '2026-07-09 18:30:20', resolution: '1080p', ptz: true },
+    { id: 'cam_003', siteId: 'wh_001', zoneId: 'z_zz_1', name: '1号抓拍相机3', type: 'loading', status: 'online', lastHeartbeat: '2026-07-09 18:30:24', resolution: '1080p', ptz: true },
+    { id: 'cam_004', siteId: 'wh_001', zoneId: 'z_zz_2', name: '2号抓拍相机1', type: 'indoor',   status: 'online', lastHeartbeat: '2026-07-09 18:30:18', resolution: '4K',    ptz: true },
+    { id: 'cam_005', siteId: 'wh_001', zoneId: 'z_zz_2', name: '2号抓拍相机2', type: 'indoor',   status: 'online', lastHeartbeat: '2026-07-09 18:30:21', resolution: '4K',    ptz: true },
+    { id: 'cam_006', siteId: 'wh_001', zoneId: 'z_zz_2', name: '2号抓拍相机3', type: 'indoor',   status: 'online', lastHeartbeat: '2026-07-09 18:30:19', resolution: '4K',    ptz: true },
+    { id: 'cam_007', siteId: 'wh_001', zoneId: 'z_zz_3', name: '3号抓拍相机1', type: 'indoor',   status: 'online', lastHeartbeat: '2026-07-09 18:30:14', resolution: '1080p', ptz: true },
+    { id: 'cam_008', siteId: 'wh_001', zoneId: 'z_zz_3', name: '3号抓拍相机2', type: 'indoor',   status: 'online', lastHeartbeat: '2026-07-09 18:30:25', resolution: '1080p', ptz: true },
+    { id: 'cam_009', siteId: 'wh_001', zoneId: 'z_zz_3', name: '3号抓拍相机3', type: 'indoor',   status: 'online', lastHeartbeat: '2026-07-09 18:30:15', resolution: '1080p', ptz: true },
+    { id: 'cam_010', siteId: 'wh_001', zoneId: 'z_zz_4', name: '称重台相机',   type: 'loading', status: 'online', lastHeartbeat: '2026-07-09 18:30:50', resolution: '1080p', ptz: false },
+    { id: 'cam_011', siteId: 'wh_001', zoneId: 'z_zz_5', name: '东侧周界相机', type: 'perimeter', status: 'online', lastHeartbeat: '2026-07-09 18:30:00', resolution: '1080p', ptz: true },
+    { id: 'cam_012', siteId: 'wh_001', zoneId: 'z_zz_5', name: '西侧周界相机', type: 'perimeter', status: 'online', lastHeartbeat: '2026-07-09 18:30:30', resolution: '1080p', ptz: true },
+    { id: 'cam_013', siteId: 'wh_001', zoneId: 'z_zz_6', name: '机房机柜',     type: 'machine',  status: 'online', lastHeartbeat: '2026-07-09 18:30:10', resolution: '1080p', ptz: false },
+
+    // ========== wh_002 郑州融万（8 个，5 在线/3 掉线）==========
+    { id: 'cam_021', siteId: 'wh_002', zoneId: 'z_rw_1', name: '1号抓拍相机1', type: 'loading', status: 'online', lastHeartbeat: '2026-07-09 18:30:13', resolution: '1080p', ptz: true },
+    { id: 'cam_022', siteId: 'wh_002', zoneId: 'z_rw_1', name: '1号抓拍相机2', type: 'loading', status: 'offline', lastHeartbeat: '2026-07-09 14:55:00', resolution: '1080p', ptz: true },
+    { id: 'cam_023', siteId: 'wh_002', zoneId: 'z_rw_2', name: 'A仓相机1',    type: 'indoor',   status: 'online', lastHeartbeat: '2026-07-09 18:30:20', resolution: '1080p', ptz: true },
+    { id: 'cam_024', siteId: 'wh_002', zoneId: 'z_rw_2', name: 'A仓相机2',    type: 'indoor',   status: 'online', lastHeartbeat: '2026-07-09 18:30:18', resolution: '1080p', ptz: true },
+    { id: 'cam_025', siteId: 'wh_002', zoneId: 'z_rw_2', name: 'A仓相机3',    type: 'indoor',   status: 'online', lastHeartbeat: '2026-07-09 18:30:24', resolution: '1080p', ptz: true },
+    { id: 'cam_026', siteId: 'wh_002', zoneId: 'z_rw_3', name: '东周界',      type: 'perimeter', status: 'signal_lost', lastHeartbeat: '2026-07-09 12:30:00', resolution: '1080p', ptz: true },
+    { id: 'cam_027', siteId: 'wh_002', zoneId: 'z_rw_3', name: '西周界',      type: 'perimeter', status: 'online', lastHeartbeat: '2026-07-09 18:30:14', resolution: '1080p', ptz: true },
+    { id: 'cam_028', siteId: 'wh_002', zoneId: 'z_rw_4', name: '机房',        type: 'machine',  status: 'occluded', lastHeartbeat: '2026-07-09 18:30:00', resolution: '1080p', ptz: false },
+
+    // ========== wh_003 天津港（16 个，全在线）==========
+    { id: 'cam_031', siteId: 'wh_003', zoneId: 'z_tj_1', name: '1号装卸位', type: 'loading', status: 'online', lastHeartbeat: '2026-07-09 18:30:10', resolution: '4K', ptz: true },
+    { id: 'cam_032', siteId: 'wh_003', zoneId: 'z_tj_1', name: '2号装卸位', type: 'loading', status: 'online', lastHeartbeat: '2026-07-09 18:30:12', resolution: '4K', ptz: true },
+    { id: 'cam_033', siteId: 'wh_003', zoneId: 'z_tj_1', name: '3号装卸位', type: 'loading', status: 'online', lastHeartbeat: '2026-07-09 18:30:11', resolution: '4K', ptz: true },
+    { id: 'cam_034', siteId: 'wh_003', zoneId: 'z_tj_2', name: '查验平台1', type: 'loading', status: 'online', lastHeartbeat: '2026-07-09 18:30:09', resolution: '4K', ptz: true },
+    { id: 'cam_035', siteId: 'wh_003', zoneId: 'z_tj_2', name: '查验平台2', type: 'loading', status: 'online', lastHeartbeat: '2026-07-09 18:30:13', resolution: '4K', ptz: true },
+    { id: 'cam_036', siteId: 'wh_003', zoneId: 'z_tj_3', name: '保税一区1', type: 'indoor',   status: 'online', lastHeartbeat: '2026-07-09 18:30:14', resolution: '1080p', ptz: true },
+    { id: 'cam_037', siteId: 'wh_003', zoneId: 'z_tj_3', name: '保税一区2', type: 'indoor',   status: 'online', lastHeartbeat: '2026-07-09 18:30:18', resolution: '1080p', ptz: true },
+    { id: 'cam_038', siteId: 'wh_003', zoneId: 'z_tj_3', name: '保税一区3', type: 'indoor',   status: 'online', lastHeartbeat: '2026-07-09 18:30:21', resolution: '1080p', ptz: true },
+    { id: 'cam_039', siteId: 'wh_003', zoneId: 'z_tj_4', name: '保税二区1', type: 'indoor',   status: 'online', lastHeartbeat: '2026-07-09 18:30:23', resolution: '1080p', ptz: true },
+    { id: 'cam_040', siteId: 'wh_003', zoneId: 'z_tj_4', name: '保税二区2', type: 'indoor',   status: 'online', lastHeartbeat: '2026-07-09 18:30:25', resolution: '1080p', ptz: true },
+    { id: 'cam_041', siteId: 'wh_003', zoneId: 'z_tj_4', name: '保税二区3', type: 'indoor',   status: 'online', lastHeartbeat: '2026-07-09 18:30:27', resolution: '1080p', ptz: true },
+    { id: 'cam_042', siteId: 'wh_003', zoneId: 'z_tj_5', name: '北侧周界',  type: 'perimeter', status: 'online', lastHeartbeat: '2026-07-09 18:30:29', resolution: '1080p', ptz: true },
+    { id: 'cam_043', siteId: 'wh_003', zoneId: 'z_tj_5', name: '南侧周界',  type: 'perimeter', status: 'online', lastHeartbeat: '2026-07-09 18:30:31', resolution: '1080p', ptz: true },
+    { id: 'cam_044', siteId: 'wh_003', zoneId: 'z_tj_5', name: '东侧周界',  type: 'perimeter', status: 'online', lastHeartbeat: '2026-07-09 18:30:33', resolution: '1080p', ptz: true },
+    { id: 'cam_045', siteId: 'wh_003', zoneId: 'z_tj_5', name: '西侧周界',  type: 'perimeter', status: 'online', lastHeartbeat: '2026-07-09 18:30:35', resolution: '1080p', ptz: true },
+    { id: 'cam_046', siteId: 'wh_003', zoneId: 'z_tj_6', name: '机房',      type: 'machine',  status: 'online', lastHeartbeat: '2026-07-09 18:30:15', resolution: '1080p', ptz: false },
+  ],
+
+  // 位置树分组（用于监控详情左侧）
+  monitorGroups: [
+    {
+      id: 'g_zcool', name: '冷链监管库', type: 'group',
+      children: [
+        {
+          id: 'p_zz', name: '郑州冷链园区', type: 'park',
+          children: [
+            { id: 'wh_001', name: '物流港二期大河智链监管库', type: 'site', siteId: 'wh_001', parentId: 'p_zz' },
+            { id: 'wh_002', name: '郑州融万冷链库', type: 'site', siteId: 'wh_002', parentId: 'p_zz' },
+          ],
+        },
+        {
+          id: 'p_tj', name: '天津港基地', type: 'park',
+          children: [
+            { id: 'wh_003', name: '天津港国际冷链基地', type: 'site', siteId: 'wh_003', parentId: 'p_tj' },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'g_coal', name: '煤炭洗选厂', type: 'group',
+      children: [
+        {
+          id: 'p_fy', name: '汾阳片区', type: 'park',
+          children: [
+            { id: 'ms_004', name: '汾阳亨利洗煤厂', type: 'site', siteId: 'ms_004', parentId: 'p_fy' },
+            { id: 'ms_005', name: '坤厚选煤厂', type: 'site', siteId: 'ms_005', parentId: 'p_fy' },
+          ],
+        },
+        {
+          id: 'p_nx', name: '宁夏片区', type: 'park',
+          children: [
+            { id: 'ms_006', name: '宁东储运港', type: 'site', siteId: 'ms_006', parentId: 'p_nx' },
+            { id: 'ms_007', name: '宁夏聚宝煤站', type: 'site', siteId: 'ms_007', parentId: 'p_nx' },
+          ],
+        },
+        {
+          id: 'p_xm', name: '新密片区', type: 'park',
+          children: [
+            { id: 'ms_008', name: '新密下庄河煤场', type: 'site', siteId: 'ms_008', parentId: 'p_xm' },
+          ],
+        },
+      ],
+    },
   ],
 
   // ========== 真实业务记录（基于盯市台账 + 实际业务编号） ==========
