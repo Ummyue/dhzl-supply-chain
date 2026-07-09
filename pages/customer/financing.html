@@ -394,20 +394,14 @@
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
-        <div class="amount-gradient rounded-xl p-4 shadow-md">
-          <div class="text-blue-100 text-xs">可用额度</div>
-          <div class="text-2xl font-bold num-focus mt-1">¥7,900,000.00</div>
-        </div>
+        ${Components.statCard({ label: '可用额度', value: '¥7,900,000.00', hint: '可用额度 = 银行授信额度 − 在贷融资本金合计（授信额度根据货主方历史信用动态调整）', gradient: true })}
+        ${Components.statCard({ label: '质押率', value: '80%', hint: '质押率 = 拟融资金额 ÷ 质押物评估价值 × 100%（质押率越高，单笔货能拿到的钱越多，但放款方风险也越大）', color: 'text-blue-600' })}
+        ${Components.statCard({ label: '融资期限', value: '≤ 4 个月', hint: '融资期限 = 自然月起息日到到期日的实际天数（当前实例 ≤ 120 天，约合 4 个月）' })}
         <div class="bg-white rounded-xl p-4 border border-slate-200">
-          <div class="text-slate-500 text-xs">质押率</div>
-          <div class="text-2xl font-bold text-blue-600 num-focus mt-1">80%</div>
-        </div>
-        <div class="bg-white rounded-xl p-4 border border-slate-200">
-          <div class="text-slate-500 text-xs">融资期限</div>
-          <div class="text-2xl font-bold text-slate-800 mt-1">≤ 4 个月</div>
-        </div>
-        <div class="bg-white rounded-xl p-4 border border-slate-200">
-          <div class="text-slate-500 text-xs">核心单据</div>
+          <div class="flex items-center gap-1.5">
+            <div class="text-slate-500 text-xs">核心单据</div>
+            <span class="stat-hint cursor-help inline-flex items-center justify-center w-4 h-4 text-[10px] rounded-full border border-slate-300 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition" title="核心单据 = 融资成功后系统自动生成的两份关键文件（质物清单 + 反担保合同）需货主方盖章。质物清单是质押物明细台账，反担保合同是货主方承诺履约的法律文件">?</span>
+          </div>
           <div class="text-sm font-medium text-slate-800 mt-2">📄 质物清单<br>📄 质押反担保合同</div>
         </div>
       </div>

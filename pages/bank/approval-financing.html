@@ -39,22 +39,10 @@
       </div>
 
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <div class="amount-gradient rounded-xl p-4 shadow-md">
-          <div class="text-blue-100 text-xs">在贷余额</div>
-          <div class="text-2xl font-bold num-focus mt-1">¥3.6亿</div>
-        </div>
-        <div class="bg-white rounded-xl p-4 border border-slate-200">
-          <div class="text-slate-500 text-xs">本月放款额</div>
-          <div class="text-2xl font-bold text-emerald-600 num-focus mt-1">¥8,200万</div>
-        </div>
-        <div class="bg-white rounded-xl p-4 border border-slate-200">
-          <div class="text-slate-500 text-xs">不良率</div>
-          <div class="text-2xl font-bold text-blue-600 num-focus mt-1">0.13%</div>
-        </div>
-        <div class="bg-white rounded-xl p-4 border border-slate-200">
-          <div class="text-slate-500 text-xs">本月待审</div>
-          <div class="text-2xl font-bold text-violet-600 num-focus mt-1">${MockData.financingList.filter(f => f.status === 'pending_funding').length} 笔</div>
-        </div>
+        ${Components.statCard({ label: '在贷余额', value: '¥3.6亿', hint: '资金方在贷余额 = 已放款且尚未结清的融资本金合计', gradient: true })}
+        ${Components.statCard({ label: '本月放款额', value: '¥8,200万', hint: '本月放款额 = 自然月内状态进入「已放款」的融资本金合计', color: 'text-emerald-600' })}
+        ${Components.statCard({ label: '不良率', value: '0.13%', hint: '不良率 = 逾期 90 天以上的未结清本金 ÷ 在贷余额 × 100%（银保监会五级分类口径）', color: 'text-blue-600' })}
+        ${Components.statCard({ label: '本月待审', value: `${MockData.financingList.filter(f => f.status === 'pending_funding').length} 笔`, hint: '本月待审 = 当前状态为「资方审核」且本自然月内提交的融资笔数', color: 'text-violet-600' })}
       </div>
 
       ${FinancingList.render({

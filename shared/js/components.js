@@ -223,6 +223,26 @@ const Components = {
     setTimeout(() => window.location.reload(), 600);
   },
 
+  // ============ 顶部数据卡（v1.7.9 带问号提示）============
+  // 用法：Components.statCard({ label: '在贷余额', value: '¥3.6亿', hint: '在贷余额 = ...', color: 'text-blue-600', gradient: false })
+  // hint 显示为问号图标 hover 弹出，描述数据如何计算
+  statCard({ label = '', value = '', hint = '', color = 'text-slate-800', gradient = false } = {}) {
+    const body = `
+      <div class="flex items-center gap-1.5">
+        <div class="${gradient ? 'text-blue-100' : 'text-slate-500'} text-xs">${label}</div>
+        ${hint ? `
+          <span class="stat-hint cursor-help inline-flex items-center justify-center w-4 h-4 text-[10px] rounded-full border ${gradient ? 'border-blue-300 text-blue-100 hover:bg-white/10' : 'border-slate-300 text-slate-400 hover:bg-slate-100 hover:text-slate-700'} transition" title="${hint.replace(/"/g, '&quot;')}">?</span>
+        ` : ''}
+      </div>
+      <div class="text-2xl font-bold num-focus mt-1 ${color}">${value}</div>
+    `;
+    return `
+      <div class="${gradient ? 'amount-gradient' : 'bg-white'} rounded-xl p-4 ${gradient ? 'shadow-md' : 'border border-slate-200'}">
+        ${body}
+      </div>
+    `;
+  },
+
   // 全局点击关闭弹层
   bindGlobalClose() {
     document.addEventListener('click', (e) => {

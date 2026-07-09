@@ -34,22 +34,10 @@
       </div>
 
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <div class="bg-amber-50 rounded-xl p-4 border border-amber-200">
-          <div class="text-xs text-amber-700">在保余额</div>
-          <div class="text-2xl font-bold text-amber-700 num-focus mt-1">¥5.2亿</div>
-        </div>
-        <div class="bg-white rounded-xl p-4 border border-slate-200">
-          <div class="text-xs text-slate-500">担保总额度</div>
-          <div class="text-2xl font-bold text-slate-800 num-focus mt-1">¥8.5亿</div>
-        </div>
-        <div class="bg-white rounded-xl p-4 border border-slate-200">
-          <div class="text-xs text-slate-500">敞口占用</div>
-          <div class="text-2xl font-bold text-orange-600 num-focus mt-1">61.2%</div>
-        </div>
-        <div class="bg-white rounded-xl p-4 border border-slate-200">
-          <div class="text-xs text-slate-500">本月代偿率</div>
-          <div class="text-2xl font-bold text-emerald-600 num-focus mt-1">0.00%</div>
-        </div>
+        ${Components.statCard({ label: '在保余额', value: '¥5.2亿', hint: '在保余额 = 已出具担保函且仍在担保期内的融资本金合计', color: 'text-amber-700' })}
+        ${Components.statCard({ label: '担保总额度', value: '¥8.5亿', hint: '担保总额度 = 担保公司与合作银行签订的年度担保授信上限（含已占用 + 可用）' })}
+        ${Components.statCard({ label: '敞口占用', value: '61.2%', hint: '敞口占用 = 在保余额 ÷ 担保总额度 × 100%（占用率越接近 80% 警戒线说明担保额度越紧）', color: 'text-orange-600' })}
+        ${Components.statCard({ label: '本月代偿率', value: '0.00%', hint: '本月代偿率 = 本月代偿金额 ÷ 本月新增担保额 × 100%（代偿 = 客户违约后担保公司替客户还的钱）', color: 'text-emerald-600' })}
       </div>
 
       <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
