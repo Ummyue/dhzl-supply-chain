@@ -164,15 +164,15 @@ const MockData = {
       { group: '工作台', items: [
         { icon: 'home', label: '首页概览', path: '/dashboard' },
       ]},
+      { group: '库存管理', items: [
+        { icon: 'list', label: '库存台账', path: '/customer/inventory-ledger' },
+      ]},
       { group: '客户准入', items: [
         { icon: 'shield', label: '准入申请', path: '/customer/admission' },
       ]},
       { group: '货物管理', items: [
         { icon: 'box', label: '入库申请', path: '/customer/inbound' },
         { icon: 'package', label: '在库货物', path: '/customer/monitoring' },
-      ]},
-      { group: '库存管理', items: [
-        { icon: 'list', label: '库存台账', path: '/customer/inventory-ledger' },
       ]},
       { group: '融资管理', items: [
         { icon: 'file', label: '融资申请', path: '/customer/financing' },
@@ -1206,18 +1206,9 @@ const MockData = {
     { id: 'acc_004', customer: '河南某冷链股份有限公司', bankName: '建设银行郑州金水支行', branch: '郑州金水支行', accountNo: '6217 XXXX XXXX 8888 777', accountAlias: '基本户', isDefault: true, verifiedAt: '2026-02-01', status: 'active' },
     { id: 'acc_005', customer: '河南某冷链股份有限公司', bankName: '招商银行郑州分行', branch: '郑州分行', accountNo: '6225 XXXX XXXX 3333 222', accountAlias: '一般户', isDefault: false, verifiedAt: '2026-04-15', status: 'active' },
   ],
-};
-
-// ========== 状态机辅助函数 ==========
-MockData.getStatusLabel = (status) => STATUS_LABELS[status] || status;
-MockData.getStatusColor = (status) => STATUS_COLORS[status] || 'gray';
-MockData.getStatusLabelEn = (status) => STATUS_LABELS_EN[status] || status;
-MockData.STATUS_LABELS = STATUS_LABELS;
-MockData.STATUS_COLORS = STATUS_COLORS;
 
   // ========== 库存台账（v1.7.9 货主方库存管理菜单使用） ==========
   // 库点 + 仓房/货位 + 货物名称（国家/品类/部位）+ 库存/质押/冻结数量重量
-  // 货物分类：4 大国 × 3 品类 × 多部位 = 12 种组合，分布在不同库点
   inventoryLedger: (function() {
     const countries = ['巴西', '澳大利亚', '美国', '新西兰'];
     const categories = ['牛肉类', '羊肉类', '猪肉类'];
@@ -1272,5 +1263,90 @@ MockData.STATUS_COLORS = STATUS_COLORS;
     }
     return records;
   })(),
+
+  // ========== 库存台账详情记录（v1.7.10 4 类记录：入库/出库/质押/解押） ==========
+  // 用于库存台账页 4 个 tab 和「查看」弹窗
+  inventoryRecords: (function() {
+    const out = [];
+    let n = 1;
+    function makeRec(type, idx) {
+      const ymd = ['2026-05-10', '2026-04-22', '2026-04-08', '2026-03-15', '2026-02-20'][idx % 5];
+      const productNames = ['保乐肩-巴西', '羔羊肉卷-新西兰', '牛腩-澳大利亚', '牛肋排-美国', '牛腱子-巴西'];
+      const warehouses = [
+        { id: 'wh_001', name: '物流港二期大河智链监管库', location: '冷冻仓-监管货位' },
+        { id: 'wh_002', name: '郑州融万冷链库', location: '冷冻仓-监管货位' },
+        { id: 'wh_003', name: '天津港国际冷链基地', location: '冷冻仓-监管货位' },
+      ];
+      const wh = warehouses[idx % warehouses.length];
+      const suppliers = ['中原银行股份有限公司', '工商银行郑州分行', '中融信托·冷链金融部', '招商银行郑州分行'];
+      const supervisors = ['大河智链供应链管理有限公司', '郑州海关·保税货物监管处'];
+      const guarantors = ['中原再担保股份有限公司', '某省级农业担保股份有限公司'];
+      const applicants = ['河南永恒有限公司', '河南某冷链股份有限公司', '郑州某冷链贸易有限公司', '河南军牧原国际贸易有限公司'];
+      const productTypeMap = { inbound: '中原e贷', outbound: '解押出库', pledge: '冷链现货质押', unpledge: '解押处理' };
+      const sourceMap = {
+        inbound: ['手动添加', '数据同步', 'API导入'],
+        outbound: ['手动添加', '系统生成'],
+        pledge: ['系统生成', '手动添加'],
+        unpledge: ['系统生成', '手动添加'],
+      };
+      const id = `${type}_${String(n++).padStart(4, '0')}`;
+      return {
+        id, type,
+        bizNo: type === 'inbound' ? `IN${ymd.replace(/-/g,'')}${String(idx).padStart(4,'0')}` :
+              type === 'outbound' ? `OUT${ymd.replace(/-/g,'')}${String(idx).padStart(4,'0')}` :
+              type === 'pledge' ? `PLEDGE_${ymd.replace(/-/g,'')}${String(idx).padStart(4,'0')}` :
+              `UNPLG_${ymd.replace(/-/g,'')}${String(idx).padStart(4,'0')}`,
+        bizDate: ymd,
+        bizTime: '12:33:34',
+        productName: productNames[idx % productNames.length],
+        warehouseId: wh.id,
+        warehouseName: wh.name,
+        location: wh.location,
+        inboundApplyNo: type === 'inbound' ? `PREIN${ymd.replace(/-/g,'')}${String(idx).padStart(4,'0')}` : '',
+        contractNo: type !== 'unpledge' ? `XJDRHSY-${ymd.replace(/-/g,'')}-003` : '',
+        source: sourceMap[type][idx % sourceMap[type].length],
+        applicant: applicants[idx % applicants.length],
+        contactPerson: '张三',
+        contactPhone: '13323828889',
+        productType: productTypeMap[type],
+        pledgee: guarantors[idx % guarantors.length],
+        supervisor: supervisors[idx % supervisors.length],
+        applyDate: ymd,
+        creator: '张三',
+        createTime: '2022-08-12 12:22:32',
+        // 库存字段（6 卡片）
+        stockWeight: 3000 + idx * 100,
+        stockValue: 20000 + idx * 1500,
+        pledgeWeight: idx % 3 === 0 ? 1500 + idx * 50 : 0,
+        pledgeValue: idx % 3 === 0 ? 10000 + idx * 800 : 0,
+        frozenWeight: idx % 5 === 0 ? 500 : 0,
+        frozenValue: idx % 5 === 0 ? 3200 : 0,
+        grossWeight: 3500 + idx * 100, tareWeight: 500, netWeight: 3000 + idx * 100,
+        remark: '',
+        // 货物明细
+        products: [{
+          name: productNames[idx % productNames.length], country: '巴西', factoryNo: '巴西',
+          planQty: 140 + idx * 5, piecesUnit: '箱',
+          planWeight: 3000 + idx * 100, weightUnit: '千克',
+          planDate: ymd, prodDate: '2026-01-01', batchNo: '2026-01-01',
+          actualQty: 140 + idx * 5, actualWeight: 3000 + idx * 100,
+        }],
+        // 附件
+        attachments: [
+          { type: '入库单', uploadedAt: '2023-12-12 12:23:32', filename: '44354657687.pdf' },
+          { type: '磅单明细', uploadedAt: '2023-12-12 12:23:32', filename: '明细1.pdf' },
+          { type: '入库作业留痕', uploadedAt: '2023-12-12 12:23:32', filename: '质检.png、称重.png、卸货.png' },
+        ],
+      };
+    }
+    // 各 tab 生成 12 条记录
+    ['inbound', 'outbound', 'pledge', 'unpledge'].forEach(type => {
+      for (let i = 0; i < 12; i++) {
+        out.push(makeRec(type, i));
+      }
+    });
+    return out;
+  })(),
+};
 
 window.MockData = MockData;

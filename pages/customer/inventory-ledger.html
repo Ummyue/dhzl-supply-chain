@@ -16,15 +16,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
   <link rel="stylesheet" href="/shared/css/style.css">
-  <style>
-    /* 多级折叠筛选（国家/品类/部位）样式 */
-    .product-cascader-pop { position: absolute; top: 100%; left: 0; margin-top: 4px; background: white; border: 1px solid #e2e8f0; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); z-index: 50; padding: 8px; min-width: 280px; }
-    .product-cascader-pop .pccol { display: inline-block; vertical-align: top; min-width: 100px; max-height: 240px; overflow-y: auto; }
-    .product-cascader-pop .pcitem { padding: 6px 10px; font-size: 13px; cursor: pointer; border-radius: 4px; }
-    .product-cascader-pop .pcitem:hover { background: #f1f5f9; }
-    .product-cascader-pop .pcitem.selected { background: #dbeafe; color: #1d4ed8; font-weight: 500; }
-    .product-cascader-pop .pcitem.has-child::after { content: ' ›'; color: #94a3b8; }
-  </style>
 </head>
 <body class="bg-slate-50">
 <div id="app"></div>
@@ -34,45 +25,36 @@
 <script>
   Components.bindGlobalClose();
 
-  // ============ 状态 ============
+  // ============ v1.7.10 状态 ============
   const state = {
-    selectedWarehouses: [],      // 库点（多选）
-    selectedLocations: [],       // 仓房-货位（多选 + 分组）
-    productCascade: { country: '', category: '', part: '' }, // 货物名称 3 级
-    selectedBanks: [],           // 金融机构（截图里展示）
-    selectedStates: [],          // 库存状态
+    activeTab: 'inbound',                // inbound | outbound | pledge | unpledge
+    bizNoSearch: '',                     // 入库单号 模糊搜索
+    dateRange: { start: '', end: '' },   // 入库日期 范围
     page: 1,
     pageSize: 10,
   };
 
-  const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
-  const STATE_OPTIONS = [
-    { id: 'normal', label: '正常', color: 'text-emerald-600' },
-    { id: 'pledged', label: '已质押', color: 'text-amber-600' },
-    { id: 'frozen', label: '已冻结', color: 'text-blue-600' },
+  const TABS = [
+    { id: 'inbound',  label: '入库记录' },
+    { id: 'outbound', label: '出库记录' },
+    { id: 'pledge',   label: '质押记录' },
+    { id: 'unpledge', label: '解押记录' },
   ];
 
-  // ============ 工具 ============
-  function _uniqueBy(arr, key) {
-    return [...new Set(arr.map(x => x[key]).filter(v => v))];
+  function getActiveList() {
+    const list = MockData.inventoryRecords || [];
+    return list.filter(r => r.type === state.activeTab);
   }
 
-  // ============ 筛选逻辑 ============
   function applyFilters() {
-    const recs = MockData.inventoryLedger;
-    return recs.filter(r => {
-      if (state.selectedWarehouses.length && !state.selectedWarehouses.includes(r.warehouseId)) return false;
-      if (state.selectedLocations.length && !state.selectedLocations.includes(r.location)) return false;
-      if (state.selectedBanks.length && !state.selectedBanks.includes(r.bank)) return false;
-      if (state.selectedStates.length && !state.selectedStates.includes(r.state)) return false;
-      if (state.productCascade.country && r.country !== state.productCascade.country) return false;
-      if (state.productCascade.category && r.category !== state.productCascade.category) return false;
-      if (state.productCascade.part && r.part !== state.productCascade.part) return false;
+    return getActiveList().filter(r => {
+      if (state.bizNoSearch && !(r.bizNo || '').toLowerCase().includes(state.bizNoSearch.toLowerCase().trim())) return false;
+      if (state.dateRange.start && r.bizDate < state.dateRange.start) return false;
+      if (state.dateRange.end && r.bizDate > state.dateRange.end) return false;
       return true;
     });
   }
 
-  // ============ 视图渲染 ============
   document.getElementById('app').innerHTML = Components.pageShell({
     title: '库存台账',
     currentPath: '/customer/inventory-ledger',
@@ -81,7 +63,7 @@
       { label: '库存管理', path: '/customer/inventory-ledger' },
       '库存台账',
     ],
-    extra: `<button onclick="exportInventoryCSV()" class="px-3 py-2 border border-slate-300 hover:border-emerald-500 hover:text-emerald-600 text-slate-700 rounded-md text-sm font-medium flex items-center gap-1 transition">
+    extra: `<button onclick="exportRecordsCSV()" class="px-3 py-2 border border-slate-300 hover:border-emerald-500 hover:text-emerald-600 text-slate-700 rounded-md text-sm font-medium flex items-center gap-1 transition">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
         数据导出
       </button>`,
@@ -97,55 +79,75 @@
     const pageItems = filtered.slice(start, start + state.pageSize);
 
     return `
-      <!-- 库存汇总 4 张统计卡 -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        ${Components.statCard({ label: '总库存', value: `${totalWeight('stockWeight', filtered)} 吨`, hint: '总库存重量 = 当前筛选条件下所有库存记录重量合计（吨）', color: 'text-emerald-600', gradient: true })}
-        ${Components.statCard({ label: '预估总货值', value: `${totalMoney('stockValue', filtered)} 元`, hint: '预估总货值 = 当前筛选条件下所有库存记录的库存货值合计', color: 'text-amber-600' })}
-        ${Components.statCard({ label: '质押总量', value: `${totalWeight('pledgeWeight', filtered)} 吨`, hint: '质押总量 = 当前筛选条件下状态含「质押」的货物重量合计', color: 'text-blue-600' })}
-        ${Components.statCard({ label: '质押预估总货值', value: `${totalMoney('pledgeValue', filtered)} 元`, hint: '质押预估总货值 = 当前筛选条件下状态含「质押」的货物质押货值合计', color: 'text-violet-600' })}
+      <!-- 顶部 6 张统计卡（4 + 2 冻结）-->
+      <div class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-4">
+        ${Components.statCard({ label: '总库存', value: `${sumWeight('stockWeight')} 吨`, hint: '总库存 = 所有未解押货物的毛重合计（吨）', color: 'text-emerald-600', gradient: true })}
+        ${Components.statCard({ label: '预估总货值', value: `${sumMoney('stockValue')} 元`, hint: '预估总货值 = 所有未解押货物的评估货值合计', color: 'text-amber-600' })}
+        ${Components.statCard({ label: '质押总量', value: `${sumWeight('pledgeWeight')} 吨`, hint: '质押总量 = 当前在押状态下货物重量合计（吨）', color: 'text-blue-600' })}
+        ${Components.statCard({ label: '质押预估总货值', value: `${sumMoney('pledgeValue')} 元`, hint: '质押预估总货值 = 当前在押状态下评估货值合计', color: 'text-violet-600' })}
+        ${Components.statCard({ label: '冻结总量', value: `${sumWeight('frozenWeight')} 吨`, hint: '冻结总量 = 风控/合规等原因暂时冻结的货物重量合计', color: 'text-rose-600' })}
+        ${Components.statCard({ label: '冻结总货值', value: `${sumMoney('frozenValue')} 元`, hint: '冻结总货值 = 暂时冻结货物的评估货值合计', color: 'text-orange-600' })}
       </div>
 
-      <!-- 筛选条 -->
-      <div class="bg-white rounded-xl border border-slate-200 p-4 mb-4">
-        <!-- 当前搜索（已选筛选条件显示） -->
-        <div class="flex items-center justify-between mb-3 text-sm">
-          <div class="flex items-center flex-wrap gap-1.5 min-h-[24px]">
-            <span class="text-slate-500">当前搜索：</span>
-            ${renderActiveTags()}
-            ${hasAnyFilter() ? `<button onclick="resetAllFilters()" class="text-xs text-rose-500 hover:text-rose-700 ml-2">清除全部</button>` : ''}
-          </div>
-          <div class="text-xs text-slate-400">共 ${total} 条记录</div>
-        </div>
-        <!-- 控件行：3 个筛选 + 多级折叠 + 状态 + 查看全部 + 数据导出 -->
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-          ${renderWarehouseFilter()}
-          ${renderLocationFilter()}
-          ${renderProductCascader()}
-          ${renderBankFilter()}
-          ${renderStateFilter()}
-          ${renderViewAllStates()}
-        </div>
-      </div>
-
-      <!-- 表格（13 列） -->
+      <!-- 4 个 TAB（入库/出库/质押/解押）-->
       <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="border-b border-slate-200 px-4 bg-slate-50/50 overflow-x-auto">
+          <div class="flex items-center gap-1">
+            ${TABS.map(t => `
+              <button onclick="switchTab('${t.id}')" class="px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition ${
+                state.activeTab === t.id
+                  ? 'border-blue-600 text-blue-700'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-200'
+              }">${t.label}</button>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- 当前搜索 + 清除 + 筛选控件 -->
+        <div class="border-b border-slate-200 px-4 py-3 bg-slate-50/50">
+          <div class="flex items-center justify-between mb-3 text-sm">
+            <div class="flex items-center flex-wrap gap-1.5 min-h-[24px]">
+              <span class="text-slate-500">当前搜索：</span>
+              ${state.bizNoSearch ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-slate-100 text-slate-700 rounded">入库单号：${state.bizNoSearch}<button onclick="clearBizNo()" class="text-slate-400 hover:text-slate-700">×</button></span>` : ''}
+              ${(state.dateRange.start || state.dateRange.end) ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-slate-100 text-slate-700 rounded">入库日期：${state.dateRange.start || '不限'} ~ ${state.dateRange.end || '不限'}<button onclick="clearDateRange()" class="text-slate-400 hover:text-slate-700">×</button></span>` : ''}
+              ${(state.bizNoSearch || state.dateRange.start || state.dateRange.end) ? `<button onclick="resetAllFilters()" class="text-xs text-rose-500 hover:text-rose-700 ml-2">清除全部</button>` : ''}
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+            <div class="md:col-span-5">
+              <label class="block text-xs text-slate-500 mb-1">入库单号</label>
+              <input type="text" placeholder="请输入入库单号" value="${state.bizNoSearch}" oninput="updateBizNo(this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+            </div>
+            <div class="md:col-span-5">
+              <label class="block text-xs text-slate-500 mb-1">入库日期</label>
+              <div class="flex items-center gap-1">
+                <input type="date" value="${state.dateRange.start}" onchange="updateDateRange('start', this.value)" class="w-full px-1.5 py-1.5 text-xs border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+                <span class="text-slate-400 text-xs">~</span>
+                <input type="date" value="${state.dateRange.end}" onchange="updateDateRange('end', this.value)" class="w-full px-1.5 py-1.5 text-xs border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              </div>
+            </div>
+            <div class="md:col-span-2">
+              <button onclick="exportRecordsCSV()" class="w-full px-2 py-1.5 text-sm border border-slate-200 hover:border-emerald-400 hover:text-emerald-600 text-slate-700 rounded">
+                数据导出
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 9 列表格 -->
         <div class="overflow-x-auto">
-          <table class="w-full text-sm min-w-[1500px]">
+          <table class="w-full text-sm min-w-[1400px]">
             <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
               <tr>
-                <th class="text-left px-3 py-3 whitespace-nowrap">库点名称</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">入库单号</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">入库时间</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">货品名称</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">仓库名称</th>
                 <th class="text-left px-3 py-3 whitespace-nowrap">仓房-货位</th>
-                <th class="text-left px-3 py-3 whitespace-nowrap">货物名称</th>
-                <th class="text-right px-3 py-3 whitespace-nowrap">库存数量</th>
-                <th class="text-right px-3 py-3 whitespace-nowrap">库存重量</th>
-                <th class="text-right px-3 py-3 whitespace-nowrap">库存货值（元）</th>
-                <th class="text-right px-3 py-3 whitespace-nowrap">质押数量</th>
-                <th class="text-right px-3 py-3 whitespace-nowrap">质押重量</th>
-                <th class="text-right px-3 py-3 whitespace-nowrap">质押货值（元）</th>
-                <th class="text-right px-3 py-3 whitespace-nowrap">冻结数量</th>
-                <th class="text-right px-3 py-3 whitespace-nowrap">冻结重量</th>
-                <th class="text-left px-3 py-3 whitespace-nowrap">数量单位</th>
-                <th class="text-left px-3 py-3 whitespace-nowrap">重量单位</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">入库申请编号</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">关联合同/订单编号</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">数据来源</th>
+                <th class="text-center px-3 py-3 whitespace-nowrap">操作</th>
               </tr>
             </thead>
             <tbody id="invBody">${renderRows(pageItems)}</tbody>
@@ -156,230 +158,45 @@
     `;
   }
 
-  function totalWeight(field, list) {
-    const sum = list.reduce((s, r) => s + (r[field] || 0), 0);
+  function sumWeight(field) {
+    const sum = (MockData.inventoryLedger || []).reduce((s, r) => s + (r[field] || 0), 0);
     return Utils.fmtNum(+(sum / 1000).toFixed(4));
   }
-  function totalMoney(field, list) {
-    const sum = list.reduce((s, r) => s + (r[field] || 0), 0);
+  function sumMoney(field) {
+    const sum = (MockData.inventoryLedger || []).reduce((s, r) => s + (r[field] || 0), 0);
     return Utils.fmtMoney(sum, false);
   }
 
-  function hasAnyFilter() {
-    return state.selectedWarehouses.length || state.selectedLocations.length
-        || state.productCascade.country || state.selectedBanks.length || state.selectedStates.length;
-  }
-
-  // ============ 各筛选控件 ============
-  function renderActiveTags() {
-    const tags = [];
-    state.selectedBanks.forEach(b => tags.push({ label: b, kind: 'bank', val: b }));
-    state.selectedStates.forEach(s => tags.push({ label: STATE_OPTIONS.find(x=>x.id===s)?.label || s, kind: 'state', val: s }));
-    if (state.selectedWarehouses.length) {
-      const names = state.selectedWarehouses.map(id => (MockData.warehouses.find(w => w.id === id) || {}).name || id);
-      names.forEach(n => tags.push({ label: `库点：${n}`, kind: 'warehouse', val: n }));
-    }
-    if (state.selectedLocations.length) {
-      state.selectedLocations.forEach(l => tags.push({ label: `货位：${l}`, kind: 'location', val: l }));
-    }
-    if (state.productCascade.country) {
-      tags.push({ label: `国家：${state.productCascade.country}`, kind: 'country', val: state.productCascade.country });
-    }
-    if (state.productCascade.category) {
-      tags.push({ label: `品类：${state.productCascade.category}`, kind: 'category', val: state.productCascade.category });
-    }
-    if (state.productCascade.part) {
-      tags.push({ label: `部位：${state.productCascade.part}`, kind: 'part', val: state.productCascade.part });
-    }
-    if (!tags.length) return '<span class="text-slate-400 text-xs">（无筛选条件）</span>';
-    return tags.map(t => `
-      <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-slate-100 text-slate-700 rounded">
-        ${t.label}
-        <button onclick="removeTag('${t.kind}','${t.val}')" class="text-slate-400 hover:text-slate-700">×</button>
-      </span>
-    `).join('');
-  }
-
-  function renderWarehouseFilter() {
-    const options = MockData.warehouses.map(w => ({ id: w.id, label: w.name }));
-    return `<div class="md:col-span-3">
-      <label class="block text-xs text-slate-500 mb-1">库点名称</label>
-      <div class="relative">
-        <button onclick="toggleDropdown('warehouse')" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded bg-white text-left flex items-center justify-between hover:border-blue-400">
-          <span class="${state.selectedWarehouses.length ? 'text-slate-800' : 'text-slate-400'}">
-            ${state.selectedWarehouses.length
-              ? `已选 ${state.selectedWarehouses.length} 个库点`
-              : '请选择'}
-          </span>
-          <svg class="w-4 h-4 text-slate-400"><path d="M6 9l6 6 6-6" stroke="currentColor" fill="none" stroke-width="2"/></svg>
-        </button>
-        <div id="dropdown_warehouse" class="hidden absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded shadow-lg z-30 min-w-full p-2">
-          ${options.map(o => `
-            <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded cursor-pointer text-sm">
-              <input type="checkbox" ${state.selectedWarehouses.includes(o.id) ? 'checked' : ''} onchange="toggleWarehouse('${o.id}', this.checked)" class="rounded">
-              <span>${o.label}</span>
-            </label>
-          `).join('')}
-        </div>
-      </div>
-    </div>`;
-  }
-
-  function renderLocationFilter() {
-    // 仓房-货位分组按所选库点
-    let groupHtml = '';
-    if (state.selectedWarehouses.length) {
-      const whs = state.selectedWarehouses.map(id => MockData.warehouses.find(w => w.id === id)).filter(Boolean);
-      groupHtml = whs.map(w => `
-        <div class="mb-2">
-          <div class="text-xs font-medium text-slate-500 px-2 py-1">${w.name}</div>
-          ${w.locations ? (Array.isArray(w.locations) ? w.locations : [w.locations]).map(loc => `
-            <label class="flex items-center gap-2 px-3 py-1 hover:bg-slate-50 rounded cursor-pointer text-sm">
-              <input type="checkbox" ${state.selectedLocations.includes(loc) ? 'checked' : ''} onchange="toggleLocation('${loc}', this.checked)" class="rounded">
-              <span>${loc}</span>
-            </label>
-          `).join('') : ''}
-        </div>
-      `).join('');
-    }
-    return `<div class="md:col-span-3">
-      <label class="block text-xs text-slate-500 mb-1">仓房-货位</label>
-      <div class="relative">
-        <button onclick="toggleDropdown('location')" ${state.selectedWarehouses.length ? '' : 'disabled'} class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded bg-white text-left flex items-center justify-between ${state.selectedWarehouses.length ? 'hover:border-blue-400' : 'opacity-50 cursor-not-allowed'}">
-          <span class="${state.selectedLocations.length ? 'text-slate-800' : 'text-slate-400'}">
-            ${state.selectedLocations.length
-              ? `已选 ${state.selectedLocations.length} 个货位`
-              : (state.selectedWarehouses.length ? '请选择' : '请先选库点')}
-          </span>
-          <svg class="w-4 h-4 text-slate-400"><path d="M6 9l6 6 6-6" stroke="currentColor" fill="none" stroke-width="2"/></svg>
-        </button>
-        <div id="dropdown_location" class="hidden absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded shadow-lg z-30 min-w-full p-2 max-h-[300px] overflow-y-auto">
-          ${groupHtml || '<div class="text-xs text-slate-400 px-2 py-3 text-center">请先选择库点</div>'}
-        </div>
-      </div>
-    </div>`;
-  }
-
-  function renderProductCascader() {
-    const c = state.productCascade;
-    const selectedText = c.part ? `${c.country} / ${c.category} / ${c.part}`
-                       : c.country ? `${c.country} / ${c.category}`
-                       : c.country ? `${c.country}`
-                       : '请选择';
-    return `<div class="md:col-span-3">
-      <label class="block text-xs text-slate-500 mb-1">货物名称（国家/品类/部位）</label>
-      <div class="relative">
-        <button onclick="toggleDropdown('product')" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded bg-white text-left flex items-center justify-between hover:border-blue-400">
-          <span class="${c.country ? 'text-slate-800' : 'text-slate-400'} truncate">${selectedText}</span>
-          <svg class="w-4 h-4 text-slate-400 flex-shrink-0"><path d="M6 9l6 6 6-6" stroke="currentColor" fill="none" stroke-width="2"/></svg>
-        </button>
-        <div id="dropdown_product" class="hidden product-cascader-pop">
-          <div class="pccol" id="pcCol_country">
-            <div class="text-xs text-slate-400 px-2 py-1">国家</div>
-            ${_uniqueBy(MockData.inventoryLedger, 'country').map(cn => `
-              <div class="pcitem ${c.country === cn ? 'selected' : ''} ${c.country === cn ? '' : 'has-child'}" onclick="pcSelect('country', '${cn}')">${cn}</div>
-            `).join('')}
-          </div>
-          ${c.country ? `
-            <div class="pccol" id="pcCol_category">
-              <div class="text-xs text-slate-400 px-2 py-1">品类</div>
-              ${_uniqueBy(MockData.inventoryLedger.filter(r => r.country === c.country), 'category').map(cat => `
-                <div class="pcitem ${c.category === cat ? 'selected' : ''} ${c.category === cat ? '' : 'has-child'}" onclick="pcSelect('category', '${cat}')">${cat}</div>
-              `).join('')}
-            </div>
-          ` : ''}
-          ${c.country && c.category ? `
-            <div class="pccol" id="pcCol_part">
-              <div class="text-xs text-slate-400 px-2 py-1">部位</div>
-              ${_uniqueBy(MockData.inventoryLedger.filter(r => r.country === c.country && r.category === c.category), 'part').map(p => `
-                <div class="pcitem ${c.part === p ? 'selected' : ''}" onclick="pcSelect('part', '${p}')">${p}</div>
-              `).join('')}
-            </div>
-          ` : ''}
-        </div>
-      </div>
-    </div>`;
-  }
-
-  function renderBankFilter() {
-    const banks = _uniqueBy(MockData.inventoryLedger, 'bank');
-    return `<div class="md:col-span-2">
-      <label class="block text-xs text-slate-500 mb-1">金融机构</label>
-      <div class="relative">
-        <button onclick="toggleDropdown('bank')" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded bg-white text-left flex items-center justify-between hover:border-blue-400">
-          <span class="${state.selectedBanks.length ? 'text-slate-800' : 'text-slate-400'}">
-            ${state.selectedBanks.length ? `已选 ${state.selectedBanks.length}` : '请选择'}
-          </span>
-          <svg class="w-4 h-4 text-slate-400"><path d="M6 9l6 6 6-6" stroke="currentColor" fill="none" stroke-width="2"/></svg>
-        </button>
-        <div id="dropdown_bank" class="hidden absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded shadow-lg z-30 min-w-full p-2">
-          ${banks.map(b => `
-            <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded cursor-pointer text-sm">
-              <input type="checkbox" ${state.selectedBanks.includes(b) ? 'checked' : ''} onchange="toggleBank('${b}', this.checked)" class="rounded">
-              <span>${b}</span>
-            </label>
-          `).join('')}
-        </div>
-      </div>
-    </div>`;
-  }
-
-  function renderStateFilter() {
-    return `<div class="md:col-span-2">
-      <label class="block text-xs text-slate-500 mb-1">库存状态</label>
-      <div class="relative">
-        <button onclick="toggleDropdown('state')" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded bg-white text-left flex items-center justify-between hover:border-blue-400">
-          <span class="${state.selectedStates.length ? 'text-slate-800' : 'text-slate-400'}">
-            ${state.selectedStates.length ? `已选 ${state.selectedStates.length}` : 'State1'}
-          </span>
-          <svg class="w-4 h-4 text-slate-400"><path d="M6 9l6 6 6-6" stroke="currentColor" fill="none" stroke-width="2"/></svg>
-        </button>
-        <div id="dropdown_state" class="hidden absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded shadow-lg z-30 min-w-full p-2">
-          ${STATE_OPTIONS.map(o => `
-            <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded cursor-pointer text-sm">
-              <input type="checkbox" ${state.selectedStates.includes(o.id) ? 'checked' : ''} onchange="toggleState('${o.id}', this.checked)" class="rounded">
-              <span class="${o.color}">${o.label}</span>
-            </label>
-          `).join('')}
-        </div>
-      </div>
-    </div>`;
-  }
-
-  function renderViewAllStates() {
-    return `<div class="md:col-span-1">
-      <button onclick="viewAllStates()" class="w-full px-2 py-1.5 text-sm border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded flex items-center justify-center gap-1">
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
-        查看全部状态
-      </button>
-    </div>`;
-  }
-
-  // ============ 表格行 + 分页 ============
   function renderRows(items) {
-    if (!items.length) {
-      return `<tr><td colspan="13" class="py-12 text-center text-slate-400 text-sm">📭 当前筛选条件下无库存记录</td></tr>`;
-    }
+    if (!items.length) return `<tr><td colspan="9" class="py-12 text-center text-slate-400 text-sm">📭 当前筛选条件下无${tabLabel(state.activeTab)}记录</td></tr>`;
     return items.map(r => `
       <tr class="border-t border-slate-100 hover:bg-blue-50/30">
+        <td class="px-3 py-2.5 font-mono text-xs text-blue-700 whitespace-nowrap">${r.bizNo}</td>
+        <td class="px-3 py-2.5 text-slate-700 whitespace-nowrap text-xs">${r.bizDate} ${r.bizTime || ''}</td>
+        <td class="px-3 py-2.5 text-slate-700 whitespace-nowrap text-xs">${r.productName}</td>
         <td class="px-3 py-2.5 text-slate-700 whitespace-nowrap text-xs">${r.warehouseName}</td>
-        <td class="px-3 py-2.5 text-slate-600 whitespace-nowrap text-xs">${r.location}</td>
-        <td class="px-3 py-2.5 whitespace-nowrap">
-          <div class="text-slate-800">${r.country}-${r.category.replace('类','')}</div>
-          <div class="text-xs text-slate-500">${r.part}</div>
+        <td class="px-3 py-2.5 text-slate-700 whitespace-nowrap text-xs">${r.location}</td>
+        <td class="px-3 py-2.5 font-mono text-xs text-blue-600 whitespace-nowrap">${r.inboundApplyNo || '-'}</td>
+        <td class="px-3 py-2.5 font-mono text-xs text-slate-600 whitespace-nowrap">${r.contractNo || '-'}</td>
+        <td class="px-3 py-2.5 text-slate-700 text-xs whitespace-nowrap">
+          <span class="px-2 py-0.5 ${dataSourceClass(r.source)} rounded text-xs">${r.source || '-'}</span>
         </td>
-        <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap">${Utils.fmtNum(r.stockPieces)}</td>
-        <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap">${Utils.fmtNum(r.stockWeight)}</td>
-        <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap">${r.stockValue.toFixed(2)}</td>
-        <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap ${r.pledgePieces ? 'text-amber-600 font-medium' : 'text-slate-300'}">${r.pledgePieces || '—'}</td>
-        <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap ${r.pledgeWeight ? 'text-amber-600 font-medium' : 'text-slate-300'}">${r.pledgeWeight || '—'}</td>
-        <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap ${r.pledgeValue ? 'text-amber-600 font-medium' : 'text-slate-300'}">${r.pledgeValue ? r.pledgeValue.toFixed(2) : '—'}</td>
-        <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap ${r.frozenPieces ? 'text-blue-600 font-medium' : 'text-slate-300'}">${r.frozenPieces || '—'}</td>
-        <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap ${r.frozenWeight ? 'text-blue-600 font-medium' : 'text-slate-300'}">${r.frozenWeight || '—'}</td>
-        <td class="px-3 py-2.5 text-slate-500 text-xs whitespace-nowrap">${r.piecesUnit}</td>
-        <td class="px-3 py-2.5 text-slate-500 text-xs whitespace-nowrap">${r.weightUnit}</td>
+        <td class="px-3 py-2.5 text-center whitespace-nowrap">
+          <button onclick="viewDetail('${r.id}')" class="text-blue-600 hover:underline text-xs font-medium">查看</button>
+        </td>
       </tr>
     `).join('');
+  }
+
+  function dataSourceClass(src) {
+    if (!src) return 'bg-slate-100 text-slate-500';
+    if (src.includes('手动')) return 'bg-amber-100 text-amber-700';
+    if (src.includes('数据')) return 'bg-blue-100 text-blue-700';
+    return 'bg-emerald-100 text-emerald-700';
+  }
+
+  function tabLabel(id) {
+    return (TABS.find(t => t.id === id) || { label: '' }).label;
   }
 
   function renderPagination(total, totalPages) {
@@ -393,13 +210,11 @@
         <div class="text-sm text-slate-500">共 <span class="font-medium text-slate-800">${total}</span> 条记录 第 <span class="font-medium text-slate-800">${state.page}</span> / ${totalPages} 页</div>
         <div class="flex items-center gap-2">
           <button onclick="setPage(${state.page - 1})" ${state.page === 1 ? 'disabled' : ''} class="px-2 py-1 text-xs border border-slate-200 rounded ${state.page === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}">‹</button>
-          ${pages.map(p => `
-            <button onclick="setPage(${p})" class="px-2.5 py-1 text-xs border rounded min-w-[28px] ${p === state.page ? 'bg-blue-600 text-white border-blue-600' : 'border-slate-200 hover:bg-slate-50'}">${p}</button>
-          `).join('')}
+          ${pages.map(p => `<button onclick="setPage(${p})" class="px-2.5 py-1 text-xs border rounded min-w-[28px] ${p === state.page ? 'bg-blue-600 text-white border-blue-600' : 'border-slate-200 hover:bg-slate-50'}">${p}</button>`).join('')}
           ${totalPages > 9 ? `<span class="text-xs text-slate-400">...</span>` : ''}
           <button onclick="setPage(${state.page + 1})" ${state.page === totalPages ? 'disabled' : ''} class="px-2 py-1 text-xs border border-slate-200 rounded ${state.page === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}">›</button>
           <select onchange="setPageSize(parseInt(this.value))" class="px-2 py-1 text-xs border border-slate-200 rounded">
-            ${PAGE_SIZE_OPTIONS.map(s => `<option value="${s}" ${state.pageSize === s ? 'selected' : ''}>${s}条/页</option>`).join('')}
+            ${[10, 20, 50, 100].map(s => `<option value="${s}" ${state.pageSize === s ? 'selected' : ''}>${s}条/页</option>`).join('')}
           </select>
           <span class="text-xs text-slate-500">跳至</span>
           <input type="number" min="1" max="${totalPages}" value="${state.page}" onchange="goToPage(parseInt(this.value))" class="w-12 px-2 py-1 text-xs border border-slate-200 rounded text-center">
@@ -418,7 +233,7 @@
         { label: '库存管理', path: '/customer/inventory-ledger' },
         '库存台账',
       ],
-      extra: `<button onclick="exportInventoryCSV()" class="px-3 py-2 border border-slate-300 hover:border-emerald-500 hover:text-emerald-600 text-slate-700 rounded-md text-sm font-medium flex items-center gap-1 transition">
+      extra: `<button onclick="exportRecordsCSV()" class="px-3 py-2 border border-slate-300 hover:border-emerald-500 hover:text-emerald-600 text-slate-700 rounded-md text-sm font-medium flex items-center gap-1 transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
           数据导出
         </button>`,
@@ -426,115 +241,35 @@
     });
   }
 
-  // ============ 事件处理 ============
-  window.toggleDropdown = function(kind) {
-    ['warehouse', 'location', 'bank', 'state', 'product'].forEach(k => {
-      if (k !== kind) {
-        const el = document.getElementById(`dropdown_${k}`);
-        if (el) el.classList.add('hidden');
-      }
-    });
-    const el = document.getElementById(`dropdown_${kind}`);
-    if (el) el.classList.toggle('hidden');
-  };
-
-  window.toggleWarehouse = function(id, checked) {
-    if (checked) {
-      state.selectedWarehouses.push(id);
-    } else {
-      state.selectedWarehouses = state.selectedWarehouses.filter(x => x !== id);
-      // 清掉不在新库点的货位
-      const validLocs = state.selectedWarehouses.flatMap(wid => {
-        const w = MockData.warehouses.find(x => x.id === wid);
-        return w ? (Array.isArray(w.locations) ? w.locations : [w.locations]).filter(Boolean) : [];
-      });
-      state.selectedLocations = state.selectedLocations.filter(l => validLocs.includes(l));
-    }
-    refresh();
-  };
-
-  window.toggleLocation = function(loc, checked) {
-    if (checked) {
-      if (!state.selectedLocations.includes(loc)) state.selectedLocations.push(loc);
-    } else {
-      state.selectedLocations = state.selectedLocations.filter(x => x !== loc);
-    }
-    refresh();
-  };
-
-  window.toggleBank = function(b, checked) {
-    if (checked) state.selectedBanks.push(b);
-    else state.selectedBanks = state.selectedBanks.filter(x => x !== b);
-    refresh();
-  };
-
-  window.toggleState = function(s, checked) {
-    if (checked) state.selectedStates.push(s);
-    else state.selectedStates = state.selectedStates.filter(x => x !== s);
-    refresh();
-  };
-
-  window.pcSelect = function(level, val) {
-    if (level === 'country') {
-      state.productCascade = { country: val, category: '', part: '' };
-    } else if (level === 'category') {
-      state.productCascade.category = val;
-      state.productCascade.part = '';
-    } else if (level === 'part') {
-      state.productCascade.part = val;
-      // 选择部位后自动收起 popover
-      setTimeout(() => {
-        const el = document.getElementById('dropdown_product');
-        if (el) el.classList.add('hidden');
-      }, 100);
-    }
-    refresh();
-  };
-
-  window.removeTag = function(kind, val) {
-    if (kind === 'bank') state.selectedBanks = state.selectedBanks.filter(x => x !== val);
-    else if (kind === 'state') state.selectedStates = state.selectedStates.filter(x => x !== val);
-    else if (kind === 'warehouse') {
-      const id = (MockData.warehouses.find(w => w.name === val) || {}).id;
-      if (id) {
-        state.selectedWarehouses = state.selectedWarehouses.filter(x => x !== id);
-        const validLocs = state.selectedWarehouses.flatMap(wid => {
-          const w = MockData.warehouses.find(x => x.id === wid);
-          return w ? (Array.isArray(w.locations) ? w.locations : [w.locations]).filter(Boolean) : [];
-        });
-        state.selectedLocations = state.selectedLocations.filter(l => validLocs.includes(l));
-      }
-    } else if (kind === 'location') {
-      state.selectedLocations = state.selectedLocations.filter(x => x !== val);
-    } else if (kind === 'country') state.productCascade = { country: '', category: '', part: '' };
-    else if (kind === 'category') { state.productCascade.category = ''; state.productCascade.part = ''; }
-    else if (kind === 'part') state.productCascade.part = '';
-    refresh();
-  };
-
-  window.resetAllFilters = function() {
-    state.selectedWarehouses = [];
-    state.selectedLocations = [];
-    state.selectedBanks = [];
-    state.selectedStates = [];
-    state.productCascade = { country: '', category: '', part: '' };
-    refresh();
-  };
-
-  window.viewAllStates = function() {
-    state.selectedStates = ['normal', 'pledged', 'frozen'];
-    refresh();
-  };
-
-  window.setPage = function(p) {
-    state.page = p;
-    refresh();
-  };
-  window.setPageSize = function(s) {
-    state.pageSize = s;
+  // ============ 事件 ============
+  window.switchTab = function(id) {
+    state.activeTab = id;
     state.page = 1;
     refresh();
   };
+
+  window.updateBizNo = function(val) {
+    state.bizNoSearch = val;
+    state.page = 1;
+    refresh();
+  };
+
+  window.updateDateRange = function(key, val) {
+    state.dateRange[key] = val;
+    state.page = 1;
+    refresh();
+  };
+
+  window.clearBizNo = function() { state.bizNoSearch = ''; refresh(); };
+  window.clearDateRange = function() { state.dateRange = { start: '', end: '' }; refresh(); };
+  window.resetAllFilters = function() {
+    state.bizNoSearch = '';
+    state.dateRange = { start: '', end: '' };
+    refresh();
+  };
+
+  window.setPage = function(p) { state.page = p; refresh(); };
+  window.setPageSize = function(s) { state.pageSize = s; state.page = 1; refresh(); };
   window.goToPage = function(p) {
     if (!Number.isFinite(p)) return;
     const total = applyFilters().length;
@@ -543,58 +278,227 @@
     refresh();
   };
 
-  // ============ 导出 CSV ============
-  window.exportInventoryCSV = function() {
-    const filtered = applyFilters();
-    if (!filtered.length) {
-      Utils.toast('当前筛选条件下无数据可导出', 'warning');
-      return;
+  // ============ 查看详情弹窗 ============
+  window.viewDetail = function(id) {
+    const r = (MockData.inventoryRecords || []).find(x => x.id === id) || (MockData.inventoryRecords || [])[0];
+    if (!r) return Utils.toast('记录不存在', 'error');
+    const modal = document.createElement('div');
+    modal.className = 'modal-backdrop';
+    modal.innerHTML = `
+      <div class="bg-slate-50 rounded-xl w-[1100px] max-h-[92vh] overflow-y-auto shadow-2xl" onclick="event.stopPropagation()">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-slate-200 sticky top-0 bg-white flex items-center justify-between z-10">
+          <div class="flex items-center gap-3">
+            <button onclick="this.closest('.modal-backdrop').remove()" class="w-8 h-8 rounded-full bg-blue-100 hover:bg-blue-200 flex items-center justify-center text-blue-600">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <h3 class="font-bold text-slate-800 text-lg">入库编号：<span class="font-mono text-blue-700">${r.bizNo}</span></h3>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="copyText('${r.bizNo}')" class="p-1.5 hover:bg-slate-100 rounded" title="复制">
+              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V7m0 0V5"/></svg>
+            </button>
+            <button onclick="this.closest('.modal-backdrop').remove()" class="text-slate-400 hover:text-slate-700 text-xl">×</button>
+          </div>
+        </div>
+
+        <div class="p-6 space-y-5">
+          <!-- 入库申请信息 -->
+          <div>
+            <div class="text-sm font-semibold text-slate-700 mb-3">入库申请信息</div>
+            <div class="grid grid-cols-3 gap-4 bg-white border border-slate-200 rounded p-4 text-sm">
+              <div><span class="text-slate-500">入库申请编号：</span><a href="#" class="text-blue-600 hover:underline font-mono">${r.inboundApplyNo || '-'}</a></div>
+              <div><span class="text-slate-500">出质方：</span><span class="text-slate-800">${r.applicant || '-'}</span></div>
+              <div><span class="text-slate-500">联系人：</span><span class="text-slate-800">${r.contactPerson || '-'}</span><span class="text-slate-400 ml-1">${r.contactPhone || ''}</span></div>
+              <div><span class="text-slate-500">金融产品：</span><span class="text-slate-800">${r.productType || '-'}</span></div>
+              <div><span class="text-slate-500">质权方：</span><span class="text-slate-800">${r.pledgee || '-'}</span></div>
+              <div><span class="text-slate-500">监管方：</span><span class="text-slate-800">${r.supervisor || '-'}</span></div>
+              <div><span class="text-slate-500">申请日期：</span><span class="text-slate-800">${r.applyDate || '-'}</span></div>
+              <div><span class="text-slate-500">创建人：</span><span class="text-slate-800">${r.creator || '-'}</span></div>
+              <div><span class="text-slate-500">创建时间：</span><span class="text-slate-800">${r.createTime || '-'}</span></div>
+            </div>
+          </div>
+
+          <!-- 库存信息（6 指标）-->
+          <div>
+            <div class="text-sm font-semibold text-slate-700 mb-3">库存信息</div>
+            <div class="grid grid-cols-6 gap-4 bg-white border border-slate-200 rounded p-4 text-sm">
+              <div class="text-red-600 font-bold text-center">
+                <div class="text-base">${Utils.fmtNum(r.stockWeight / 1000)}</div>
+                <div class="text-xs text-slate-500 mt-1">总库存</div>
+              </div>
+              <div class="text-red-600 font-bold text-center">
+                <div class="text-base">${Utils.fmtMoney(r.stockValue, false)}</div>
+                <div class="text-xs text-slate-500 mt-1">预估总货值</div>
+              </div>
+              <div class="text-red-600 font-bold text-center">
+                <div class="text-base">${Utils.fmtNum(r.pledgeWeight / 1000)}</div>
+                <div class="text-xs text-slate-500 mt-1">质押总量</div>
+              </div>
+              <div class="text-red-600 font-bold text-center">
+                <div class="text-base">${Utils.fmtMoney(r.pledgeValue, false)}</div>
+                <div class="text-xs text-slate-500 mt-1">质押预估总货值</div>
+              </div>
+              <div class="text-red-600 font-bold text-center">
+                <div class="text-base">${Utils.fmtNum(r.frozenWeight / 1000)}</div>
+                <div class="text-xs text-slate-500 mt-1">冻结总量</div>
+              </div>
+              <div class="text-red-600 font-bold text-center">
+                <div class="text-base">${Utils.fmtMoney(r.frozenValue, false)}</div>
+                <div class="text-xs text-slate-500 mt-1">冻结总货值</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 入库信息 -->
+          <div>
+            <div class="text-sm font-semibold text-slate-700 mb-3">入库信息</div>
+            <div class="bg-white border border-slate-200 rounded text-sm">
+              <div class="grid grid-cols-2 border-b border-slate-200">
+                <div class="px-4 py-2.5 border-r border-slate-200"><span class="text-slate-500">入库单号：</span><span class="text-slate-800">${r.bizNo}</span></div>
+                <div class="px-4 py-2.5"><span class="text-slate-500">入库时间：</span><span class="text-slate-800">${r.bizDate || '-'}</span></div>
+              </div>
+              <div class="grid grid-cols-2 border-b border-slate-200">
+                <div class="px-4 py-2.5 border-r border-slate-200"><span class="text-slate-500">库点名称：</span><span class="text-slate-800">${r.warehouseName || '-'}</span></div>
+                <div class="px-4 py-2.5"><span class="text-slate-500">仓房&货位：</span><span class="text-slate-800">${r.location || '-'}</span></div>
+              </div>
+              <div class="grid grid-cols-2 border-b border-slate-200">
+                <div class="px-4 py-2.5 border-r border-slate-200"><span class="text-slate-500">货主名称：</span><span class="text-slate-800">${r.applicant || '-'}</span></div>
+                <div class="px-4 py-2.5"><span class="text-slate-500">毛重总量：</span><span class="text-slate-800 num-focus">${Utils.fmtNum(r.grossWeight || 0)}</span> 千克</div>
+              </div>
+              <div class="grid grid-cols-2 border-b border-slate-200">
+                <div class="px-4 py-2.5 border-r border-slate-200"><span class="text-slate-500">皮重总量：</span><span class="text-slate-800 num-focus">${Utils.fmtNum(r.tareWeight || 0)}</span> 千克</div>
+                <div class="px-4 py-2.5"><span class="text-slate-500">净重总量：</span><span class="text-slate-800 num-focus">${Utils.fmtNum(r.netWeight || 0)}</span> 千克</div>
+              </div>
+              <div class="px-4 py-2.5">
+                <span class="text-slate-500">备注：</span>
+                <span class="text-slate-800">${r.remark || ''}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 货物明细 -->
+          <div>
+            <div class="text-sm font-semibold text-slate-700 mb-3">货物明细</div>
+            <div class="bg-white border border-slate-200 rounded overflow-hidden">
+              <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-slate-600 text-xs">
+                  <tr>
+                    <th class="px-3 py-2 text-left">序号</th>
+                    <th class="px-3 py-2 text-left">货品名称</th>
+                    <th class="px-3 py-2 text-left">国家</th>
+                    <th class="px-3 py-2 text-left">厂号</th>
+                    <th class="px-3 py-2 text-right">入库数量</th>
+                    <th class="px-3 py-2 text-left">数量单位</th>
+                    <th class="px-3 py-2 text-right">入库重量</th>
+                    <th class="px-3 py-2 text-left">重量单位</th>
+                    <th class="px-3 py-2 text-left">计划入库时间</th>
+                    <th class="px-3 py-2 text-left">生产日期</th>
+                    <th class="px-3 py-2 text-left">生产批号</th>
+                    <th class="px-3 py-2 text-right">实收数量</th>
+                    <th class="px-3 py-2 text-right">实收重量</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${(r.products || [{ name: r.productName, country: r.country, factoryNo: r.factoryNo, planQty: r.stockPieces, planDate: r.bizDate, prodDate: r.bizDate, batchNo: '-', actualQty: r.stockPieces, actualWeight: r.stockWeight, piecesUnit: '箱', weightUnit: '千克' }]).map((p, i) => `
+                    <tr class="border-t border-slate-100">
+                      <td class="px-3 py-2">${i + 1}</td>
+                      <td class="px-3 py-2">${p.name || '-'}</td>
+                      <td class="px-3 py-2">${p.country || '-'}</td>
+                      <td class="px-3 py-2">${p.factoryNo || '-'}</td>
+                      <td class="px-3 py-2 text-right num-focus">${Utils.fmtNum(p.planQty || 0)}</td>
+                      <td class="px-3 py-2 text-slate-500">${p.piecesUnit || '箱'}</td>
+                      <td class="px-3 py-2 text-right num-focus">${Utils.fmtNum(p.planWeight || r.stockWeight)}</td>
+                      <td class="px-3 py-2 text-slate-500">${p.weightUnit || '千克'}</td>
+                      <td class="px-3 py-2 text-slate-600">${p.planDate || r.bizDate || '-'}</td>
+                      <td class="px-3 py-2 text-slate-600">${p.prodDate || r.bizDate || '-'}</td>
+                      <td class="px-3 py-2 text-slate-600">${p.batchNo || '-'}</td>
+                      <td class="px-3 py-2 text-right num-focus text-blue-700 font-medium">${Utils.fmtNum(p.actualQty || r.stockPieces)}</td>
+                      <td class="px-3 py-2 text-right num-focus text-blue-700 font-medium">${Utils.fmtNum(p.actualWeight || r.stockWeight)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 附件 -->
+          <div>
+            <div class="text-sm font-semibold text-slate-700 mb-3 flex items-center justify-between">
+              <span>附件</span>
+              <button onclick="Utils.toast('一键下载所有附件（待对接）', 'info')" class="text-xs text-blue-600 hover:underline">一键下载</button>
+            </div>
+            <div class="bg-white border border-slate-200 rounded overflow-hidden">
+              <table class="w-full text-sm">
+                <thead class="bg-slate-50 text-slate-600 text-xs">
+                  <tr>
+                    <th class="px-3 py-2 text-left">单据类型</th>
+                    <th class="px-3 py-2 text-left">上传时间</th>
+                    <th class="px-3 py-2 text-left">文件名</th>
+                    <th class="px-3 py-2 text-center">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${(r.attachments || [
+                    { type: '入库单', uploadedAt: '2023-12-12 12:23:32', filename: '44354657687.pdf' },
+                    { type: '磅单明细', uploadedAt: '2023-12-12 12:23:32', filename: '明细1.pdf' },
+                    { type: '入库作业留痕', uploadedAt: '2023-12-12 12:23:32', filename: '质检.png、称重.png、卸货.png' },
+                  ]).map(a => `
+                    <tr class="border-t border-slate-100">
+                      <td class="px-3 py-2">${a.type}</td>
+                      <td class="px-3 py-2 relative">
+                        <span class="text-blue-600 font-mono text-xs">${a.uploadedAt}</span>
+                        <div class="absolute left-1/2 -translate-x-1/2 mt-1 px-3 py-1.5 bg-slate-800 text-white text-xs rounded shadow-lg whitespace-nowrap pointer-events-none hidden">
+                          上传时间：${a.uploadedAt}
+                        </div>
+                      </td>
+                      <td class="px-3 py-2 text-blue-600 font-mono text-xs">${a.filename}</td>
+                      <td class="px-3 py-2 text-center">
+                        <button onclick="Utils.toast('下载 ${a.filename}（待对接）', 'info')" class="text-blue-600 hover:underline">下载</button>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    // v1.7.8 表单类弹窗：屏蔽点击外面关闭
+    modal.onclick = () => {};
+    document.body.appendChild(modal);
+  };
+
+  window.copyText = function(text) {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => Utils.toast('已复制：' + text, 'success'));
+    } else {
+      Utils.toast('请手动复制：' + text, 'info');
     }
-    const headers = [
-      '库点名称', '仓房-货位', '货物名称（国家/品类/部位）',
-      '库存数量', '库存重量', '库存货值（元）',
-      '质押数量', '质押重量', '质押货值（元）',
-      '冻结数量', '冻结重量', '数量单位', '重量单位',
-      '金融机构', '状态',
-    ];
-    const stateLabelMap = { normal: '正常', pledged: '已质押', frozen: '已冻结' };
-    const rows = filtered.map(r => [
-      r.warehouseName, r.location,
-      `${r.country}-${r.category.replace('类','')}-${r.part}`,
-      r.stockPieces, r.stockWeight, r.stockValue,
-      r.pledgePieces || 0, r.pledgeWeight || 0, r.pledgeValue || 0,
-      r.frozenPieces || 0, r.frozenWeight || 0,
-      r.piecesUnit, r.weightUnit,
-      r.bank, stateLabelMap[r.state] || r.state,
-    ]);
-    const csv = [headers, ...rows].map(row =>
-      row.map(c => {
-        const v = String(c == null ? '' : c);
-        return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
-      }).join(',')
-    ).join('\n');
+  };
+
+  // ============ 导出 ============
+  window.exportRecordsCSV = function() {
+    const filtered = applyFilters();
+    if (!filtered.length) return Utils.toast('当前筛选条件下无数据可导出', 'warning');
+    const headers = ['入库单号', '入库时间', '货品名称', '仓库名称', '仓房-货位', '入库申请编号', '关联合同/订单编号', '数据来源'];
+    const rows = filtered.map(r => [r.bizNo, `${r.bizDate} ${r.bizTime || ''}`, r.productName, r.warehouseName, r.location, r.inboundApplyNo || '', r.contractNo || '', r.source || '']);
+    const csv = [headers, ...rows].map(row => row.map(c => {
+      const v = String(c == null ? '' : c);
+      return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+    }).join(',')).join('\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    const date = new Date().toISOString().slice(0, 10);
     link.href = url;
-    link.download = `库存台账_${date}.csv`;
+    link.download = `${tabLabel(state.activeTab)}_${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    Utils.toast(`已导出 ${filtered.length} 条库存记录`, 'success');
+    Utils.toast(`已导出 ${filtered.length} 条${tabLabel(state.activeTab)}`, 'success');
   };
-
-  // 点击空白关闭所有下拉
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.relative')) {
-      ['warehouse', 'location', 'bank', 'state', 'product'].forEach(k => {
-        const el = document.getElementById(`dropdown_${k}`);
-        if (el) el.classList.add('hidden');
-      });
-    }
-  });
 </script>
 </body>
 </html>
