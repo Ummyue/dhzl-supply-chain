@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>模块占位 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.26 占位页（其他子产品：数字供应链/供应链金融/运营管理） ============
+  // 当前所有原型归属于「智慧仓储」；点击其他子产品顶栏入口落到此页
+
+  const urlSub = new URLSearchParams(window.location.search).get('sub') || 'digital';
+  const product = Utils.resolveProductLine(urlSub);
+  const topLine = product ? product.topLine : null;
+  const subLabel = product ? product.label : '该模块';
+  const topLabel = topLine ? topLine.label : '';
+  const desc = product ? product.description : '';
+
+  // 不通过 pageShell（避免强制渲染 sidebar），只渲染 topbar + 主内容
+  document.getElementById('app').innerHTML = `
+    ${Components.topbar('')}
+    <main class="min-h-[calc(100vh-4rem)] p-10">
+      <div class="max-w-3xl mx-auto">
+        <!-- 面包屑 -->
+        <nav class="flex items-center text-sm text-slate-500 mb-6">
+          <span>${topLabel}</span>
+          <svg class="w-4 h-4 mx-1 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          <span class="text-slate-800 font-medium">${subLabel}</span>
+        </nav>
+
+        <div class="bg-white border border-slate-200 rounded-xl px-6 py-12 text-center">
+          <div class="w-20 h-20 mx-auto mb-5 bg-blue-50 rounded-full flex items-center justify-center text-3xl">🚧</div>
+          <h1 class="text-2xl font-bold text-slate-800 mb-2">${subLabel}</h1>
+          ${desc ? `<p class="text-slate-500">${desc}</p>` : ''}
+          <div class="my-6 inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-md text-xs">
+            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0L13.5 8.05c.36.639-.158 1.422-.857 1.422H8.357c-.699 0-1.217-.783-.857-1.422l1.757-3.16zM10 13a1 1 0 100 2 1 1 0 000-2z" clip-rule="evenodd"/></svg>
+            该子产品即将上线
+          </div>
+          <p class="text-sm text-slate-400 max-w-md mx-auto leading-relaxed">
+            当前演示版本所有原型均归属于「智慧仓储」，其他子产品的功能规划将在后续阶段陆续补齐。
+            <br/>你仍可通过顶部「产品设置」切换器在任何时候返回「智慧仓储」。
+          </p>
+          <a href="${Utils.nav('/dashboard')}" class="inline-block mt-6 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">
+            ← 返回智慧仓储
+          </a>
+        </div>
+
+        <!-- 路由上下文 -->
+        <div class="mt-6 bg-slate-100 border border-slate-200 rounded-lg p-4 text-xs text-slate-500">
+          <div class="font-medium text-slate-700 mb-2">📦 系统层产品结构</div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <div class="text-slate-400">顶层模块</div>
+              <div class="text-slate-700">${topLabel}</div>
+            </div>
+            <div>
+              <div class="text-slate-400">子产品（当前）</div>
+              <div class="text-slate-700">${subLabel}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  `;
+</script>
+</body>
+</html>

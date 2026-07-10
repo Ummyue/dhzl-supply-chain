@@ -220,6 +220,30 @@ const Utils = {
     localStorage.setItem('dhzl_role', r);
   },
 
+  // 当前顶层子产品 id（v1.7.26 起：多产品线切换）
+  // warehouse 智慧仓储 / digital 数字供应链 / finance 供应链金融 / ops 运营管理
+  getProductLine() {
+    return localStorage.getItem('dhzl_product') || 'warehouse';
+  },
+  setProductLine(p) {
+    localStorage.setItem('dhzl_product', p);
+  },
+  // 根据 id 解析 productLine 配置（含父级 line 信息）
+  resolveProductLine(id) {
+    const productLines = (typeof MockData !== 'undefined' && MockData.productLines) || [];
+    for (const line of productLines) {
+      for (const sub of (line.subItems || [])) {
+        if (sub.id === id) return { ...sub, topLine: line };
+      }
+    }
+    return null;
+  },
+  // productLine 的展示标签（按子产品 id 返回）
+  productLineLabel(id) {
+    const p = this.resolveProductLine(id);
+    return p ? p.label : id;
+  },
+
   // 当前登录用户
   getUser() {
     return JSON.parse(localStorage.getItem('dhzl_user') || 'null');

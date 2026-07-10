@@ -158,6 +158,37 @@ const MockData = {
     { id: 'contract_seal', name: '合同专用章', color: 'red', preview: '合同专用章' },
   ],
 
+  // ========== v1.7.26 顶层产品线配置（参考飞书管理后台的产品设置下拉） ==========
+  // 2 个顶层模块：① 供应链综合服务（含「运营管理」） ② 产品设置（数字供应链/智慧仓储/供应链金融）
+  // 当前所有原型归属于【产品设置 → 智慧仓储】（智慧仓储 = 大河智链 · 现货质押融资平台）
+  // 其他子产品 = 数字供应链 / 供应链金融 / 运营管理 = 占位跳转 portal.html
+  productLines: [
+    {
+      id: 'integrated',
+      label: '供应链综合服务',
+      description: '运营管理后台',
+      active: false,
+      subItems: [
+        { id: 'ops', label: '运营管理', path: '/portal/ops', status: 'placeholder',
+          description: '运营监控 / 系统设置' },
+      ],
+    },
+    {
+      id: 'products',
+      label: '产品设置',
+      description: '数字供应链 / 智慧仓储 / 供应链金融',
+      active: true,
+      subItems: [
+        { id: 'digital',   label: '数字供应链', path: '/portal/digital',   status: 'placeholder',
+          description: '订单 / 物流跟踪 / 区块链溯源' },
+        { id: 'warehouse', label: '智慧仓储',   path: '/dashboard',     status: 'active',
+          description: '大河智链 · 现货质押融资平台（当前）' },
+        { id: 'finance',   label: '供应链金融', path: '/portal/finance',   status: 'placeholder',
+          description: '订单融资 / 保理 / 担保服务' },
+      ],
+    },
+  ],
+
   // ========== 角色菜单配置 ==========
   menus: {
     customer: [

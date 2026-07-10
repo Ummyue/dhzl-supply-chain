@@ -7,10 +7,14 @@ const Components = {
     const role = Utils.getRole();
     const user = MockData.users[role] || MockData.users.customer;
     const unreadCount = MockData.notifications.filter(n => n.unread).length;
+    const currentSub = Utils.getProductLine();
+    const currentTop = Utils.resolveProductLine(currentSub);
+    const currentTopLine = currentTop ? currentTop.topLine : null;
+    const productLines = MockData.productLines || [];
 
     return `
-      <header class="bg-white border-b border-slate-200 h-16 px-6 flex items-center justify-between sticky top-0 z-30 shadow-sm">
-        <div class="flex items-center gap-3">
+      <header class="bg-white border-b border-slate-200 h-16 px-6 flex items-center sticky top-0 z-30 shadow-sm">
+        <div class="flex items-center gap-3 flex-shrink-0">
           <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white font-bold shadow-md">大</div>
           <div>
             <div class="font-bold text-slate-800 text-lg leading-tight">大河智链</div>
@@ -18,7 +22,61 @@ const Components = {
           </div>
         </div>
 
-        <div class="flex items-center gap-3">
+        <!-- v1.7.26：产品线切换器（参考飞书管理后台的产品设置下拉） -->
+        <div class="flex items-center gap-3 ml-8">
+          <div class="relative" id="productSwitcher">
+            <button onclick="Components.toggleProductMenu()" class="flex items-center gap-2 px-3 py-1.5 rounded-md border border-slate-200 hover:border-blue-400 hover:bg-blue-50 transition text-sm ${currentTopLine && currentTopLine.active ? 'border-blue-300 bg-blue-50 text-blue-700' : ''}">
+              <span class="font-medium">${currentTopLine ? currentTopLine.label : '产品设置'}</span>
+              <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+
+            <div id="productMenu" class="hidden absolute left-0 top-full mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl p-3 z-50" style="width: 540px;">
+              <div class="grid grid-cols-2 gap-3">
+                ${productLines.map(line => `
+                  <div class="border ${line.active ? 'border-blue-300 bg-blue-50/30' : 'border-slate-200'} rounded-lg p-3">
+                    <div class="flex items-center justify-between mb-1">
+                      <span class="font-medium text-sm ${line.active ? 'text-blue-700' : 'text-slate-700'}">${line.label}</span>
+                      ${line.active ? '<span class="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">当前</span>' : ''}
+                    </div>
+                    <div class="text-xs text-slate-400 mb-3">${line.description || ''}</div>
+                    <div class="space-y-1">
+                      ${(line.subItems || []).map(sub => {
+                        const isCurrent = sub.id === currentSub;
+                        const isPlaceholder = sub.status === 'placeholder';
+                        return `
+                          <button onclick="Components.switchProduct('${sub.id}', '${sub.path || ''}')" class="w-full flex items-center justify-between gap-2 px-3 py-2 text-sm text-left rounded transition ${
+                            isCurrent
+                              ? 'bg-blue-100 text-blue-700 font-medium'
+                              : isPlaceholder
+                                ? 'hover:bg-slate-100 text-slate-500'
+                                : 'hover:bg-slate-100 text-slate-700'
+                          }">
+                            <span class="flex items-center gap-2">
+                              ${isCurrent ? '<svg class="w-3.5 h-3.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>' : '<span class="w-3.5 h-3.5"></span>'}
+                              <span>${sub.label}</span>
+                            </span>
+                            ${isPlaceholder ? '<span class="text-xs px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded">待开发</span>' : (isCurrent ? '<span class="text-xs text-blue-600">访问中</span>' : '')}
+                          </button>
+                        `;
+                      }).join('')}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+              <div class="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-400 px-1">
+                当前可见原型仅限于「智慧仓储」子产品，其他子产品在二期陆续补齐
+              </div>
+            </div>
+          </div>
+
+          <!-- 当前选中子产品 chip（导航上下文标识） -->
+          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 border border-blue-200 text-xs">
+            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+            <span class="text-blue-700 font-medium">${currentTop ? currentTop.label : '智慧仓储'}</span>
+          </div>
+        </div>
+
+        <div class="ml-auto flex items-center gap-3">
           <!-- 角色切换器 -->
           <div class="relative" id="roleSwitcher">
             <button onclick="Components.toggleRoleMenu()" class="flex items-center gap-2 px-3 py-1.5 rounded-md border border-slate-200 hover:border-blue-400 hover:bg-blue-50 transition text-sm">
@@ -204,12 +262,45 @@ const Components = {
     document.getElementById('roleMenu')?.classList.toggle('hidden');
     document.getElementById('userDropdown')?.classList.add('hidden');
     document.getElementById('notifPanel')?.classList.add('hidden');
+    document.getElementById('productMenu')?.classList.add('hidden');
   },
   switchRole(r) {
     Utils.setRole(r);
     Utils.setUser(MockData.users[r]);
     Utils.toast(`已切换到【${Utils.roleLabel(r)}】视角`, 'success');
     setTimeout(() => window.location.reload(), 400);
+  },
+
+  // v1.7.26 产品线切换器
+  toggleProductMenu() {
+    document.getElementById('productMenu')?.classList.toggle('hidden');
+    document.getElementById('roleMenu')?.classList.add('hidden');
+    document.getElementById('userDropdown')?.classList.add('hidden');
+    document.getElementById('notifPanel')?.classList.add('hidden');
+  },
+  switchProduct(subId, fallbackPath) {
+    Utils.setProductLine(subId);
+    const productLines = MockData.productLines || [];
+    let target = '';
+    for (const line of productLines) {
+      for (const sub of (line.subItems || [])) {
+        if (sub.id === subId) { target = sub; break; }
+      }
+      if (target) break;
+    }
+    if (!target) return;
+    if (target.status === 'placeholder') {
+      Utils.toast(`【${target.label}】即将上线，当前请使用「智慧仓储」`, 'info');
+      // 占位子产品 → 跳 portal 占位页（带 sub 信息）
+      const targetPath = target.path || `/portal/${subId}`;
+      setTimeout(() => window.location.href = `${Utils.nav(targetPath)}?sub=${encodeURIComponent(subId)}`, 600);
+      return;
+    }
+    if (target.path) {
+      window.location.href = `${Utils.nav(target.path)}`;
+    } else if (fallbackPath) {
+      window.location.href = `${Utils.nav(fallbackPath)}`;
+    }
   },
   toggleUserMenu() {
     document.getElementById('userDropdown')?.classList.toggle('hidden');
@@ -253,6 +344,7 @@ const Components = {
     document.addEventListener('click', (e) => {
       if (!e.target.closest('#roleSwitcher')) document.getElementById('roleMenu')?.classList.add('hidden');
       if (!e.target.closest('#userMenu')) document.getElementById('userDropdown')?.classList.add('hidden');
+      if (!e.target.closest('#productSwitcher')) document.getElementById('productMenu')?.classList.add('hidden');
     });
   },
 };
