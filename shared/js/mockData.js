@@ -158,39 +158,41 @@ const MockData = {
     { id: 'contract_seal', name: '合同专用章', color: 'red', preview: '合同专用章' },
   ],
 
-  // ========== v1.7.26 顶层产品线配置（参考飞书管理后台的产品设置下拉） ==========
-  // 2 个顶层模块：① 供应链综合服务（含「运营管理」） ② 产品设置（数字供应链/智慧仓储/供应链金融）
-  // 当前所有原型归属于【产品设置 → 智慧仓储】（智慧仓储 = 大河智链 · 现货质押融资平台）
-  // 其他子产品 = 数字供应链 / 供应链金融 / 运营管理 = 占位跳转 portal.html
-  // v1.7.27：subtitle 联动 topbar 「大河智链」下方副标题（按子产品切换）
+  // ========== v1.7.28 顶层产品线重构（按 user 2026-07-10 17:22 截图） ==========
+  // 2 个顶级模块：
+  //   ① 供应链综合服务（含 智慧仓储/供应链金融/数字供应链 3 个子产品）
+  //   ② 运营管理中心（含 企业信息 1 个子产品）
+  // 视觉交互：topbar 胶囊按钮（蓝色边框，文字=当前子产品名）→ 抽屉两列布局
+  // 当前归属：【供应链综合服务 → 智慧仓储】
   productLines: [
     {
       id: 'integrated',
       label: '供应链综合服务',
-      description: '运营管理后台',
-      subtitle: '运营管理平台',
-      active: false,
+      description: '智慧仓储 / 供应链金融 / 数字供应链',
+      subtitle: '供应链综合服务平台',
+      active: true,
       subItems: [
-        { id: 'ops', label: '运营管理', path: '/portal/ops', status: 'placeholder',
-          description: '运营监控 / 系统设置' },
+        { id: 'warehouse', label: '智慧仓储',   path: '/dashboard',         status: 'active',
+          description: '大河智链 · 现货质押融资平台（当前）',
+          subtitle: '现货质押融资监管平台' },
+        { id: 'finance',   label: '供应链金融', path: '/portal/finance',    status: 'placeholder',
+          description: '客户准入 / 融资 / 解押出库 / 贷后 / 盯市',
+          subtitle: '供应链金融服务平台' },
+        { id: 'digital',   label: '数字供应链', path: '/portal/digital',    status: 'placeholder',
+          description: '订单 / 物流跟踪 / 区块链溯源',
+          subtitle: '数字供应链平台' },
       ],
     },
     {
-      id: 'products',
-      label: '产品设置',
-      description: '数字供应链 / 智慧仓储 / 供应链金融',
-      subtitle: '智慧仓储管理平台',
-      active: true,
+      id: 'ops-center',
+      label: '运营管理中心',
+      description: '客户企业信息 / 风险监控',
+      subtitle: '运营管理平台',
+      active: false,
       subItems: [
-        { id: 'digital',   label: '数字供应链', path: '/portal/digital',   status: 'placeholder',
-          description: '订单 / 物流跟踪 / 区块链溯源',
-          subtitle: '数字供应链平台' },
-        { id: 'warehouse', label: '智慧仓储',   path: '/dashboard',     status: 'active',
-          description: '大河智链 · 现货质押融资平台（当前）',
-          subtitle: '现货质押融资监管平台' },
-        { id: 'finance',   label: '供应链金融', path: '/portal/finance',   status: 'placeholder',
-          description: '客户准入 / 融资 / 解押出库 / 贷后 / 盯市',
-          subtitle: '供应链金融服务平台' },
+        { id: 'enterprise', label: '企业信息', path: '/portal/enterprise', status: 'placeholder',
+          description: '客户企业信息管理',
+          subtitle: '企业信息管理平台' },
       ],
     },
   ],
@@ -338,8 +340,9 @@ const MockData = {
     },
 
     // ============== 占位子产品（暂无菜单） ==============
-    digital: { customer: [], platform: [], guarantor: [], bank: [], warehouse: [] },
-    ops:     { customer: [], platform: [], guarantor: [], bank: [], warehouse: [] },
+    // v1.7.28：删除 v1.7.27 的 'ops' 子产品占位（已并入 企业信息），保留 digital，加 enterprise
+    digital:    { customer: [], platform: [], guarantor: [], bank: [], warehouse: [] },
+    enterprise: { customer: [], platform: [], guarantor: [], bank: [], warehouse: [] },
   },
 
   // ========== 货品 SKU 库（来自真实盯市台账） ==========

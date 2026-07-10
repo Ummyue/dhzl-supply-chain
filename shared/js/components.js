@@ -9,7 +9,6 @@ const Components = {
     const unreadCount = MockData.notifications.filter(n => n.unread).length;
     const currentSub = Utils.getProductLine();
     const currentTop = Utils.resolveProductLine(currentSub);
-    const currentTopLine = currentTop ? currentTop.topLine : null;
     const productLines = MockData.productLines || [];
 
     return `
@@ -22,40 +21,31 @@ const Components = {
           </div>
         </div>
 
-        <!-- v1.7.26：产品线切换器（参考飞书管理后台的产品设置下拉） -->
-        <div class="flex items-center gap-3 ml-8">
+        <!-- v1.7.28：产品线切换器（按 user 2026-07-10 17:22 截图重做） -->
+        <!-- 胶囊按钮（蓝色边框，文字=当前子产品名）→ 抽屉（两列布局：每列一个顶级产品线 + 标题下划线） -->
+        <div class="ml-8">
           <div class="relative" id="productSwitcher">
-            <button onclick="Components.toggleProductMenu()" class="flex items-center gap-2 px-3 py-1.5 rounded-md border border-slate-200 hover:border-blue-400 hover:bg-blue-50 transition text-sm ${currentTopLine && currentTopLine.active ? 'border-blue-300 bg-blue-50 text-blue-700' : ''}">
-              <span class="font-medium">${currentTopLine ? currentTopLine.label : '产品设置'}</span>
-              <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            <button onclick="Components.toggleProductMenu()" class="flex items-center gap-2 px-4 py-1.5 rounded-full border-2 border-blue-500 hover:border-blue-600 hover:bg-blue-50 transition text-sm bg-white">
+              <span class="font-medium text-blue-700">${currentTop ? currentTop.label : '智慧仓储'}</span>
+              <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
 
-            <div id="productMenu" class="hidden absolute left-0 top-full mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl p-3 z-50" style="width: 540px;">
-              <div class="grid grid-cols-2 gap-3">
+            <div id="productMenu" class="hidden absolute left-0 top-full mt-3 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50" style="width: 720px;">
+              <div class="grid grid-cols-2 gap-8 p-6">
                 ${productLines.map(line => `
-                  <div class="border ${line.active ? 'border-blue-300 bg-blue-50/30' : 'border-slate-200'} rounded-lg p-3">
-                    <div class="flex items-center justify-between mb-1">
-                      <span class="font-medium text-sm ${line.active ? 'text-blue-700' : 'text-slate-700'}">${line.label}</span>
-                      ${line.active ? '<span class="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">当前</span>' : ''}
-                    </div>
-                    <div class="text-xs text-slate-400 mb-3">${line.description || ''}</div>
+                  <div>
+                    <h3 class="text-base font-semibold text-slate-800 mb-4 pb-2 border-b-2 border-slate-200">${line.label}</h3>
                     <div class="space-y-1">
                       ${(line.subItems || []).map(sub => {
                         const isCurrent = sub.id === currentSub;
-                        const isPlaceholder = sub.status === 'placeholder';
                         return `
-                          <button onclick="Components.switchProduct('${sub.id}', '${sub.path || ''}')" class="w-full flex items-center justify-between gap-2 px-3 py-2 text-sm text-left rounded transition ${
+                          <button onclick="Components.switchProduct('${sub.id}', '${sub.path || ''}')" class="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm text-left rounded-lg transition ${
                             isCurrent
-                              ? 'bg-blue-100 text-blue-700 font-medium'
-                              : isPlaceholder
-                                ? 'hover:bg-slate-100 text-slate-500'
-                                : 'hover:bg-slate-100 text-slate-700'
+                              ? 'text-blue-700 font-semibold bg-blue-50/60'
+                              : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
                           }">
-                            <span class="flex items-center gap-2">
-                              ${isCurrent ? '<svg class="w-3.5 h-3.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>' : '<span class="w-3.5 h-3.5"></span>'}
-                              <span>${sub.label}</span>
-                            </span>
-                            ${isPlaceholder ? '<span class="text-xs px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded">待开发</span>' : (isCurrent ? '<span class="text-xs text-blue-600">访问中</span>' : '')}
+                            <span>${sub.label}</span>
+                            ${isCurrent ? '<svg class="w-3.5 h-3.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>' : '<span class="w-3.5 h-3.5"></span>'}
                           </button>
                         `;
                       }).join('')}
@@ -63,16 +53,7 @@ const Components = {
                   </div>
                 `).join('')}
               </div>
-              <div class="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-400 px-1">
-                当前可见原型仅限于「智慧仓储」子产品，其他子产品在二期陆续补齐
-              </div>
             </div>
-          </div>
-
-          <!-- 当前选中子产品 chip（导航上下文标识） -->
-          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 border border-blue-200 text-xs">
-            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-            <span class="text-blue-700 font-medium">${currentTop ? currentTop.label : '智慧仓储'}</span>
           </div>
         </div>
 
@@ -174,7 +155,7 @@ const Components = {
             <div class="px-4 py-3 text-sm text-slate-500">
               <div class="text-slate-400 text-xs uppercase tracking-wider mb-2">${product ? product.topLine.label : '当前子产品'}</div>
               <div class="font-medium text-slate-800 mb-2">${product ? product.label : '该模块'}</div>
-              <div class="text-xs leading-relaxed">当前角色在该子产品下还没有具体功能。点击顶部「产品设置」可切换到其他子产品。</div>
+              <div class="text-xs leading-relaxed">当前角色在该子产品下还没有具体功能。点击顶部蓝色按钮可切换到其他子产品。</div>
               <button onclick="Components.toggleProductMenu()" class="mt-4 inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-blue-300 text-blue-700 rounded hover:bg-blue-50">
                 <span>切换子产品</span>
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
