@@ -299,13 +299,11 @@
     const filesHtml = files.length === 0
       ? `<span class="text-slate-300 text-xs">（暂无文件）</span>`
       : `<div class="flex items-center gap-2 flex-wrap">${files.map((f, i) => `
-          <div class="relative inline-block">
-            <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">
-              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>
-              ${f}
-            </span>
-            <button onclick="removeFile(this)" class="ml-1 -mr-1 -mt-1 absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-slate-500 hover:bg-rose-500 text-white text-[10px] flex items-center justify-center">×</button>
-            ${i === 0 && !optional ? '<div class="absolute -top-8 left-0 bg-slate-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">上传时间：2023-12-12 12:23:32<div class="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-slate-800"></div></div>' : ''}
+          <div class="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-50 rounded text-xs">
+            <svg class="w-3 h-3 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>
+            <span class="text-blue-700">${f}</span>
+            <span class="text-slate-400 text-[11px] whitespace-nowrap">📅 ${i === 0 && !optional ? '2023-12-12 12:23:32' : (i === 0 ? '2023-12-12 12:25:18' : '2023-12-12 12:30:01')}</span>
+            <button onclick="removeFile(this)" class="ml-1 -mr-1 w-3.5 h-3.5 rounded-full bg-slate-400 hover:bg-rose-500 text-white text-[10px] flex items-center justify-center">×</button>
           </div>
         `).join('')}</div>`;
     const filesCell = `<td class="py-3 px-3">${filesHtml}</td>`;

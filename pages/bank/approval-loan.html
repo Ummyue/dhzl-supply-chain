@@ -134,7 +134,7 @@
         </div>
       </section>
 
-      <!-- 3. 附件（电子回单 + 放款证明 + 上传时间气泡） -->
+      <!-- 3. 附件（电子回单 + 放款证明 + 上传时间 常驻标签） -->
       <section class="bg-white border border-slate-200 rounded-xl mb-6 overflow-hidden">
         <div class="px-6 py-3 border-b border-slate-200">
           <h3 class="font-bold text-slate-800">附件</h3>
@@ -149,14 +149,8 @@
             <thead>
               <tr class="text-slate-600 border-b border-slate-200">
                 <th class="text-left py-2 px-3 w-40">单据类型</th>
-                <th class="text-center py-2 px-3 w-32 relative">
-                  <span>操作</span>
-                  <div id="uploadTip" class="absolute left-1/2 top-full -translate-x-1/2 mt-1 bg-slate-800 text-white text-xs px-2.5 py-1.5 rounded whitespace-nowrap shadow-lg hidden z-10">
-                    📅 上传时间：<span id="uploadTimeText">2023-12-12 12:23:32</span>
-                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-slate-800"></div>
-                  </div>
-                </th>
-                <th class="text-left py-2 px-3">文件名</th>
+                <th class="text-center py-2 px-3 w-32">操作</th>
+                <th class="text-left py-2 px-3">文件名（📅 上传时间：常驻显示）</th>
               </tr>
             </thead>
             <tbody>
@@ -186,7 +180,7 @@
           ${key === 'cert' ? '<p class="text-xs text-slate-400 mt-1">（必传：银行放款证明含借据号）</p>' : ''}
         </td>
         <td class="py-3 px-3 align-top text-center">
-          <button onmouseenter="showUploadTip()" onmouseleave="hideUploadTip()" onclick="doUpload('${key}')" class="px-3 py-1 border border-blue-500 text-blue-600 rounded text-xs hover:bg-blue-50">+ 上传</button>
+          <button onclick="doUpload('${key}')" class="px-3 py-1 border border-blue-500 text-blue-600 rounded text-xs hover:bg-blue-50">+ 上传</button>
         </td>
         <td class="py-3 px-3 align-top">
           <div id="files_${key}" class="flex items-center gap-2 flex-wrap">
@@ -224,23 +218,21 @@
     }
   };
 
-  window.showUploadTip = () => document.getElementById('uploadTip')?.classList.remove('hidden');
-  window.hideUploadTip = () => document.getElementById('uploadTip')?.classList.add('hidden');
-
   window.doUpload = (key) => {
     const wrap = document.getElementById('files_' + key);
     if (!wrap) return;
     const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const shortNow = now.slice(5); // MM-DD HH:MM:SS
     const fileName = (key === 'rect' ? '电子回单' : '放款证明') + '_' + Date.now().toString().slice(-6) + '.png';
     wrap.innerHTML = `
-      <div class="relative group inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">
-        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>
-        ${fileName}
-        <button onclick="removeFile(this, '${key}')" class="ml-1 -mr-1 -mt-1 absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-slate-500 hover:bg-rose-500 text-white text-[10px] flex items-center justify-center">×</button>
+      <div class="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-50 rounded text-xs">
+        <svg class="w-3 h-3 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>
+        <span class="text-blue-700">${fileName}</span>
+        <span class="text-slate-400 text-[11px] whitespace-nowrap">📅 ${shortNow}</span>
+        <button onclick="removeFile(this, '${key}')" class="ml-1 -mr-1 w-3.5 h-3.5 rounded-full bg-slate-400 hover:bg-rose-500 text-white text-[10px] flex items-center justify-center">×</button>
       </div>
     `;
     Utils.toast('已选择' + fileName, 'success');
-    document.getElementById('uploadTimeText').textContent = now;
   };
 
   window.removeFile = (btn, key) => {

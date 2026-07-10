@@ -115,11 +115,15 @@
             <tbody>
               ${(limit.attachments && limit.attachments.length ? limit.attachments : []).map(a => `
                 <tr class="border-t border-slate-100">
-                  <td class="py-3 px-4 text-slate-700">${a.type}</td>
+                  <td class="py-3 px-4 text-slate-700 align-top">${a.type}</td>
                   <td class="py-3 px-4">
-                    <a href="javascript:void(0)" onclick="downloadFile('${a.name}')" class="text-blue-600 hover:underline">${a.name}</a>
+                    <div class="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-50 rounded text-xs">
+                      <svg class="w-3 h-3 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>
+                      <a href="javascript:void(0)" onclick="downloadFile('${a.name}')" class="text-blue-700 hover:underline">${a.name}</a>
+                      ${a.uploadedAt ? `<span class="text-slate-400 text-[11px] whitespace-nowrap">📅 ${a.uploadedAt}</span>` : ''}
+                    </div>
                   </td>
-                  <td class="py-3 px-4 flex items-center gap-3">
+                  <td class="py-3 px-4 align-top flex items-center gap-3">
                     <button onclick="viewFile('${a.name}')" class="text-blue-600 hover:underline">查看</button>
                     <button onclick="downloadFile('${a.name}')" class="text-blue-600 hover:underline">下载</button>
                   </td>
