@@ -98,12 +98,6 @@
           </div>
           ${stateBadge(stock.state)}
         </div>
-        <div class="flex items-center gap-2">
-          <button onclick="Utils.toast('调整质押（占位）','info')" class="px-3 py-1.5 text-sm border border-violet-300 text-violet-700 rounded hover:bg-violet-50">调整质押</button>
-          <button onclick="Utils.toast('调整冻结（占位）','info')" class="px-3 py-1.5 text-sm border border-slate-300 text-slate-700 rounded hover:bg-slate-50">调整冻结</button>
-          <button onclick="Utils.toast('解除质押（占位）','info')" class="px-3 py-1.5 text-sm border border-rose-300 text-rose-700 rounded hover:bg-rose-50">解除质押</button>
-          <button onclick="exportStockDetail()" class="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded">导出明细</button>
-        </div>
       </div>
 
       <!-- 1. 库存基础信息（8 字段 4×2） -->
@@ -276,7 +270,6 @@
   // ============ Events ============
   window.switchTab = (id) => { activeTab = id; refresh(); };
   window.viewRecord = (id) => Utils.toast(`查看单据 ${id}（占位）`, 'info');
-  window.exportStockDetail = () => Utils.toast('导出库存明细（占位）', 'info');
 
   function refresh() {
     document.getElementById('app').innerHTML = Components.pageShell({
