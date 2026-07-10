@@ -720,6 +720,48 @@ const MockData = {
     },
   ],
 
+  // ========== 准入审批列表（v1.7.28.5 平台方/监管方视角）==========
+  // 6 状态 tab：基础材料收集 / 资质审核 / 现场考察 / 风险评估 / 办结 / 全部
+  // 12 行 mock（每页 10 条，2 条在第 2 页，模拟 400/80）
+  admissionApprovalList: [
+    { id: 'adm_001', name: '郑州某冷链贸易有限公司',     creditCode: '91XXXXXXXXMAXXXXXXXX', legalPerson: '陈志强', currentProgress: '基础材料收集', applyDate: '2023-01-04', applyResult: '通过' },
+    { id: 'adm_002', name: '河南国信食品集团有限公司',   creditCode: '91XXXXXXXXMAXXXXXXXX', legalPerson: '王建国', currentProgress: '资质审核',     applyDate: '2023-01-04', applyResult: '不通过' },
+    { id: 'adm_003', name: '天津港国际冷链物流基地',     creditCode: '91XXXXXXXXMAXXXXXXXX', legalPerson: '张伟',   currentProgress: '现场考察',     applyDate: '2023-01-04', applyResult: '通过' },
+    { id: 'adm_004', name: '河北中农信用担保有限公司',   creditCode: '91XXXXXXXXMAXXXXXXXX', legalPerson: '李娜',   currentProgress: '风险评估',     applyDate: '2023-01-04', applyResult: '不通过' },
+    { id: 'adm_005', name: '北京华瑞银行股份有限公司',   creditCode: '91XXXXXXXXMAXXXXXXXX', legalPerson: '刘强',   currentProgress: '办结',         applyDate: '2023-01-04', applyResult: '通过' },
+    { id: 'adm_006', name: '山东海通远洋渔业有限公司',   creditCode: '91XXXXXXXXMAXXXXXXXX', legalPerson: '周杰',   currentProgress: '基础材料收集', applyDate: '2023-01-04', applyResult: '不通过' },
+    { id: 'adm_007', name: '内蒙古蒙鑫牧业股份有限公司', creditCode: '91XXXXXXXXMAXXXXXXXX', legalPerson: '冯磊',   currentProgress: '资质审核',     applyDate: '2023-01-04', applyResult: '通过' },
+    { id: 'adm_008', name: '青岛远洋冷藏运输有限公司',   creditCode: '91XXXXXXXXMAXXXXXXXX', legalPerson: '朱明',   currentProgress: '现场考察',     applyDate: '2023-01-04', applyResult: '不通过' },
+    { id: 'adm_009', name: '山西晋商信用担保有限公司',   creditCode: '91XXXXXXXXMAXXXXXXXX', legalPerson: '高翔',   currentProgress: '风险评估',     applyDate: '2023-01-04', applyResult: '通过' },
+    { id: 'adm_010', name: '上海浦东供应链金融服务有限公司', creditCode: '91XXXXXXXXMAXXXXXXXX', legalPerson: '杨帆', currentProgress: '基础材料收集', applyDate: '2023-01-04', applyResult: '不通过' },
+    { id: 'adm_011', name: '陕西秦农粮油集团有限公司',   creditCode: '91XXXXXXXXMAXXXXXXXX', legalPerson: '陈丽',   currentProgress: '资质审核',     applyDate: '2023-01-04', applyResult: '通过' },
+    { id: 'adm_012', name: '江苏苏南冷链物流有限公司',   creditCode: '91XXXXXXXXMAXXXXXXXX', legalPerson: '李娜',   currentProgress: '现场考察',     applyDate: '2023-01-04', applyResult: '不通过' },
+  ],
+  // 准入审批 6 状态 tab（v1.7.28.5）
+  admissionApprovalDict: {
+    progressTabs: [
+      { key: 'all',          label: '全部',         count: 888, urgent: true },
+      { key: 'materials',    label: '基础材料收集', count: 888, urgent: true },
+      { key: 'qualification',label: '资质审核',     count: 888, urgent: true },
+      { key: 'siteVisit',    label: '现场考察',     count: 888, urgent: true },
+      { key: 'riskAssess',   label: '风险评估',     count: 888, urgent: true },
+      { key: 'closed',       label: '办结',         count: 888, urgent: true },
+    ],
+    progressMap: {
+      'all':           null,  // 全部（不筛选）
+      'materials':     '基础材料收集',
+      'qualification': '资质审核',
+      'siteVisit':     '现场考察',
+      'riskAssess':    '风险评估',
+      'closed':        '办结',
+    },
+    applyResults: [
+      { value: 'pass',     label: '通过' },
+      { value: 'fail',     label: '不通过' },
+      { value: 'pending',  label: '审核中' },
+    ],
+  },
+
   // ========== 客户准入申请（待办） ==========
   admissionList: [
     // ----- 草稿状态（操作人保存，未提交）-----
