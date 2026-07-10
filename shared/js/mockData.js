@@ -1588,6 +1588,48 @@ const MockData = {
     },
   ],
 
+  // ========== 企业信息管理 · 数据管理（v1.7.28.2） ==========
+  // 列表总数 = 400 条（40 页 × 10 条/页），实际 mock 10 条作为当前页渲染
+  // 字段：id / name(企业名称) / shortName(企业简称) / creditCode(脱敏 18 位) /
+  //      type(企业类型) / legalPerson(企业法人) / admin(企业管理员) /
+  //      status(企业状态) / materialsReceived(材料收取) / authChannel(认证渠道) /
+  //      createDate(入驻日期)
+  enterpriseList: [
+    { id: 'ent_001', name: '郑州某冷链贸易有限公司',       shortName: '郑州冷链', creditCode: '91XXXXXXXXMAXXXXXXXX', type: '核心企业',     legalPerson: '陈志强', admin: '李雪',   status: 'normal',  materialsReceived: 'received', authChannel: 'platform',   createDate: '2025-08-12' },
+    { id: 'ent_002', name: '河南国信食品集团有限公司',     shortName: '国信食品', creditCode: '91XXXXXXXXMAXXXXXXXX', type: '上游供应商',   legalPerson: '王建国', admin: '刘敏',   status: 'normal',  materialsReceived: 'received', authChannel: 'thirdparty', createDate: '2025-09-23' },
+    { id: 'ent_003', name: '天津港国际冷链物流基地',       shortName: '港冷基地', creditCode: '91XXXXXXXXMAXXXXXXXX', type: '监管方',       legalPerson: '张伟',   admin: '陈丽',   status: 'normal',  materialsReceived: 'received', authChannel: 'regulator',  createDate: '2025-10-15' },
+    { id: 'ent_004', name: '河北中农信用担保有限公司',     shortName: '中农担保', creditCode: '91XXXXXXXXMAXXXXXXXX', type: '担保方',       legalPerson: '李娜',   admin: '王磊',   status: 'normal',  materialsReceived: 'received', authChannel: 'platform',   createDate: '2025-11-08' },
+    { id: 'ent_005', name: '北京华瑞银行股份有限公司',     shortName: '华瑞银行', creditCode: '91XXXXXXXXMAXXXXXXXX', type: '资金方',       legalPerson: '刘强',   admin: '张勇',   status: 'normal',  materialsReceived: 'received', authChannel: 'thirdparty', createDate: '2025-12-01' },
+    { id: 'ent_006', name: '山东海通远洋渔业有限公司',     shortName: '海通远洋', creditCode: '91XXXXXXXXMAXXXXXXXX', type: '上游供应商',   legalPerson: '周杰',   admin: '孙艳',   status: 'pending', materialsReceived: 'partial',  authChannel: 'platform',   createDate: '2026-01-20' },
+    { id: 'ent_007', name: '内蒙古蒙鑫牧业股份有限公司',   shortName: '蒙鑫牧业', creditCode: '91XXXXXXXXMAXXXXXXXX', type: '核心企业',     legalPerson: '冯磊',   admin: '赵静',   status: 'normal',  materialsReceived: 'received', authChannel: 'thirdparty', createDate: '2026-02-14' },
+    { id: 'ent_008', name: '青岛远洋冷藏运输有限公司',     shortName: '远洋冷藏', creditCode: '91XXXXXXXXMAXXXXXXXX', type: '仓储方',       legalPerson: '朱明',   admin: '韩雪',   status: 'normal',  materialsReceived: 'received', authChannel: 'platform',   createDate: '2026-03-08' },
+    { id: 'ent_009', name: '山西晋商信用担保有限公司',     shortName: '晋商担保', creditCode: '91XXXXXXXXMAXXXXXXXX', type: '担保方',       legalPerson: '高翔',   admin: '林涛',   status: 'frozen',  materialsReceived: 'none',     authChannel: 'thirdparty', createDate: '2026-04-22' },
+    { id: 'ent_010', name: '上海浦东供应链金融服务有限公司', shortName: '浦链金融', creditCode: '91XXXXXXXXMAXXXXXXXX', type: '资金方',       legalPerson: '杨帆',   admin: '邓超',   status: 'normal',  materialsReceived: 'received', authChannel: 'regulator',  createDate: '2026-05-17' },
+  ],
+  // 数据管理筛选字典（v1.7.28.2）
+  enterpriseDict: {
+    type: ['核心企业', '上游供应商', '下游经销商', '担保方', '资金方', '监管方', '仓储方'],
+    status: [
+      { value: 'normal',    label: '正常' },
+      { value: 'pending',   label: '待审核' },
+      { value: 'frozen',    label: '冻结' },
+      { value: 'cancelled', label: '已注销' },
+    ],
+    materialsReceived: [
+      { value: 'received', label: '已收取' },
+      { value: 'partial',  label: '部分收取' },
+      { value: 'none',     label: '未收取' },
+    ],
+    authChannel: [
+      { value: 'platform',   label: '平台认证' },
+      { value: 'thirdparty', label: '第三方认证' },
+      { value: 'regulator',  label: '监管方认证' },
+    ],
+    // 操作类型枚举（用于行操作按钮渲染）
+    // 1=查看详情（启用）/ 2=服务配置（待启用 ⚡）/ 3=材料收取（待启用 ⚡）/ 4=冻结（启用）
+    actions: ['view', 'service', 'materials', 'freeze'],
+  },
+
   // ========== 系统通知 ==========
   notifications: [
     { id: 'n1', type: 'warn', title: '价格预警：去骨牛心管上涨 6.77%', time: '2026-07-08 09:30', unread: true },
