@@ -133,14 +133,17 @@
     ];
     return actions.map((a, idx) => {
       const isPending = !a.enabled;
+      // v1.7.28.2 黄色⚡图标改 SVG（避免 unicode 渲染成 ✕）
       const hint = isPending
-        ? `<span class="inline-flex items-center justify-center w-4 h-4 bg-yellow-300 rounded-sm text-[10px] font-bold text-yellow-900 align-middle" title="该功能待客户确认后启用">⚡</span>`
+        ? `<span class="inline-flex items-center justify-center w-4 h-4 bg-yellow-300 rounded-sm align-middle ml-0.5" title="该功能待客户确认后启用">
+             <svg class="w-2.5 h-2.5 text-yellow-900" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h7v8l10-12h-7V2z"/></svg>
+           </span>`
         : '';
       const sep = idx > 0 ? '<span class="text-slate-200">|</span>' : '';
       const onClick = a.enabled
         ? `Utils.toast('${a.label}：${item.name}', 'info')`
         : `Utils.toast('【${a.label}】功能待客户确认后启用', 'info')`;
-      return `${sep}<a href="javascript:void(0)" onclick="${onClick}" class="text-xs ${a.cls}">${a.label}</a>${hint ? '<span class="inline-block ml-0.5">' + hint + '</span>' : ''}`;
+      return `${sep}<a href="javascript:void(0)" onclick="${onClick}" class="text-xs ${a.cls}">${a.label}</a>${hint}`;
     }).join('');
   }
 
