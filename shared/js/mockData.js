@@ -190,8 +190,8 @@ const MockData = {
       subtitle: '运营管理平台',
       active: false,
       subItems: [
-        { id: 'enterprise', label: '企业信息', path: '/portal/enterprise', status: 'placeholder',
-          description: '客户企业信息管理',
+        { id: 'enterprise', label: '企业信息管理', path: '/portal/enterprise', status: 'placeholder',
+          description: '企业概览 / 数据管理',
           subtitle: '企业信息管理平台' },
       ],
     },
@@ -342,7 +342,34 @@ const MockData = {
     // ============== 占位子产品（暂无菜单） ==============
     // v1.7.28：删除 v1.7.27 的 'ops' 子产品占位（已并入 企业信息），保留 digital，加 enterprise
     digital:    { customer: [], platform: [], guarantor: [], bank: [], warehouse: [] },
-    enterprise: { customer: [], platform: [], guarantor: [], bank: [], warehouse: [] },
+    // v1.7.28.1：企业信息管理 → 企业概览（一级菜单）/ 数据管理（二级菜单）
+    enterprise: {
+      customer: [
+        { group: '企业概览', items: [
+          { icon: 'file', label: '数据管理', path: '/enterprise/data-management' },
+        ]},
+      ],
+      platform: [
+        { group: '企业概览', items: [
+          { icon: 'file', label: '数据管理', path: '/enterprise/data-management' },
+        ]},
+      ],
+      guarantor: [
+        { group: '企业概览', items: [
+          { icon: 'file', label: '数据管理', path: '/enterprise/data-management' },
+        ]},
+      ],
+      bank: [
+        { group: '企业概览', items: [
+          { icon: 'file', label: '数据管理', path: '/enterprise/data-management' },
+        ]},
+      ],
+      warehouse: [
+        { group: '企业概览', items: [
+          { icon: 'file', label: '数据管理', path: '/enterprise/data-management' },
+        ]},
+      ],
+    },
   },
 
   // ========== 货品 SKU 库（来自真实盯市台账） ==========

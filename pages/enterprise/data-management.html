@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>数据管理 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.28.1 数据管理占位页 ============
+  // 归属：运营管理中心 → 企业信息管理 → 企业概览（一级菜单） → 数据管理（二级菜单）
+  // 所有 5 角色共享同一占位（待客户确认具体字段后再充实）
+
+  // 切到 enterprise 子产品，保证 sidebar 正确显示「企业概览 / 数据管理」组
+  if (Utils.getProductLine() !== 'enterprise') {
+    Utils.setProductLine('enterprise');
+  }
+
+  document.getElementById('app').innerHTML = `
+    ${Components.topbar('')}
+    <div class="flex">
+      ${Components.sidebar('/enterprise/data-management')}
+      <main class="flex-1 overflow-y-auto bg-slate-50">
+        <div class="p-6 page-enter">
+          ${Components.breadcrumb(['企业信息管理', '企业概览', '数据管理'])}
+          <div class="mb-6">
+            <h1 class="text-2xl font-bold text-slate-800">数据管理</h1>
+            <p class="text-slate-500 mt-1">企业基础信息 / 证照 / 股东 / 关联关系 / 业务数据维护</p>
+          </div>
+
+          <div class="bg-white border border-slate-200 rounded-xl px-6 py-12 text-center">
+            <div class="w-20 h-20 mx-auto mb-5 bg-blue-50 rounded-full flex items-center justify-center text-3xl">📋</div>
+            <h2 class="text-xl font-bold text-slate-800 mb-2">数据管理</h2>
+            <p class="text-slate-500 max-w-md mx-auto">企业基础信息、资质证照、股东信息、关联关系、业务台账等数据的录入、维护、归档管理</p>
+            <div class="my-6 inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-md text-xs">
+              <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0L13.5 8.05c.36.639-.158 1.422-.857 1.422H8.357c-.699 0-1.217-.783-.857-1.422l1.757-3.16zM10 13a1 1 0 100 2 1 1 0 000-2z" clip-rule="evenodd"/></svg>
+              该功能待客户确认字段后充实
+            </div>
+            <div class="mt-6 text-xs text-slate-400">
+              路由：运营管理中心 / 企业信息管理 / 企业概览 / 数据管理
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  `;
+</script>
+</body>
+</html>
