@@ -741,6 +741,59 @@ const MockData = {
     },
   ],
 
+  // ========== v1.7.21 准入详情（按用户图 2） ==========
+  admissionDetail: {
+    adm_001: {
+      // 申请企业基本信息
+      companyName: '河南测试企业有限公司',
+      creditCode: '910ASDXXXXXXXXXXX',
+      shortName: '河南测试',
+      shortNamePinyin: 'HMCS',
+      established: '2025-06-01',
+      nature: '上市公司',
+      businessDeadline: '长期有效',
+      registeredAddress: '河南省郑州市中原区XXXXXXXX',
+      industry: '',
+      registeredCapital: '',
+      inRenewal: true,
+      contactPhone: '',
+      contactAddress: '',
+      businessScope: '',
+      // 法人信息
+      legalName: '张三',
+      legalIdCard: '410123456789922555',
+      legalPhone: '15512345678',
+      legalIdValidFrom: '2020-01-01',
+      legalIdValidTo: '2040-01-01',
+      // 股权结构（默认空，让用户在详情页「添加一行」录入）
+      shareholders: [
+        { name: '河南测试集团有限公司', type: '货币出资', amount: 8000000, ratio: 80, date: '2023-09-15' },
+        { name: '某投资管理合伙企业',     type: '货币出资', amount: 1500000, ratio: 15, date: '2024-03-20' },
+        { name: '张三（自然人）',          type: '技术入股', amount: 500000,  ratio: 5,  date: '2024-06-01' },
+      ],
+      // 其他信息
+      otherInfo: {
+        history: '公司前身为某商贸中心（2008年成立），2015年改制为有限责任公司，2025年完成股份制改造并申报上市辅导。',
+        relatedEnterprises: '关联企业：河南测试集团有限公司（控股股东，持股80%）；某贸易合伙企业（联营企业）。',
+      },
+      // 附件（图2 的 6 类）
+      attachments: [
+        { type: '营业执照',                  required: true,  files: [{ name: '最新设计稿.pdf', time: '2024-06-12 09:15:32' }] },
+        { type: '法人身份证复印件',          required: true,  files: [{ name: '最新设计稿.pdf', time: '2024-06-12 09:18:45' }] },
+        { type: '最近一年财务报表',          required: false, files: [{ name: '最新设计稿.pdf', time: '2024-06-12 09:22:10' }] },
+        { type: '完税证明',                  required: false, files: [{ name: '完税证明.pdf',    time: '2024-06-12 09:25:33' }] },
+        { type: '三个月内业务购销合同复印件、发票复印件', required: false, files: [{ name: '采购合同.pdf', time: '2024-06-12 09:28:14' }, { name: '销售发票.pdf', time: '2024-06-12 09:30:01' }] },
+        { type: '其他附件',                  required: false, files: [] },
+      ],
+      // 列表用字段（与 admissionList 重复保留以便详情回填）
+      legalRep: '张三',
+      registeredCap: '3000万元',
+      applyDate: '2025-01-04',
+      progress: '基础材料收集',
+      applyResult: '通过',
+    },
+  },
+
   // ========== 入库申请 ==========
   inboundList: [
     {

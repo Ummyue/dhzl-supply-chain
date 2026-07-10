@@ -4,18 +4,17 @@
   <script>
 (function() {
   var p = window.location.pathname;
-  // GitHub Pages 子路径部署 vs Vercel 根路径部署
   var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
   document.write('<base href="' + base + '">');
 })();
 </script>
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>准入申请详情 - 大河智链</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
-<link rel="stylesheet" href="/shared/css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>准入详情 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
 </head>
 <body class="bg-slate-50">
 <div id="app"></div>
@@ -25,252 +24,383 @@
 <script>
   Components.bindGlobalClose();
 
-  // 从 URL 取 id
-  const urlParams = new URLSearchParams(window.location.search);
-  const id = urlParams.get('id') || 'adm_001';
-  const a = MockData.admissionList.find(x => x.id === id) || MockData.admissionList[0];
+  // ============ v1.7.21 准入详情（按用户图2重做） ============
+  // 5 大区块：申请企业基本信息 / 法人信息 / 股权结构说明 / 其他信息 / 附件
+  // 底部：[取消] [提交]
 
-  // 模拟审批进度（基于状态机）- 5 步流程：含签章节点
-  const progressMap = {
-    'draft': [
-      { node: '草稿保存', operator: a.drafter || '陈志强（操作人）', time: a.applyDate, status: 'current', opinion: '草稿已保存，材料未补全，需盖章人完成签章' },
-      { node: '电子签章', operator: '—', time: '—', status: 'pending', opinion: '—' },
-      { node: '监管方审核', operator: '—', time: '—', status: 'pending', opinion: '—' },
-      { node: '担保方审核', operator: '—', time: '—', status: 'pending', opinion: '—' },
-      { node: '资金方录入授信', operator: '—', time: '—', status: 'pending', opinion: '—' },
-    ],
-    'pending': [
-      { node: '草稿保存', operator: a.drafter || '陈志强（操作人）', time: a.applyDate, status: 'success', opinion: '操作人完成表单填写，保存为草稿' },
-      { node: '电子签章', operator: a.sealUser || '李雪（盖章人）', time: Utils.relativeTime(a.applyDate), status: 'success', opinion: '盖章人完成图片盖章（公司公章）' },
-      { node: '监管方审核', operator: '—', time: '—', status: 'current', opinion: '等待监管方审核中' },
-      { node: '担保方审核', operator: '—', time: '—', status: 'pending', opinion: '—' },
-      { node: '资金方录入授信', operator: '—', time: '—', status: 'pending', opinion: '—' },
-    ],
-    'reviewing': [
-      { node: '草稿保存', operator: a.drafter || '陈志强（操作人）', time: a.applyDate, status: 'success', opinion: '操作人完成表单填写，保存为草稿' },
-      { node: '电子签章', operator: a.sealUser || '李雪（盖章人）', time: a.applyDate, status: 'success', opinion: '盖章人完成图片盖章（公司公章 + 法人章）' },
-      { node: '监管方审核', operator: '李雪 (风控经理)', time: Utils.relativeTime(a.applyDate), status: 'success', opinion: '工商核验通过，征信评分 AA，建议授信 5000 万' },
-      { node: '担保方审核', operator: '—', time: '—', status: 'current', opinion: '等待担保方核保' },
-      { node: '资金方录入授信', operator: '—', time: '—', status: 'pending', opinion: '—' },
-    ],
-    'approved': [
-      { node: '草稿保存', operator: a.drafter || '陈志强（操作人）', time: '2025-11-15 10:00', status: 'success', opinion: '操作人完成表单填写，保存为草稿' },
-      { node: '电子签章', operator: a.sealUser || '李雪（盖章人）', time: '2025-11-15 10:25', status: 'success', opinion: '盖章人完成图片盖章（公司公章）' },
-      { node: '监管方审核', operator: '李雪 (风控经理)', time: '2025-11-15 14:20', status: 'success', opinion: '工商核验通过，征信评分 AA，建议授信 5000 万' },
-      { node: '担保方审核', operator: '王建国 (业务总监)', time: '2025-11-16 09:45', status: 'success', opinion: '反担保措施到位，同意准入' },
-      { node: '资金方录入授信', operator: '刘敏 (客户经理)', time: '2025-11-16 16:30', status: 'success', opinion: '授信额度 ¥5,000 万，期限 12 个月，利率 4.35%' },
-    ],
-    'rejected': [
-      { node: '草稿保存', operator: a.drafter || '陈志强（操作人）', time: a.applyDate, status: 'success', opinion: '操作人完成表单填写，保存为草稿' },
-      { node: '电子签章', operator: a.sealUser || '李雪（盖章人）', time: a.applyDate, status: 'success', opinion: '盖章人完成图片盖章' },
-      { node: '监管方审核', operator: '李雪 (风控经理)', time: Utils.relativeTime(a.applyDate), status: 'danger', opinion: a.rejectReason || '资质审核未通过' },
-      { node: '担保方审核', operator: '—', time: '—', status: 'pending', opinion: '—' },
-      { node: '资金方录入授信', operator: '—', time: '—', status: 'pending', opinion: '—' },
+  const urlId = new URLSearchParams(window.location.search).get('id') || 'adm_001';
+
+  // 优先从 admissionDetail 取数据；回退到 admissionList 的基础字段
+  const detail = (MockData.admissionDetail && MockData.admissionDetail[urlId]) || null;
+  const summary = (MockData.admissionList || []).find(a => a.id === urlId) || {};
+  const data = { ...summary, ...(detail || {}) };
+
+  // 编辑表单数据
+  const form = {
+    companyName: data.companyName || data.customer || '',
+    creditCode: data.creditCode || '',
+    shortName: data.shortName || '',
+    shortNamePinyin: data.shortNamePinyin || '',
+    established: data.established || '',
+    nature: data.nature || '',
+    businessDeadline: data.businessDeadline || '',
+    registeredAddress: data.registeredAddress || '',
+    industry: data.industry || '',
+    registeredCapital: data.registeredCapital || '',
+    inRenewal: data.inRenewal !== undefined ? data.inRenewal : true,
+    contactPhone: data.contactPhone || '',
+    contactAddress: data.contactAddress || '',
+    businessScope: data.businessScope || '',
+    legalName: data.legalName || data.legalRep || '',
+    legalIdCard: data.legalIdCard || '',
+    legalPhone: data.legalPhone || '',
+    legalIdValidFrom: data.legalIdValidFrom || '',
+    legalIdValidTo: data.legalIdValidTo || '',
+    shareholders: data.shareholders || [],
+    otherInfo: {
+      history: data.otherInfo?.history || '',
+      relatedEnterprises: data.otherInfo?.relatedEnterprises || '',
+    },
+    attachments: data.attachments || [
+      { type: '* 营业执照', required: true,  files: [] },
+      { type: '* 法人身份证复印件', required: true,  files: [] },
+      { type: '最近一年财务报表', required: false, files: [] },
+      { type: '完税证明', required: false, files: [] },
+      { type: '三个月内业务购销合同复印件、发票复印件', required: false, files: [] },
+      { type: '其他附件', required: false, files: [] },
     ],
   };
 
-  const progress = progressMap[a.status] || progressMap['pending'];
-
-  // 根据状态决定操作按钮
-  const actions = {
-    'draft': [
-      { label: '编辑草稿', type: 'primary', onclick: "Utils.toast('打开编辑','info')" },
-      { label: '删除', type: 'danger', onclick: "if(confirm('确认删除此草稿？')){Utils.toast('已删除','success');setTimeout(()=>history.back(),600)}" },
-      { label: '提交申请', type: 'success', onclick: "Utils.toast('申请已提交','success');setTimeout(()=>location.reload(),800)" },
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '准入详情',
+    currentPath: '/customer/admission',
+    breadcrumb: [
+      { label: '客户准入', path: '/customer/admission' },
+      { label: '准入申请', path: '/customer/admission' },
+      { label: '准入详情', path: '/customer/admission-detail' },
     ],
-    'pending': [
-      { label: '撤回申请', type: 'danger', onclick: "if(confirm('确认撤回？撤回后可重新编辑')){Utils.toast('已撤回','success');setTimeout(()=>history.back(),600)}" },
-      { label: '联系业务员', type: 'default', onclick: "Utils.toast('业务员：张丽 139 0000 1234','info')" },
-      { label: '查看审批进度', type: 'default', onclick: "document.getElementById('progressSection').scrollIntoView({behavior:'smooth'})" },
-    ],
-    'reviewing': [
-      { label: '查看审批进度', type: 'primary', onclick: "document.getElementById('progressSection').scrollIntoView({behavior:'smooth'})" },
-      { label: '催办', type: 'default', onclick: "Utils.toast('已发送催办短信给担保方','success')" },
-      { label: '联系业务员', type: 'default', onclick: "Utils.toast('业务员：张丽 139 0000 1234','info')" },
-    ],
-    'approved': [
-      { label: '查看授信额度', type: 'primary', onclick: "Utils.toast('已授信 ¥5,000万，期限 12 个月','info')" },
-      { label: '发起入库申请', type: 'success', onclick: "window.location.href = Utils.nav('/customer/inbound')" },
-      { label: '下载准入通知书', type: 'default', onclick: "Utils.toast('正在生成 PDF...','info')" },
-    ],
-    'rejected': [
-      { label: '查看驳回原因', type: 'primary', onclick: "document.getElementById('progressSection').scrollIntoView({behavior:'smooth'})" },
-      { label: '修改并重新提交', type: 'success', onclick: "Utils.toast('打开修改表单','info')" },
-      { label: '申诉', type: 'default', onclick: "Utils.toast('已提交申诉，预计 3 个工作日反馈','info')" },
-    ],
-  };
+    extra: '',
+    content: render(),
+  });
 
-  const currentActions = actions[a.status] || actions['pending'];
-
-  document.getElementById('app').innerHTML = `
-    ${Components.topbar()}
-    <div class="flex">
-      ${Components.sidebar('/customer/admission')}
-      <main class="flex-1 overflow-y-auto bg-slate-50">
-        <div class="p-6 page-enter">
-          ${Components.breadcrumb([
-            { label: '客户准入', path: '/customer/admission' },
-            '准入详情'
-          ])}
-          <!-- 顶部状态卡 -->
-          <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6">
-            <div class="flex items-start justify-between mb-4">
-              <div>
-                <div class="flex items-center gap-3 mb-2">
-                  <h1 class="text-2xl font-bold text-slate-800">准入申请详情</h1>
-                  ${Components.badge(a.status)}
-                </div>
-                <div class="text-sm text-slate-500">申请编号: <span class="font-mono">${a.id.toUpperCase()}</span> · 提交时间: ${a.applyDate}</div>
-              </div>
-              <div class="flex gap-2">
-                <button onclick="history.back()" class="px-3 py-2 border border-slate-300 rounded-md text-sm hover:bg-slate-50">← 返回列表</button>
-              </div>
-            </div>
-
-            <!-- 当前节点提示 -->
-            <div class="bg-${a.status === 'approved' ? 'green' : a.status === 'rejected' ? 'red' : 'blue'}-50 border border-${a.status === 'approved' ? 'green' : a.status === 'rejected' ? 'red' : 'blue'}-200 rounded-lg p-3 mb-4">
-              <div class="text-sm font-medium text-${a.status === 'approved' ? 'green' : a.status === 'rejected' ? 'red' : 'blue'}-800">
-                ${a.status === 'pending' ? '⏳ 当前状态：监管方审核中，预计 1-2 个工作日内反馈' :
-                  a.status === 'reviewing' ? '⏳ 当前状态：担保方核保中，预计 1 个工作日内反馈' :
-                  a.status === 'approved' ? '✅ 准入已通过！授信额度 ¥' + (a.creditLimit ? a.creditLimit.toLocaleString() : '50,000,000') + '，您可发起入库申请' :
-                  a.status === 'rejected' ? '❌ 准入已驳回，请查看驳回原因后可修改重新提交' :
-                  '📝 当前为草稿状态，您可以编辑或提交'}
-              </div>
-            </div>
-
-            <!-- 操作按钮 -->
-            <div class="flex flex-wrap gap-2">
-              ${currentActions.map(act => `
-                <button onclick="${act.onclick.replace(/"/g, '&quot;')}" class="px-4 py-2 rounded-md text-sm font-medium ${
-                  act.type === 'primary' ? 'bg-blue-600 hover:bg-blue-700 text-white' :
-                  act.type === 'success' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' :
-                  act.type === 'danger' ? 'bg-white border border-rose-300 text-rose-600 hover:bg-rose-50' :
-                  'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50'
-                }">${act.label}</button>
-              `).join('')}
-            </div>
+  function render() {
+    return `
+      <!-- 顶部 header -->
+      <div class="flex items-center justify-between mb-4 bg-white border border-slate-200 rounded-xl px-5 py-3">
+        <div class="flex items-center gap-3">
+          <a href="${Utils.nav('/customer/admission')}" class="flex items-center gap-1 text-slate-600 hover:text-blue-600 text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            返回准入申请
+          </a>
+          <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">准</div>
+          <div>
+            <h2 class="text-base font-bold text-slate-800">${form.companyName || '新建准入申请'}</h2>
+            <p class="text-xs text-slate-500 font-mono">业务编号 ${urlId.toUpperCase()} · 当前阶段：${data.progress || '基础材料收集'}</p>
           </div>
+          <span class="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded">${data.applyResult || '审核中'}</span>
+        </div>
+      </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- 左侧主信息 -->
-            <div class="lg:col-span-2 space-y-6">
-              <!-- 企业基本信息 -->
-              <div class="bg-white rounded-xl border border-slate-200 p-6">
-                <h3 class="font-semibold text-slate-800 mb-4 pb-3 border-b">📋 企业基本信息</h3>
-                <div class="grid grid-cols-2 gap-4 text-sm">
-                  <div><span class="text-slate-500">企业名称：</span><span class="font-medium">${a.customer}</span></div>
-                  <div><span class="text-slate-500">统一社会信用代码：</span><span class="font-mono text-xs">${a.creditCode}</span></div>
-                  <div><span class="text-slate-500">法定代表人：</span>${a.legalRep}</div>
-                  <div><span class="text-slate-500">注册资本：</span><span class="num-focus font-medium">${a.registeredCap}</span></div>
-                  <div><span class="text-slate-500">成立日期：</span>${a.established}</div>
-                  <div><span class="text-slate-500">申请日期：</span>${a.applyDate}</div>
-                  <div class="col-span-2"><span class="text-slate-500">经营范围：</span>${a.bizScope}</div>
-                </div>
-              </div>
+      <!-- 1. 申请企业基本信息（图2 行 1：3 列网格，13+ 字段）-->
+      <section class="bg-white border border-slate-200 rounded-xl overflow-hidden mb-4">
+        <div class="px-6 py-3 border-b border-slate-200 flex items-center gap-2">
+          <span class="w-1 h-4 bg-blue-500 rounded"></span>
+          <h3 class="font-bold text-slate-800">申请企业基本信息</h3>
+          <span class="text-xs text-slate-400">带 <span class="text-red-500">*</span> 为必填项</span>
+        </div>
+        <div class="px-6 py-5">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
+            <div><dt class="text-xs text-slate-500 mb-1.5">* <span class="text-slate-700">企业名称</span></dt><dd><input type="text" value="${form.companyName}" onchange="updateForm('companyName', this.value)" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"></dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1.5">* <span class="text-slate-700">社会统一信用代码</span></dt><dd><input type="text" value="${form.creditCode}" onchange="updateForm('creditCode', this.value)" class="w-full px-3 py-2 border border-slate-300 rounded text-sm font-mono focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"></dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1.5"><span class="text-slate-700">企业简称</span></dt><dd><input type="text" value="${form.shortName}" onchange="updateForm('shortName', this.value)" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"></dd></div>
 
-              <!-- 联系人信息 -->
-              <div class="bg-white rounded-xl border border-slate-200 p-6">
-                <h3 class="font-semibold text-slate-800 mb-4 pb-3 border-b">📞 联系人信息</h3>
-                <div class="grid grid-cols-2 gap-4 text-sm">
-                  <div><span class="text-slate-500">联系人姓名：</span>${Utils.randomName()}</div>
-                  <div><span class="text-slate-500">联系电话：</span>${Utils.randomPhone()}</div>
-                  <div><span class="text-slate-500">电子邮箱：</span>chenzhiqiang@example.com</div>
-                  <div><span class="text-slate-500">联系地址：</span>郑州市惠济区大河惠济国际食品贸易港 A 座 18 层</div>
-                </div>
-              </div>
+            <div><dt class="text-xs text-slate-500 mb-1.5"><span class="text-slate-700">企业简称首字母</span></dt><dd><input type="text" value="${form.shortNamePinyin}" onchange="updateForm('shortNamePinyin', this.value)" class="w-full px-3 py-2 border border-slate-300 rounded text-sm uppercase focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"></dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1.5">* <span class="text-slate-700">成立日期</span></dt><dd><input type="date" value="${form.established}" onchange="updateForm('established', this.value)" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"></dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1.5">* <span class="text-slate-700">企业性质</span></dt><dd>
+              <select onchange="updateForm('nature', this.value)" class="w-full px-3 py-2 border border-slate-300 rounded text-sm bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none">
+                <option value="">请选择</option>
+                ${['上市公司','有限责任公司','股份有限公司','国有企业','民营企业','外商投资企业','个体工商户'].map(s => `<option ${form.nature === s ? 'selected' : ''}>${s}</option>`).join('')}
+              </select>
+            </dd></div>
 
-              <!-- 申请材料 -->
-              <div class="bg-white rounded-xl border border-slate-200 p-6">
-                <h3 class="font-semibold text-slate-800 mb-4 pb-3 border-b flex items-center justify-between">
-                  <span>📎 申请材料 <span class="text-xs text-slate-400">(${a.attachments.length}/4 已上传)</span></span>
-                  ${a.status === 'draft' || a.status === 'rejected' ? '<button class="text-sm text-blue-600 hover:underline">+ 上传材料</button>' : ''}
-                </h3>
-                <div class="grid grid-cols-2 gap-3">
-                  ${a.attachments.map(f => `
-                    <div class="flex items-center justify-between p-3 border border-slate-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition cursor-pointer" onclick="Utils.toast('预览文件: ${f}','info')">
-                      <div class="flex items-center gap-2">
-                        <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>
-                        <div>
-                          <div class="text-sm font-medium">${f}</div>
-                          <div class="text-xs text-slate-400">${(Math.random() * 3 + 0.5).toFixed(1)} MB · 已上传</div>
-                        </div>
-                      </div>
-                      <div class="flex gap-2">
-                        <button onclick="event.stopPropagation();Utils.toast('预览中...','info')" class="text-xs text-blue-600 hover:underline">预览</button>
-                        <button onclick="event.stopPropagation();Utils.toast('下载中...','info')" class="text-xs text-slate-600 hover:underline">下载</button>
-                      </div>
-                    </div>
-                  `).join('')}
-                </div>
-              </div>
+            <div><dt class="text-xs text-slate-500 mb-1.5">* <span class="text-slate-700">营业期限止</span></dt><dd><input type="text" value="${form.businessDeadline}" placeholder="如：长期有效 或 2030-12-31" onchange="updateForm('businessDeadline', this.value)" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"></dd></div>
+            <div class="md:col-span-2"><dt class="text-xs text-slate-500 mb-1.5">* <span class="text-slate-700">注册地址</span></dt><dd><input type="text" value="${form.registeredAddress}" onchange="updateForm('registeredAddress', this.value)" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"></dd></div>
 
-              <!-- 数据授权 -->
-              <div class="bg-white rounded-xl border border-slate-200 p-6">
-                <h3 class="font-semibold text-slate-800 mb-4 pb-3 border-b">🔐 数据授权</h3>
-                <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
-                  ✓ 已授权大河智链平台使用本企业相关数据进行准入审核、风险评估及融资业务合作
-                </div>
-                <div class="text-xs text-slate-500 mt-2">授权时间：${a.applyDate} · 授权有效期：长期有效</div>
-              </div>
-            </div>
+            <div><dt class="text-xs text-slate-500 mb-1.5">* <span class="text-slate-700">所属行业</span></dt><dd><input type="text" value="${form.industry}" placeholder="输入内容" onchange="updateForm('industry', this.value)" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"></dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1.5">* <span class="text-slate-700">注册资本</span></dt><dd><input type="text" value="${form.registeredCapital}" placeholder="输入内容（万元）" onchange="updateForm('registeredCapital', this.value)" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"></dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1.5">* <span class="text-slate-700">是否在续续期</span></dt><dd>
+              <select onchange="updateForm('inRenewal', this.value === 'true')" class="w-full px-3 py-2 border border-slate-300 rounded text-sm bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none">
+                <option value="true" ${form.inRenewal ? 'selected' : ''}>是</option>
+                <option value="false" ${!form.inRenewal ? 'selected' : ''}>否</option>
+              </select>
+            </dd></div>
 
-            <!-- 右侧：审批进度时间轴 -->
-            <div id="progressSection" class="space-y-6">
-              <div class="bg-white rounded-xl border border-slate-200 p-6 sticky top-4">
-                <h3 class="font-semibold text-slate-800 mb-4 pb-3 border-b">🕐 审批进度</h3>
+            <div><dt class="text-xs text-slate-500 mb-1.5">* <span class="text-slate-700">联系电话</span></dt><dd><input type="text" value="${form.contactPhone}" placeholder="输入内容" onchange="updateForm('contactPhone', this.value)" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"></dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1.5">* <span class="text-slate-700">联系地址</span></dt><dd><input type="text" value="${form.contactAddress}" placeholder="输入内容" onchange="updateForm('contactAddress', this.value)" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"></dd></div>
+            <div></div>
 
-                <!-- 进度概览 -->
-                <div class="mb-4">
-                  <div class="flex items-center justify-between text-xs text-slate-500 mb-2">
-                    <span>已完成 ${progress.filter(p => p.status === 'success').length} / 共 ${progress.length} 步</span>
-                    <span class="font-medium">${Math.round(progress.filter(p => p.status === 'success').length / progress.length * 100)}%</span>
-                  </div>
-                  <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div class="h-full bg-gradient-to-r from-blue-500 to-blue-600" style="width: ${progress.filter(p => p.status === 'success').length / progress.length * 100}%"></div>
-                  </div>
-                </div>
-
-                <!-- 时间轴 -->
-                <div class="space-y-4 mt-6">
-                  ${progress.map((p, idx) => `
-                    <div class="relative flex gap-3">
-                      ${idx < progress.length - 1 ? `<div class="absolute left-[11px] top-6 w-0.5 h-${p.status === 'success' ? 'full' : '0'} bg-${p.status === 'success' ? 'green-500' : 'slate-200'}"></div>` : ''}
-                      <div class="relative flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                        p.status === 'success' ? 'bg-green-500 text-white' :
-                        p.status === 'current' ? 'bg-blue-500 text-white animate-pulse' :
-                        p.status === 'danger' ? 'bg-rose-500 text-white' :
-                        'bg-slate-200 text-slate-400'
-                      }">
-                        ${p.status === 'success' ? '✓' : p.status === 'danger' ? '✕' : idx + 1}
-                      </div>
-                      <div class="flex-1 ${p.status === 'pending' ? 'opacity-50' : ''}">
-                        <div class="flex items-center justify-between">
-                          <div class="text-sm font-medium text-slate-800">${p.node}</div>
-                          <div class="text-xs text-slate-400">${p.time}</div>
-                        </div>
-                        <div class="text-xs text-slate-500 mt-0.5">${p.operator}</div>
-                        ${p.opinion && p.opinion !== '—' ? `<div class="text-xs text-slate-600 mt-1 p-2 bg-slate-50 rounded">${p.opinion}</div>` : ''}
-                      </div>
-                    </div>
-                  `).join('')}
-                </div>
-
-                <!-- 预计完成时间 -->
-                ${a.status === 'pending' || a.status === 'reviewing' ? `
-                  <div class="mt-6 pt-4 border-t border-slate-200 text-xs text-slate-500">
-                    <div class="flex items-center gap-1">
-                      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
-                      预计 ${a.status === 'pending' ? '1-2' : '0.5-1'} 个工作日内反馈
-                    </div>
-                  </div>
-                ` : ''}
-              </div>
+            <div class="md:col-span-3">
+              <dt class="text-xs text-slate-500 mb-1.5">* <span class="text-slate-700">经营范围</span></dt>
+              <dd class="relative">
+                <textarea id="bizScope" oninput="onScopeInput()" maxlength="100" placeholder="输入内容" class="w-full px-3 py-2 border border-slate-300 rounded text-sm h-24 resize-y focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none">${form.businessScope}</textarea>
+                <div class="text-xs text-slate-400 mt-1 text-right">${(form.businessScope || '').length}/100</div>
+              </dd>
             </div>
           </div>
         </div>
-      </main>
-    </div>
-  `;
+      </section>
+
+      <!-- 2. 法人信息（3 列 5 字段） -->
+      <section class="bg-white border border-slate-200 rounded-xl overflow-hidden mb-4">
+        <div class="px-6 py-3 border-b border-slate-200 flex items-center gap-2">
+          <span class="w-1 h-4 bg-blue-500 rounded"></span>
+          <h3 class="font-bold text-slate-800">法人信息</h3>
+        </div>
+        <div class="px-6 py-5">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
+            <div><dt class="text-xs text-slate-500 mb-1.5">* <span class="text-slate-700">法人姓名</span></dt><dd><input type="text" value="${form.legalName}" onchange="updateForm('legalName', this.value)" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"></dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1.5">* <span class="text-slate-700">法人身份证号码</span></dt><dd><input type="text" value="${form.legalIdCard}" onchange="updateForm('legalIdCard', this.value)" class="w-full px-3 py-2 border border-slate-300 rounded text-sm font-mono focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"></dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1.5">* <span class="text-slate-700">法人手机号</span></dt><dd><input type="text" value="${form.legalPhone}" onchange="updateForm('legalPhone', this.value)" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"></dd></div>
+
+            <div><dt class="text-xs text-slate-500 mb-1.5">* <span class="text-slate-700">身份证有效期起</span></dt><dd><input type="date" value="${form.legalIdValidFrom}" onchange="updateForm('legalIdValidFrom', this.value)" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"></dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1.5">* <span class="text-slate-700">身份证有效期止</span></dt><dd><input type="date" value="${form.legalIdValidTo}" onchange="updateForm('legalIdValidTo', this.value)" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"></dd></div>
+            <div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. 股权结构说明（添加一行 + 5 列表） -->
+      <section class="bg-white border border-slate-200 rounded-xl overflow-hidden mb-4">
+        <div class="px-6 py-3 border-b border-slate-200 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            <h3 class="font-bold text-slate-800">股权结构说明</h3>
+          </div>
+          <button onclick="addShareholderRow()" class="px-3 py-1.5 text-xs border border-blue-500 text-blue-600 rounded hover:bg-blue-50 flex items-center gap-1">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            添加一行
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 text-slate-600 text-xs">
+              <tr>
+                <th class="text-left px-3 py-2.5 whitespace-nowrap">股东名称</th>
+                <th class="text-left px-3 py-2.5 whitespace-nowrap">出资方式</th>
+                <th class="text-right px-3 py-2.5 whitespace-nowrap">认缴出资额</th>
+                <th class="text-right px-3 py-2.5 whitespace-nowrap">持股比例</th>
+                <th class="text-left px-3 py-2.5 whitespace-nowrap">认缴出资时间</th>
+                <th class="text-center px-3 py-2.5 w-16 whitespace-nowrap">操作</th>
+              </tr>
+            </thead>
+            <tbody id="shareholdersBody">${renderShareholders()}</tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 4. 其他信息（2 个 textarea） -->
+      <section class="bg-white border border-slate-200 rounded-xl overflow-hidden mb-4">
+        <div class="px-6 py-3 border-b border-slate-200">
+          <div class="flex items-center gap-2">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            <h3 class="font-bold text-slate-800">其他信息</h3>
+          </div>
+        </div>
+        <div class="px-6 py-5 space-y-5">
+          <div>
+            <label class="text-xs text-slate-700 mb-1.5 block">客商的历史沿革和其他需要说明的重大事项</label>
+            <div class="relative">
+              <textarea oninput="onOtherInput('history', this)" maxlength="100" class="w-full px-3 py-2 border border-slate-300 rounded text-sm h-24 resize-y focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none">${form.otherInfo.history}</textarea>
+              <div class="text-xs text-slate-400 mt-1 text-right">${(form.otherInfo.history || '').length}/100</div>
+            </div>
+          </div>
+          <div>
+            <label class="text-xs text-slate-700 mb-1.5 block">关联企业情况</label>
+            <div class="relative">
+              <textarea oninput="onOtherInput('relatedEnterprises', this)" maxlength="100" class="w-full px-3 py-2 border border-slate-300 rounded text-sm h-24 resize-y focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none">${form.otherInfo.relatedEnterprises}</textarea>
+              <div class="text-xs text-slate-400 mt-1 text-right">${(form.otherInfo.relatedEnterprises || '').length}/100</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. 附件（6 类 + 上传时间常驻） -->
+      <section class="bg-white border border-slate-200 rounded-xl overflow-hidden mb-6">
+        <div class="px-6 py-3 border-b border-slate-200 flex items-center gap-2">
+          <span class="w-1 h-4 bg-blue-500 rounded"></span>
+          <h3 class="font-bold text-slate-800">附件</h3>
+          <span class="text-xs text-slate-400 ml-2">支持 jpg / jpeg / png / pdf，单个 ≤ 100MB</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="text-slate-600 text-xs">
+              <tr class="border-b border-slate-200">
+                <th class="text-left py-2.5 px-4 w-48">资料名称</th>
+                <th class="text-center py-2.5 px-4 w-28">操作</th>
+                <th class="text-left py-2.5 px-4">文件名（📅 上传时间常驻显示）</th>
+              </tr>
+            </thead>
+            <tbody id="attachmentsBody">${renderAttachments()}</tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 底部 -->
+      <div class="flex justify-center gap-3 pb-8">
+        <button onclick="cancelEdit()" class="px-12 py-2 border border-slate-300 rounded text-sm text-slate-700 hover:bg-slate-50">取消</button>
+        <button onclick="submitAdmission()" class="px-12 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">提交</button>
+      </div>
+    `;
+  }
+
+  function renderShareholders() {
+    if (!form.shareholders.length) {
+      return `<tr><td colspan="6" class="py-8 text-center text-slate-400 text-sm">📭 暂无股东信息，请点击右上角「添加一行」</td></tr>`;
+    }
+    return form.shareholders.map((s, i) => `
+      <tr class="border-t border-slate-100">
+        <td class="px-3 py-2"><input type="text" value="${s.name}" onchange="updateShareholder(${i}, 'name', this.value)" class="w-full px-2 py-1 border border-slate-200 rounded text-xs"></td>
+        <td class="px-3 py-2">
+          <select onchange="updateShareholder(${i}, 'type', this.value)" class="w-full px-2 py-1 border border-slate-200 rounded text-xs bg-white">
+            ${['货币出资','技术入股','实物出资','债权转股权','土地出资'].map(t => `<option ${s.type === t ? 'selected' : ''}>${t}</option>`).join('')}
+          </select>
+        </td>
+        <td class="px-3 py-2 text-right"><input type="number" value="${s.amount}" onchange="updateShareholder(${i}, 'amount', Number(this.value))" class="w-full px-2 py-1 border border-slate-200 rounded text-xs text-right num-focus"></td>
+        <td class="px-3 py-2 text-right">
+          <div class="flex items-center justify-end gap-1">
+            <input type="number" value="${s.ratio}" step="0.01" onchange="updateShareholder(${i}, 'ratio', Number(this.value))" class="w-16 px-2 py-1 border border-slate-200 rounded text-xs text-right num-focus">
+            <span class="text-xs text-slate-400">%</span>
+          </div>
+        </td>
+        <td class="px-3 py-2"><input type="date" value="${s.date}" onchange="updateShareholder(${i}, 'date', this.value)" class="w-full px-2 py-1 border border-slate-200 rounded text-xs"></td>
+        <td class="px-3 py-2 text-center">
+          <button onclick="removeShareholder(${i})" class="text-rose-500 hover:text-rose-700 text-xs">删除</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function renderAttachments() {
+    return form.attachments.map((a, i) => {
+      const isRequired = a.type.includes('*');
+      return `
+        <tr class="border-t border-slate-100">
+          <td class="py-3 px-4 align-top">
+            <span class="${isRequired ? 'text-rose-500' : 'text-slate-700'} text-sm">${a.type}</span>
+          </td>
+          <td class="py-3 px-4 align-top text-center">
+            <button onclick="uploadAttachment(${i})" class="px-2.5 py-1 text-xs border border-blue-500 text-blue-600 rounded hover:bg-blue-50">+ 选择文件</button>
+          </td>
+          <td class="py-3 px-4 align-top">
+            <div id="att_${i}" class="flex flex-wrap gap-1.5">${renderAttachmentFiles(a)}</div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function renderAttachmentFiles(a) {
+    if (!a.files || !a.files.length) return '<span class="text-slate-300 text-xs">（暂无文件）</span>';
+    return a.files.map((f, j) => `
+      <div class="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-50 rounded text-xs">
+        <svg class="w-3 h-3 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>
+        <span class="text-blue-700">${f.name}</span>
+        <span class="text-slate-400 text-[11px] whitespace-nowrap">📅 ${f.time}</span>
+        <button onclick="removeAttachmentFile(${i}, ${j})" class="ml-1 -mr-1 w-3.5 h-3.5 rounded-full bg-slate-400 hover:bg-rose-500 text-white text-[10px] flex items-center justify-center">×</button>
+      </div>
+    `).join('');
+  }
+
+  // ============ Events ============
+  window.updateForm = (k, v) => { form[k] = v; };
+
+  window.onScopeInput = () => {
+    form.businessScope = document.getElementById('bizScope').value;
+    refresh();
+  };
+
+  window.onOtherInput = (k, el) => {
+    form.otherInfo[k] = el.value;
+    // 仅更新字数提示（不重渲染整个页面避免失焦）
+    const counter = el.parentElement.querySelector('.text-right');
+    if (counter) counter.textContent = `${el.value.length}/100`;
+  };
+
+  window.addShareholderRow = () => {
+    const nextNo = (form.shareholders.length || 0) + 1;
+    form.shareholders.push({ name: '', type: '货币出资', amount: 0, ratio: 0, date: '' });
+    refresh();
+  };
+  window.updateShareholder = (i, k, v) => {
+    form.shareholders[i][k] = v;
+  };
+  window.removeShareholder = (i) => {
+    form.shareholders.splice(i, 1);
+    refresh();
+  };
+
+  window.uploadAttachment = (i) => {
+    const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const shortNow = now.slice(5);
+    const f = { name: '最新设计稿.pdf', time: shortNow };
+    if (!form.attachments[i].files) form.attachments[i].files = [];
+    form.attachments[i].files.push(f);
+    const wrap = document.getElementById('att_' + i);
+    if (wrap) wrap.innerHTML = renderAttachmentFiles(form.attachments[i]);
+    Utils.toast('已选择文件（占位）', 'success');
+  };
+  window.removeAttachmentFile = (i, j) => {
+    form.attachments[i].files.splice(j, 1);
+    const wrap = document.getElementById('att_' + i);
+    if (wrap) wrap.innerHTML = renderAttachmentFiles(form.attachments[i]);
+  };
+
+  window.cancelEdit = () => {
+    if (confirm('确认取消？未保存的内容将丢失。')) history.back();
+  };
+
+  window.submitAdmission = () => {
+    // 校验必填
+    const missing = [];
+    if (!form.companyName) missing.push('企业名称');
+    if (!form.creditCode) missing.push('社会统一信用代码');
+    if (!form.established) missing.push('成立日期');
+    if (!form.nature) missing.push('企业性质');
+    if (!form.businessDeadline) missing.push('营业期限止');
+    if (!form.registeredAddress) missing.push('注册地址');
+    if (!form.industry) missing.push('所属行业');
+    if (!form.registeredCapital) missing.push('注册资本');
+    if (!form.contactPhone) missing.push('联系电话');
+    if (!form.contactAddress) missing.push('联系地址');
+    if (!form.businessScope) missing.push('经营范围');
+    if (!form.legalName) missing.push('法人姓名');
+    if (!form.legalIdCard) missing.push('法人身份证号码');
+    if (!form.legalPhone) missing.push('法人手机号');
+    if (!form.legalIdValidFrom) missing.push('身份证有效期起');
+    if (!form.legalIdValidTo) missing.push('身份证有效期止');
+    if (missing.length) return Utils.toast('请填写：' + missing.join('、'), 'error');
+    // 附件必传（营业执照 + 法人身份证）
+    const lic = form.attachments[0].files?.length || 0;
+    const idCard = form.attachments[1].files?.length || 0;
+    if (lic === 0) return Utils.toast('请上传「营业执照」（必传）', 'error');
+    if (idCard === 0) return Utils.toast('请上传「法人身份证复印件」（必传）', 'error');
+    Utils.toast('准入申请已提交，进入「基础材料收集」阶段', 'success');
+    setTimeout(() => history.back(), 1000);
+  };
+
+  function refresh() {
+    document.getElementById('app').innerHTML = Components.pageShell({
+      title: '准入详情',
+      currentPath: '/customer/admission',
+      breadcrumb: [
+        { label: '客户准入', path: '/customer/admission' },
+        { label: '准入申请', path: '/customer/admission' },
+        { label: '准入详情', path: '/customer/admission-detail' },
+      ],
+      extra: '',
+      content: render(),
+    });
+  }
 </script>
 </body>
 </html>

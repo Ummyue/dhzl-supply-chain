@@ -4,231 +4,284 @@
   <script>
 (function() {
   var p = window.location.pathname;
-  // GitHub Pages 子路径部署 vs Vercel 根路径部署
   var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
   document.write('<base href="' + base + '">');
 })();
 </script>
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>准入申请 - 大河智链</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
-<link rel="stylesheet" href="/shared/css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>准入申请 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
 </head>
 <body class="bg-slate-50">
 <div id="app"></div>
-
 <script src="/shared/js/utils.js"></script>
 <script src="/shared/js/mockData.js"></script>
 <script src="/shared/js/components.js"></script>
 <script>
   Components.bindGlobalClose();
 
+  // ============ v1.7.21 准入申请列表（按用户图1重设计） ============
+  // 6 列表头：企业名称 / 社会统一信用代码 / 企业法人 / 当前进度 / 申请日期 / 申请结果
+  // 4 列筛选：企业名称 / 社会统一信用代码 / 申请日期范围 / 通过
+  // + 1 行：基础材料收集下拉 + 查询 + 重置
+
+  const filters = {
+    companyName: '',
+    creditCode: '',
+    dateStart: '',
+    dateEnd: '',
+    applyResult: '',
+    progress: '',
+  };
+
   document.getElementById('app').innerHTML = Components.pageShell({
-    title: '客户准入申请',
+    title: '准入申请',
     currentPath: '/customer/admission',
-    breadcrumb: [{ label: '客户准入', path: '/customer/admission' }, '准入申请'],
-    extra: `<button onclick="createAdmission()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium flex items-center gap-1">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-      新建准入申请
-    </button>`,
-    content: `
-      <!-- 流程说明 -->
-      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-        <div class="text-sm font-medium text-blue-800 mb-2">💡 准入流程说明</div>
-        <div class="flex items-center justify-between text-xs text-blue-700">
-          <div class="flex items-center gap-2"><span class="w-6 h-6 rounded-full bg-blue-200 flex items-center justify-center font-bold">1</span><span>货主提交申请</span></div>
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-          <div class="flex items-center gap-2"><span class="w-6 h-6 rounded-full bg-blue-200 flex items-center justify-center font-bold">2</span><span>监管方审核</span></div>
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-          <div class="flex items-center gap-2"><span class="w-6 h-6 rounded-full bg-blue-200 flex items-center justify-center font-bold">3</span><span>担保方审核</span></div>
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-          <div class="flex items-center gap-2"><span class="w-6 h-6 rounded-full bg-blue-200 flex items-center justify-center font-bold">4</span><span>资金方授信</span></div>
-        </div>
-      </div>
-
-      <!-- 筛选 -->
-      <div class="bg-white rounded-xl border border-slate-200 p-4 mb-4 flex items-center gap-3">
-        <select class="px-3 py-2 border border-slate-300 rounded-md text-sm">
-          <option>全部状态</option><option>待审核</option><option>审核中</option><option>已通过</option><option>已驳回</option>
-        </select>
-        <input type="text" placeholder="搜索企业名称/统一社会信用代码" class="flex-1 px-3 py-2 border border-slate-300 rounded-md text-sm">
-        <button class="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-md text-sm">查询</button>
-      </div>
-
-      <!-- 列表 -->
-      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
-            <tr>
-              <th class="text-left px-4 py-3">申请编号</th>
-              <th class="text-left px-4 py-3">企业名称</th>
-              <th class="text-left px-4 py-3">法定代表人</th>
-              <th class="text-right px-4 py-3">注册资本</th>
-              <th class="text-center px-4 py-3">当前进度</th>
-              <th class="text-center px-4 py-3">状态</th>
-              <th class="text-center px-4 py-3">申请日期</th>
-              <th class="text-center px-4 py-3">操作</th>
-            </tr>
-          </thead>
-          <tbody class="table-row-hover">
-            ${MockData.admissionList.map(a => `
-              <tr class="border-t border-slate-100">
-                <td class="px-4 py-3 font-mono text-xs text-slate-500">${a.id.toUpperCase()}</td>
-                <td class="px-4 py-3">
-                  <div class="font-medium text-slate-800">${a.customer}</div>
-                  <div class="text-xs text-slate-400 font-mono">${a.creditCode}</div>
-                </td>
-                <td class="px-4 py-3">${a.legalRep}</td>
-                <td class="px-4 py-3 text-right num-focus">${a.registeredCap}</td>
-                <td class="px-4 py-3">
-                  <div class="flex items-center gap-1">
-                    ${Array.from({length: a.totalSteps}).map((_, i) => `
-                      <div class="w-2 h-2 rounded-full ${i < a.progress ? 'bg-green-500' : 'bg-slate-200'}"></div>
-                    `).join('<div class="w-3 h-0.5 ' + (i => i < a.progress - 1 ? 'bg-green-500' : 'bg-slate-200') + '"></div>')}
-                  </div>
-                </td>
-                <td class="px-4 py-3 text-center">${Components.badge(a.status)}</td>
-                <td class="px-4 py-3 text-center text-slate-500">${a.applyDate}</td>
-                <td class="px-4 py-3 text-center">
-                  <button onclick="viewDetail('${a.id}')" class="text-blue-600 hover:underline text-xs font-medium">查看详情 →</button>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    `
+    breadcrumb: [
+      { label: '客户准入', path: '/customer/admission' },
+      { label: '准入申请', path: '/customer/admission' },
+    ],
+    extra: `
+      <a href="${Utils.nav('/customer/admission-detail')}?id=adm_001" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium flex items-center gap-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        准入申请
+      </a>
+    `,
+    content: render(),
   });
 
-  function createAdmission() {
-    const user = Utils.getUser();
-    const hasSeal = user.sealPermission === true;
-    const modal = document.createElement('div');
-    modal.className = 'modal-backdrop';
-    modal.innerHTML = `
-      <div class="bg-white rounded-xl w-[800px] max-h-[85vh] overflow-y-auto shadow-2xl" onclick="event.stopPropagation()">
-        <div class="px-6 py-4 border-b border-slate-200 sticky top-0 bg-white">
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="font-bold text-slate-800 text-lg">新建准入申请</h3>
-            <button onclick="this.closest('.modal-backdrop').remove()" class="text-slate-400 hover:text-slate-600 text-2xl">×</button>
-          </div>
-          <!-- 操作人权限提示 -->
-          <div class="rounded-lg p-2.5 ${hasSeal ? 'bg-amber-50 border border-amber-200' : 'bg-blue-50 border border-blue-200'}">
-            <div class="flex items-center gap-2 text-xs">
-              <span class="font-medium ${hasSeal ? 'text-amber-800' : 'text-blue-800'}">
-                当前操作人：${user.name} · ${user.department || ''} ${user.title || ''}
-              </span>
-              <span class="px-1.5 py-0.5 rounded ${hasSeal ? 'bg-amber-200 text-amber-800' : 'bg-blue-200 text-blue-800'}">
-                ${hasSeal ? '🔖 盖章人（拥有电子签章权限）' : '✏️ 操作人（仅可保存草稿）'}
-              </span>
-            </div>
-            <div class="text-xs ${hasSeal ? 'text-amber-700' : 'text-blue-700'} mt-1">
-              ${hasSeal
-                ? '✓ 提交时将自动触发电子签章流程，请用印后完成提交'
-                : '⚠ 您无电子签章权限，提交后将保存为草稿状态，请联系盖章人完成签章提交'}
-            </div>
+  // 用 list 里字段；如果某些字段没有（progress / applyResult 是新加的），做兼容回退
+  function getProgressText(a) {
+    if (a.progress && ['基础材料收集', '资质审核', '现场考察', '风险评估', '办结'].includes(a.progress)) return a.progress;
+    // 从旧的 progress 整数 + status 推导出当前阶段文本
+    const stageMap = ['', '基础材料收集', '资质审核', '现场考察', '风险评估', '办结'];
+    if (a.progress && /^\d+$/.test(String(a.progress))) return stageMap[Number(a.progress)] || '基础材料收集';
+    return '基础材料收集';
+  }
+
+  function getApplyResult(a) {
+    if (a.applyResult) return a.applyResult;
+    if (a.status === 'approved' || a.progress === 5) return '通过';
+    if (a.status === 'rejected') return '不通过';
+    return '—';
+  }
+
+  function applyFilters() {
+    return (MockData.admissionList || []).filter(a => {
+      if (filters.companyName && !a.customer.includes(filters.companyName)) return false;
+      if (filters.creditCode && !(a.creditCode || '').includes(filters.creditCode)) return false;
+      if (filters.dateStart && a.applyDate < filters.dateStart) return false;
+      if (filters.dateEnd && a.applyDate > filters.dateEnd) return false;
+      if (filters.applyResult && getApplyResult(a) !== filters.applyResult) return false;
+      if (filters.progress && getProgressText(a) !== filters.progress) return false;
+      return true;
+    });
+  }
+
+  function renderProgressBadge(text) {
+    const map = {
+      '基础材料收集': 'bg-slate-100 text-slate-700',
+      '资质审核':     'bg-blue-100 text-blue-700',
+      '现场考察':     'bg-cyan-100 text-cyan-700',
+      '风险评估':     'bg-amber-100 text-amber-700',
+      '办结':         'bg-emerald-100 text-emerald-700',
+    };
+    const cls = map[text] || 'bg-slate-100 text-slate-700';
+    return `<span class="px-2 py-0.5 text-xs ${cls} rounded whitespace-nowrap">${text}</span>`;
+  }
+
+  function renderResultBadge(text) {
+    if (text === '通过') return '<span class="px-2 py-0.5 text-xs bg-emerald-100 text-emerald-700 rounded">通过</span>';
+    if (text === '不通过') return '<span class="px-2 py-0.5 text-xs bg-rose-100 text-rose-700 rounded">不通过</span>';
+    return '<span class="text-xs text-slate-400">—</span>';
+  }
+
+  function render() {
+    const list = applyFilters();
+    return `
+      <!-- 4+1 筛选区（按用户图1） -->
+      <div class="bg-white border border-slate-200 rounded-xl p-4 mb-3">
+        <!-- 当前搜索 tag + 重置全部 -->
+        <div class="flex items-center justify-between mb-3 text-sm">
+          <div class="flex items-center flex-wrap gap-1.5 min-h-[24px]">
+            <span class="text-slate-500">当前搜索：</span>
+            ${renderActiveTags()}
+            ${hasAnyFilter() ? `<button onclick="resetAllFilters()" class="text-xs text-rose-500 hover:text-rose-700 ml-2">清除全部</button>` : ''}
           </div>
         </div>
-        <div class="p-6 space-y-5">
+
+        <!-- 行 1：企业名称 / 统一信用代码 / 申请日期范围 / 申请结果（通过/不通过） -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end mb-3">
           <div>
-            <h4 class="text-sm font-semibold text-slate-700 mb-3 pb-2 border-b">一、企业基本信息</h4>
-            <div class="grid grid-cols-2 gap-4">
-              <div><label class="block text-xs text-slate-600 mb-1">企业名称 <span class="text-red-500">*</span></label><input type="text" placeholder="请输入企业全称" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"></div>
-              <div><label class="block text-xs text-slate-600 mb-1">统一社会信用代码 <span class="text-red-500">*</span></label><input type="text" placeholder="91XXXXXXXXMAXXXXXXXXX" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"></div>
-              <div><label class="block text-xs text-slate-600 mb-1">法定代表人 <span class="text-red-500">*</span></label><input type="text" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"></div>
-              <div><label class="block text-xs text-slate-600 mb-1">注册资本 <span class="text-red-500">*</span></label><input type="text" placeholder="如：1000万元" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"></div>
-              <div><label class="block text-xs text-slate-600 mb-1">成立日期</label><input type="date" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"></div>
-              <div><label class="block text-xs text-slate-600 mb-1">经营范围 <span class="text-red-500">*</span></label><input type="text" placeholder="如：冷链物流；冻品批发零售" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"></div>
+            <input type="text" value="${filters.companyName}" oninput="updateFilter('companyName', this.value)" placeholder="输入企业名称" class="w-full px-3 py-2 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+          <div>
+            <input type="text" value="${filters.creditCode}" oninput="updateFilter('creditCode', this.value)" placeholder="输入社会统一信用代码" class="w-full px-3 py-2 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+          <div>
+            <div class="flex items-center gap-1">
+              <input type="date" value="${filters.dateStart}" onchange="updateFilter('dateStart', this.value)" class="flex-1 min-w-0 px-2 py-1.5 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              <button onclick="Utils.toast('打开日期范围选择器（占位）','info')" class="px-2 py-1.5 border border-slate-200 rounded hover:bg-slate-50" title="选择日期">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              </button>
             </div>
           </div>
-
           <div>
-            <h4 class="text-sm font-semibold text-slate-700 mb-3 pb-2 border-b">二、联系人信息</h4>
-            <div class="grid grid-cols-2 gap-4">
-              <div><label class="block text-xs text-slate-600 mb-1">联系人姓名</label><input type="text" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"></div>
-              <div><label class="block text-xs text-slate-600 mb-1">联系电话</label><input type="text" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"></div>
-            </div>
-          </div>
-
-          <div>
-            <h4 class="text-sm font-semibold text-slate-700 mb-3 pb-2 border-b">三、申请材料 <span class="text-red-500">*</span></h4>
-            <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-blue-400 transition cursor-pointer">
-              <svg class="w-10 h-10 mx-auto text-slate-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-              <div class="text-sm text-slate-600">点击或拖拽文件至此处上传</div>
-              <div class="text-xs text-slate-400 mt-1">支持 PDF/JPG/PNG，单文件不超过 20MB</div>
-            </div>
-            <div class="mt-3 space-y-2">
-              ${['营业执照.pdf', '财务报表2025.pdf', '完税证明.pdf', '征信报告.pdf'].map((f, i) => `
-                <div class="flex items-center justify-between p-2 bg-slate-50 rounded text-xs">
-                  <div class="flex items-center gap-2">
-                    <svg class="w-4 h-4 text-slate-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>
-                    <span class="text-slate-700">${f}</span>
-                    <span class="text-slate-400">已上传 · ${(Math.random() * 3 + 0.5).toFixed(1)} MB</span>
-                  </div>
-                  <button class="text-red-500 hover:underline">删除</button>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-
-          <div>
-            <label class="flex items-start gap-2 text-xs text-slate-600">
-              <input type="checkbox" checked class="mt-0.5">
-              <span>我已阅读并同意《用户服务协议》《数据授权协议》，授权平台使用我司相关数据进行准入审核及风险评估</span>
-            </label>
+            <select onchange="updateFilter('applyResult', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              <option value="">结果（全部）</option>
+              <option value="通过" ${filters.applyResult === '通过' ? 'selected' : ''}>通过</option>
+              <option value="不通过" ${filters.applyResult === '不通过' ? 'selected' : ''}>不通过</option>
+            </select>
           </div>
         </div>
-        <div class="px-6 py-4 border-t border-slate-200 flex justify-between sticky bottom-0 bg-white">
-          <div class="text-xs text-slate-500 flex items-center">
-            ${hasSeal ? '提交后将自动触发盖章流程' : '提交后保存为草稿，需盖章人完成'}
+
+        <!-- 行 2：当前进度（基础材料收集）+ 查询 + 重置 -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+          <div>
+            <select onchange="updateFilter('progress', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              <option value="">当前进度（全部）</option>
+              <option value="基础材料收集" ${filters.progress === '基础材料收集' ? 'selected' : ''}>基础材料收集</option>
+              <option value="资质审核" ${filters.progress === '资质审核' ? 'selected' : ''}>资质审核</option>
+              <option value="现场考察" ${filters.progress === '现场考察' ? 'selected' : ''}>现场考察</option>
+              <option value="风险评估" ${filters.progress === '风险评估' ? 'selected' : ''}>风险评估</option>
+              <option value="办结" ${filters.progress === '办结' ? 'selected' : ''}>办结</option>
+            </select>
           </div>
-          <div class="flex gap-2">
-            <button onclick="this.closest('.modal-backdrop').remove()" class="px-4 py-2 border border-slate-300 rounded-md text-sm hover:bg-slate-50">取消</button>
-            <button onclick="submitAdmission('draft')" class="px-4 py-2 border border-slate-300 rounded-md text-sm hover:bg-slate-50">保存草稿</button>
-            <button onclick="submitAdmission('submit')" class="px-4 py-2 ${hasSeal ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-600 hover:bg-emerald-700'} text-white rounded-md text-sm font-medium">
-              ${hasSeal ? '🔖 提交并签章' : '✓ 提交申请'}
+          <div class="md:col-span-2"></div>
+          <div class="flex items-center gap-2 justify-end">
+            <button onclick="resetFilters()" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">重置</button>
+            <button onclick="refresh()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35"/></svg>
+              查询
             </button>
           </div>
         </div>
       </div>
+
+      <!-- 6 列准入申请表格（按用户图1） -->
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm min-w-[1100px]">
+            <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+              <tr>
+                <th class="text-left px-4 py-3 whitespace-nowrap">企业名称</th>
+                <th class="text-left px-4 py-3 whitespace-nowrap">社会统一信用代码</th>
+                <th class="text-left px-4 py-3 whitespace-nowrap">企业法人</th>
+                <th class="text-left px-4 py-3 whitespace-nowrap">当前进度</th>
+                <th class="text-left px-4 py-3 whitespace-nowrap">申请日期</th>
+                <th class="text-left px-4 py-3 whitespace-nowrap">申请结果</th>
+              </tr>
+            </thead>
+            <tbody>${renderRows(list)}</tbody>
+          </table>
+        </div>
+        ${renderPagination(list)}
+      </div>
     `;
-    // v1.7.8 表单类弹窗：屏蔽点击外面关闭
-    modal.onclick = () => {};
-    document.body.appendChild(modal);
   }
 
-  function submitAdmission(action) {
-    const user = Utils.getUser();
-    const hasSeal = user.sealPermission === true;
-    const modal = document.querySelector('.modal-backdrop');
-    modal?.remove();
-
-    if (action === 'draft') {
-      // 任何角色都可以保存草稿
-      Utils.toast('✓ 草稿已保存，您可稍后继续编辑', 'success');
-      setTimeout(() => window.location.reload(), 800);
-      return;
+  function renderRows(list) {
+    if (!list.length) {
+      return `<tr><td colspan="6" class="py-12 text-center text-slate-400 text-sm">📭 当前筛选条件下无准入申请</td></tr>`;
     }
-
-    // action === 'submit'
-    if (hasSeal) {
-      // 盖章人：跳转到签章流程页
-      Utils.toast('正在进入签章流程...', 'info');
-      setTimeout(() => {
-        window.location.href = Utils.nav('/customer/admission-seal');
-      }, 600);
-    } else {
-      // 操作人：无签章权限，提交后保存为草稿
-      Utils.toast('⚠ 您无电子签章权限，申请已保存为草稿，请联系盖章人（李雪）完成签章', 'warn');
-      setTimeout(() => window.location.reload(), 1200);
-    }
+    return list.map(a => {
+      const progress = getProgressText(a);
+      const result = getApplyResult(a);
+      return `
+        <tr class="border-t border-slate-100 hover:bg-blue-50/30 cursor-pointer" onclick="goDetail('${a.id}')">
+          <td class="px-4 py-3 text-slate-800 font-medium whitespace-nowrap">${a.customer}</td>
+          <td class="px-4 py-3 text-slate-600 font-mono text-xs whitespace-nowrap">${a.creditCode || '91XXXXXXXXMAXXXXXXXX'}</td>
+          <td class="px-4 py-3 text-slate-700 text-xs whitespace-nowrap">${a.legalRep}</td>
+          <td class="px-4 py-3 whitespace-nowrap">${renderProgressBadge(progress)}</td>
+          <td class="px-4 py-3 text-slate-700 text-xs whitespace-nowrap font-mono">${a.applyDate}</td>
+          <td class="px-4 py-3 whitespace-nowrap">${renderResultBadge(result)}</td>
+        </tr>
+      `;
+    }).join('');
   }
 
-  function viewDetail(id) {
-    window.location.href = Utils.nav('/customer/admission-detail?id=') + id;
+  function renderPagination(list) {
+    const total = list.length;
+    const totalRecords = 400;
+    const totalPages = Math.max(80, Math.ceil(totalRecords / 5));
+    return `
+      <div class="px-4 py-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+        <span>共 <b class="text-slate-800">${totalRecords}</b> 条记录，第 1 / ${totalPages} 页</span>
+        <div class="flex items-center gap-1">
+          <button class="px-2 py-1 border border-slate-200 rounded hover:bg-slate-50 disabled:opacity-50" disabled>
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          ${[1,2,3,4,5,6,7,8,9].map(n => `<button class="px-2 py-1 border ${n === 1 ? 'bg-blue-600 text-white border-blue-600' : 'border-slate-200 hover:bg-slate-50'} rounded">${n}</button>`).join('')}
+          <button class="px-2 py-1 border border-slate-200 rounded hover:bg-slate-50">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+          <select class="ml-2 px-2 py-1 border border-slate-200 rounded text-xs">
+            <option>5 条/页</option><option>10 条/页</option><option>20 条/页</option>
+          </select>
+          <span class="ml-2">跳至</span>
+          <input type="number" value="1" class="w-12 px-2 py-1 border border-slate-200 rounded text-xs text-center">
+          <span>页</span>
+        </div>
+      </div>
+    `;
+  }
+
+  function hasAnyFilter() {
+    return !!(filters.companyName || filters.creditCode || filters.dateStart || filters.dateEnd || filters.applyResult || filters.progress);
+  }
+
+  function renderActiveTags() {
+    const tags = [];
+    if (filters.companyName) tags.push({ key: 'companyName', label: `企业名称：${filters.companyName}` });
+    if (filters.creditCode) tags.push({ key: 'creditCode', label: `信用代码：${filters.creditCode}` });
+    if (filters.applyResult) tags.push({ key: 'applyResult', label: `结果：${filters.applyResult}` });
+    if (filters.progress) tags.push({ key: 'progress', label: `进度：${filters.progress}` });
+    if (filters.dateStart || filters.dateEnd) tags.push({ key: '_date', label: `日期 ${filters.dateStart || '不限'} ~ ${filters.dateEnd || '不限'}` });
+    if (!tags.length) return '<span class="text-slate-400 text-xs">（无筛选条件 / 默认显示全部）</span>';
+    return tags.map(t => `
+      <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-slate-100 text-slate-700 rounded">
+        ${t.label}<button onclick="removeTag('${t.key}')" class="text-slate-400 hover:text-slate-700">×</button>
+      </span>
+    `).join('');
+  }
+
+  // ============ Events ============
+  window.updateFilter = (k, v) => { filters[k] = v; };
+  window.refresh = () => refresh();
+  window.resetFilters = () => {
+    Object.keys(filters).forEach(k => filters[k] = '');
+    refresh();
+  };
+  window.resetAllFilters = window.resetFilters;
+  window.removeTag = (k) => {
+    if (k === '_date') { filters.dateStart = ''; filters.dateEnd = ''; }
+    else filters[k] = '';
+    refresh();
+  };
+  window.goDetail = (id) => {
+    window.location.href = `${Utils.nav('/customer/admission-detail')}?id=${id}`;
+  };
+
+  function refresh() {
+    document.getElementById('app').innerHTML = Components.pageShell({
+      title: '准入申请',
+      currentPath: '/customer/admission',
+      breadcrumb: [
+        { label: '客户准入', path: '/customer/admission' },
+        { label: '准入申请', path: '/customer/admission' },
+      ],
+      extra: `
+        <a href="${Utils.nav('/customer/admission-detail')}?id=adm_001" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium flex items-center gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          准入申请
+        </a>
+      `,
+      content: render(),
+    });
   }
 </script>
 </body>
