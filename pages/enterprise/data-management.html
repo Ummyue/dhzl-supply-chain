@@ -123,29 +123,19 @@
 
   // ============ 渲染：行操作 ============
   function renderRowActions(item) {
-    // 按截图：4 个操作；后 2 个带 ⚡ 黄色图标（标记「待启用 / 待客户确认」）
-    // v1.7.28.2 实现：view / freeze 启用（toast）；service / materials 待启用
+    // v1.7.28.4 全部 4 个操作启用：view → 详情页；service / materials / freeze → 弹窗
     const actions = [
-      { key: 'view',      label: '查看详情', enabled: true,  cls: 'text-blue-600 hover:text-blue-800' },
-      { key: 'service',   label: '服务配置', enabled: false, cls: 'text-slate-400 cursor-not-allowed' },
-      { key: 'materials', label: '材料收取', enabled: false, cls: 'text-slate-400 cursor-not-allowed' },
-      { key: 'freeze',    label: '冻结',     enabled: true,  cls: 'text-blue-400 hover:text-blue-600' },
+      { key: 'view',      label: '查看详情', cls: 'text-blue-600 hover:text-blue-800' },
+      { key: 'service',   label: '服务配置', cls: 'text-blue-600 hover:text-blue-800' },
+      { key: 'materials', label: '材料收取', cls: 'text-blue-600 hover:text-blue-800' },
+      { key: 'freeze',    label: '冻结',     cls: 'text-blue-600 hover:text-blue-800' },
     ];
     return actions.map((a, idx) => {
-      const isPending = !a.enabled;
-      // v1.7.28.2 黄色⚡图标改 SVG（避免 unicode 渲染成 ✕）
-      const hint = isPending
-        ? `<span class="inline-flex items-center justify-center w-4 h-4 bg-yellow-300 rounded-sm align-middle ml-0.5" title="该功能待客户确认后启用">
-             <svg class="w-2.5 h-2.5 text-yellow-900" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h7v8l10-12h-7V2z"/></svg>
-           </span>`
-        : '';
       const sep = idx > 0 ? '<span class="text-slate-200">|</span>' : '';
       const onClick = a.key === 'view'
         ? `window.location.href = Utils.nav('/enterprise/detail') + '?id=' + '${item.id}' + '&tab=basic'`
-        : a.enabled
-          ? `Utils.toast('${a.label}：${item.name}', 'info')`
-          : `Utils.toast('【${a.label}】功能待客户确认后启用', 'info')`;
-      return `${sep}<a href="javascript:void(0)" onclick="${onClick}" class="text-xs ${a.cls}">${a.label}</a>${hint}`;
+        : `openModal('${a.key}', '${item.id}')`;
+      return `${sep}<a href="javascript:void(0)" onclick="${onClick}" class="text-xs ${a.cls}">${a.label}</a>`;
     }).join('');
   }
 
@@ -277,6 +267,222 @@
     document.getElementById('jump-page').onchange = (e) => goPage(parseInt(e.target.value || 1, 10));
   }
 
+  // ============ v1.7.28.4 3 个弹窗（服务配置 / 材料收取 / 冻结）============
+  // 当前行操作：view / service / materials / freeze
+  // 弹窗独立于 #app 容器，fixed 定位；点遮罩/X/取消关闭
+  let currentModal = null;     // 'service' | 'materials' | 'freeze' | null
+  let currentTargetId = null;  // 当前操作的企业 id
+  // 各弹窗独立状态
+  const modalState = {
+    service: { checked: new Set() },                                // 9 个 checkbox
+    materials: { value: 'yes' },                                     // 'yes' | 'no'
+    freeze: { reason: '' },                                          // textarea
+  };
+
+  function openModal(type, targetId) {
+    currentModal = type;
+    currentTargetId = targetId;
+    renderModal();
+  }
+  function closeModal() {
+    currentModal = null;
+    currentTargetId = null;
+    document.getElementById('modal-root').innerHTML = '';
+  }
+  window.openModal = openModal;
+  window.closeModal = closeModal;
+
+  // 服务配置弹窗 9 个 checkbox 项（v1.7.28.4 按 user 截图）
+  const SERVICE_OPTIONS = [
+    { key: 'coal_zzyh',    label: '煤炭供应链金融服务', suffix: '（类中原银行）', indent: 0 },
+    { key: 'coal_smbl',    label: '煤炭供应链金融服务', suffix: '（类善美保理）', indent: 0 },
+    { key: 'grain',        label: '粮食仓单服务',         suffix: '',             indent: 0 },
+    { key: 'cinda',        label: '信达资产服务',         suffix: '',             indent: 0 },
+    { key: 'steel_parent', label: '钢材供应链',           suffix: '',             indent: 0 },
+    { key: 'steel',        label: '钢材供应链',           suffix: '',             indent: 1 },
+    { key: 'chain_data',   label: '全业务链数据',         suffix: '',             indent: 1 },
+    { key: 'bill',         label: '票据中心',             suffix: '',             indent: 0 },
+    { key: 'view_all',     label: '全业务线查看',         suffix: '',             indent: 0 },
+    { key: 'cargo',        label: '货物管理',             suffix: '',             indent: 0 },
+  ];
+
+  function renderModal() {
+    if (!currentModal) {
+      document.getElementById('modal-root').innerHTML = '';
+      return;
+    }
+    const target = (MockData.enterpriseList || []).find(x => x.id === currentTargetId) || { name: '', type: '' };
+    const root = document.getElementById('modal-root');
+    root.innerHTML = `
+      <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onclick="if(event.target===this)closeModal()">
+        ${renderModalContent(target)}
+      </div>
+    `;
+    bindModalEvents();
+  }
+  window.renderModal = renderModal;
+
+  // 弹窗内容分发
+  function renderModalContent(target) {
+    if (currentModal === 'service')  return renderServiceModal(target);
+    if (currentModal === 'materials') return renderMaterialsModal(target);
+    if (currentModal === 'freeze')   return renderFreezeModal(target);
+    return '';
+  }
+  window.renderModalContent = renderModalContent;
+
+  // ========== Modal 1: 服务配置 ==========
+  function renderServiceModal(target) {
+    const optionsHtml = SERVICE_OPTIONS.map(o => {
+      const checked = modalState.service.checked.has(o.key);
+      const padding = o.indent > 0 ? 'pl-10' : 'pl-1';
+      return `
+        <label class="flex items-center gap-2 py-1.5 text-sm text-slate-700 cursor-pointer hover:bg-slate-50 px-2 rounded ${padding}">
+          <input type="checkbox" data-svc="${o.key}" ${checked ? 'checked' : ''} class="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+          <span>${o.label}${o.suffix ? `<span class="text-slate-500"> ${o.suffix}</span>` : ''}</span>
+        </label>
+      `;
+    }).join('');
+    return `
+      <div class="bg-white rounded-lg shadow-2xl w-full max-w-2xl" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+          <h3 class="text-lg font-semibold text-slate-800">服务配置</h3>
+          <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="px-6 py-5 space-y-3 max-h-[60vh] overflow-y-auto">
+          <div class="grid grid-cols-3 gap-4 text-sm">
+            <div class="text-slate-500">企业名称：</div>
+            <div class="col-span-2 text-slate-700">${target.name}</div>
+            <div class="text-slate-500">企业类型：</div>
+            <div class="col-span-2 text-slate-700">${target.type || '—'}</div>
+          </div>
+          <div class="pt-3">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-sm text-slate-700">开通功能服务：</span>
+            </div>
+            <div class="space-y-0.5">${optionsHtml}</div>
+          </div>
+        </div>
+        <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-200">
+          <button onclick="closeModal()" class="px-5 py-1.5 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded text-sm">取 消</button>
+          <button onclick="submitService()" class="px-5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">确 定</button>
+        </div>
+      </div>
+    `;
+  }
+  window.renderServiceModal = renderServiceModal;
+
+  function submitService() {
+    const ids = Array.from(modalState.service.checked);
+    if (ids.length === 0) {
+      Utils.toast('请至少勾选一项功能服务', 'warn');
+      return;
+    }
+    Utils.toast(`已为该企业开通 ${ids.length} 项功能服务`, 'success');
+    closeModal();
+  }
+  window.submitService = submitService;
+
+  // ========== Modal 2: 材料收取 ==========
+  function renderMaterialsModal(target) {
+    return `
+      <div class="bg-white rounded-lg shadow-2xl w-full max-w-xl" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+          <h3 class="text-lg font-semibold text-slate-800">材料收取</h3>
+          <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="px-6 py-6 space-y-5">
+          <div class="flex items-center gap-8 text-sm">
+            <span class="text-slate-700">认证材料是否收到</span>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="radio" name="mat-received" value="yes" ${modalState.materials.value === 'yes' ? 'checked' : ''} onchange="modalState.materials.value='yes'; renderModal()" class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500" />
+              <span>是</span>
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="radio" name="mat-received" value="no" ${modalState.materials.value === 'no' ? 'checked' : ''} onchange="modalState.materials.value='no'; renderModal()" class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500" />
+              <span>否</span>
+            </label>
+          </div>
+          <p class="text-sm text-slate-500 leading-relaxed">该功能仅用于系统标记是否线下收到企业认证等相关材料，不会对企业使用的功能有影响</p>
+        </div>
+        <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-200">
+          <button onclick="closeModal()" class="px-5 py-1.5 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded text-sm">取 消</button>
+          <button onclick="submitMaterials()" class="px-5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">确 定</button>
+        </div>
+      </div>
+    `;
+  }
+  window.renderMaterialsModal = renderMaterialsModal;
+
+  function submitMaterials() {
+    const v = modalState.materials.value;
+    const label = v === 'yes' ? '已收到' : '未收到';
+    Utils.toast(`材料状态已标记为：${label}`, 'success');
+    closeModal();
+  }
+  window.submitMaterials = submitMaterials;
+
+  // ========== Modal 3: 冻结 ==========
+  function renderFreezeModal(target) {
+    return `
+      <div class="bg-white rounded-lg shadow-2xl w-full max-w-xl" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+          <h3 class="text-lg font-semibold text-slate-800">冻结企业</h3>
+          <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="px-6 py-6 space-y-3">
+          <div class="text-base font-semibold text-slate-800">确定要冻结该企业吗？</div>
+          <div class="text-sm text-slate-500">冻结后，该企业将无法使用系统，请谨慎操作</div>
+          <div class="pt-2">
+            <label class="block text-sm text-slate-700 mb-2">
+              <span class="text-rose-500 mr-0.5">*</span>请输入冻结的理由：
+            </label>
+            <textarea id="freeze-reason" rows="5" placeholder="请输入内容" class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm placeholder-slate-300 focus:outline-none focus:border-blue-400 resize-none" oninput="modalState.freeze.reason=this.value">${modalState.freeze.reason}</textarea>
+          </div>
+        </div>
+        <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-200">
+          <button onclick="closeModal()" class="px-5 py-1.5 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded text-sm">取 消</button>
+          <button onclick="submitFreeze()" class="px-5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">确 定</button>
+        </div>
+      </div>
+    `;
+  }
+  window.renderFreezeModal = renderFreezeModal;
+
+  function submitFreeze() {
+    const reason = (modalState.freeze.reason || '').trim();
+    if (!reason) {
+      Utils.toast('请输入冻结理由', 'warn');
+      document.getElementById('freeze-reason').focus();
+      return;
+    }
+    Utils.toast('企业已冻结', 'success');
+    closeModal();
+  }
+  window.submitFreeze = submitFreeze;
+
+  // 服务配置 checkbox change
+  function bindModalEvents() {
+    if (currentModal === 'service') {
+      document.querySelectorAll('input[data-svc]').forEach(el => {
+        el.addEventListener('change', (e) => {
+          const k = e.target.getAttribute('data-svc');
+          if (e.target.checked) modalState.service.checked.add(k);
+          else modalState.service.checked.delete(k);
+        });
+      });
+    }
+  }
+
+  // ============ 启动 ============
+  // 在 body 末尾追加 modal 容器
+  document.body.insertAdjacentHTML('beforeend', '<div id="modal-root"></div>');
   render();
 </script>
 </body>
