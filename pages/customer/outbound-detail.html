@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>解押出库申请详情 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+  <style>
+    /* 步骤条 */
+    .stp { display: flex; align-items: center; }
+    .stp-node {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0 14px; white-space: nowrap;
+    }
+    .stp-circle {
+      width: 32px; height: 32px; border-radius: 999px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600;
+      border: 2px solid #cbd5e1;
+      background: #fff; color: #94a3b8;
+      transition: all .15s;
+    }
+    .stp-node.done .stp-circle {
+      background: #fff; color: #2563eb; border-color: #2563eb;
+    }
+    .stp-node.active .stp-circle {
+      background: #2563eb; color: #fff; border-color: #2563eb;
+      box-shadow: 0 0 0 4px #dbeafe;
+    }
+    .stp-node.future .stp-circle {
+      background: #fff; color: #94a3b8; border-color: #cbd5e1;
+    }
+    .stp-line {
+      flex: 0 0 56px; height: 2px; margin-top: 16px;
+      background: repeating-linear-gradient(90deg, #cbd5e1 0 4px, transparent 4px 8px);
+    }
+    .stp-node.done + .stp-line { background: #2563eb; opacity: .5; }
+    .stp-label { font-size: 13px; color: #475569; }
+    .stp-node.done .stp-label { color: #1e293b; font-weight: 600; }
+    .stp-node.active .stp-label { color: #2563eb; font-weight: 700; }
+
+    /* 12 列拟解押表 sticky 行尾 3 列 */
+    .rel-table { min-width: 1480px; border-collapse: separate; border-spacing: 0; }
+    .rel-table thead th.sticky-end { position: sticky; right: 0; background: #faf5ff !important; z-index: 2; box-shadow: inset 2px 0 0 #a855f7; }
+    .rel-table tbody td.sticky-end  { position: sticky; right: 0; background: #fff !important;     z-index: 1; box-shadow: inset 2px 0 0 #a855f7; }
+    .rel-table thead th { background: #f8fafc; }
+    .rel-frame { border: 1.5px dashed #a855f7; border-radius: 10px; overflow: hidden; }
+
+    /* 紫色 status badge */
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 4px;
+      font-size: 12px; font-weight: 500;
+      background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa;
+    }
+
+    /* title bar */
+    .pd-title-bar { display: inline-block; width: 4px; height: 18px; background: #2563eb; border-radius: 1px; margin-right: 8px; vertical-align: middle; }
+  </style>
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.23 解押详情（按用户图3，待监管方确认） ============
+  // 6 步步骤条 + 8 字段信息 + 12 列拟解押 sticky 表 + 出库/还款信息
+
+  const urlId = new URLSearchParams(window.location.search).get('id') || 'jy_001';
+  const detail = (MockData.dischargeDetail && MockData.dischargeDetail[urlId]) || (MockData.dischargeDetail && MockData.dischargeDetail.jy_001) || null;
+  const financing = detail.financingInfo || {};
+  const pledge    = detail.pledgeAssetInfo || {};
+  const repay     = detail.repaymentInfo || {};
+  const summary   = detail.releaseSummary || { count: 0, totalQty: '-', totalWeight: '-', totalValue: '-' };
+
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '解押出库申请',
+    currentPath: '/customer/outbound',
+    breadcrumb: [
+      { label: '解押出库管理', path: '/customer/outbound' },
+      { label: '解押出库申请', path: '/customer/outbound' },
+      { label: '解押出库申请详情', path: '/customer/outbound-detail' },
+    ],
+    extra: '',
+    content: render(),
+  });
+
+  function render() {
+    if (!detail) {
+      return `<div class="bg-white border border-slate-200 rounded-xl p-12 text-center text-slate-400">📭 找不到解押申请（id=${urlId}）</div>`;
+    }
+    return `
+      <!-- 标题 + 编号 + 当前状态角标 -->
+      <div class="bg-white border border-slate-200 rounded-xl px-6 py-5 mb-4">
+        <h2 class="text-lg font-bold text-slate-800 mb-3"><span class="pd-title-bar"></span>解押出库申请</h2>
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-bold flex-shrink-0">解</span>
+          <span class="text-sm text-slate-600 font-medium">解押出库申请编号：</span>
+          <span class="font-mono text-base font-bold text-slate-800">${detail.applyNo}</span>
+          <button onclick="copyText('${detail.applyNo}', '解押出库申请编号')" class="text-blue-500 hover:text-blue-700" title="复制">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke-width="2"/><path stroke-width="2" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+          <span class="status-pill">${statusText(detail.statusTag || 'pending_supervisor')}</span>
+        </div>
+
+        <!-- 6 字段信息网格 -->
+        <div class="mt-5 grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4">
+          <div class="flex"><dt class="w-28 text-xs text-slate-500 flex-shrink-0 pt-0.5">质物清单编号：</dt><dd class="text-sm">
+            <span class="text-blue-600 font-mono">${detail.pledgeAssetNo}</span>
+            <button onclick="copyText('${detail.pledgeAssetNo}', '质物清单编号')" class="ml-1 text-blue-500 hover:text-blue-700" title="复制"><svg class="w-3.5 h-3.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke-width="2"/><path stroke-width="2" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+          </dd></div>
+          <div class="flex"><dt class="w-28 text-xs text-slate-500 flex-shrink-0 pt-0.5">创建人：</dt><dd class="text-sm text-slate-800 font-medium">${detail.creator || '张三'}</dd></div>
+          <div class="flex"><dt class="w-28 text-xs text-slate-500 flex-shrink-0 pt-0.5">创建时间：</dt><dd class="text-sm text-slate-800 font-mono">${detail.createdAt || '2022-08-12 12:22:32'}</dd></div>
+        </div>
+      </div>
+
+      <!-- 步骤条 -->
+      <div class="bg-white border border-slate-200 rounded-xl px-6 py-5 mb-4 overflow-x-auto">
+        <div class="stp">
+          ${renderSteps(detail.approvalSteps)}
+        </div>
+      </div>
+
+      <!-- 1. 融资信息 -->
+      <div class="bg-white border border-slate-200 rounded-xl px-6 py-5 mb-4">
+        <h3 class="text-base font-bold text-slate-800 mb-3"><span class="inline-block w-1 h-4 bg-blue-500 rounded mr-2 align-middle"></span>融资信息</h3>
+        <div class="border border-slate-200 rounded overflow-hidden">
+          ${finRow('融资编号', `<span class="text-blue-600 font-mono">${financing.financingNo || 'RZ202411280002'}</span>`)}
+          ${finRow3('融资方', financing.pledgor || '河南军牧原国际贸易有限公司', '金融产品', financing.product || '中原e货')}
+          ${finRow3('金融机构', financing.bank || '中原银行股份有限公司', '融资利率', `<span class="num-focus">${financing.interestRate || '2.3%'}</span>`, '融资放款日期', financing.loanDate || '2024-11-21')}
+          ${finRow3('融资到期日期', financing.dueDate || '2025-11-16', '借据号', financing.loanNote || 'sn0018288', '柜号', financing.counterNo || 'sn0018288')}
+          ${finRow3('放款金额（元）', `<span class="text-rose-600 num-focus">${Utils.fmtMoney(financing.loanAmount || 300000)}</span>`, '已还款金额（元）', `<span class="text-rose-600 num-focus">${Utils.fmtMoney(financing.repaidAmount || 300000)}</span>`, '剩余还款金额（元）', `<span class="text-rose-600 num-focus">${Utils.fmtMoney(financing.remainingAmount || 300000)}</span>`)}
+        </div>
+      </div>
+
+      <!-- 2. 质押资产信息 -->
+      <div class="bg-white border border-slate-200 rounded-xl px-6 py-5 mb-4">
+        <h3 class="text-base font-bold text-slate-800 mb-3"><span class="inline-block w-1 h-4 bg-blue-500 rounded mr-2 align-middle"></span>质押资产信息</h3>
+        <div class="border border-slate-200 rounded overflow-hidden">
+          ${finRow3('质物清单编号', `<span class="text-blue-600 font-mono">${pledge.pledgeNo || 'MPCB_14910955281409'}</span>`, '出质方', pledge.pledgor || '河南军牧原国际贸易有限公司', '质权方', pledge.pledgee || '郑州农业融担保股份有限公司')}
+          ${finRow3('质押数量（件）', `<span class="text-rose-600 num-focus">${pledge.pledgeQty || 700}</span>`, '质押重量（千克）', `<span class="text-rose-600 num-focus">${(pledge.pledgeWeight || 10000).toLocaleString()}.0000</span>`, '质押货值（元）', `<span class="text-rose-600 num-focus">${Utils.fmtMoney(pledge.pledgeValue || 10000)}</span>`)}
+        </div>
+      </div>
+
+      <!-- 3. 拟解押信息（12 列含质押单价 + sticky 3 列） -->
+      <div class="bg-white border border-slate-200 rounded-xl px-6 py-5 mb-4">
+        <h3 class="text-base font-bold text-slate-800 mb-3 flex items-center">
+          <span class="inline-block w-1 h-4 bg-blue-500 rounded mr-2 align-middle"></span>拟解押信息
+          <span class="ml-4 text-xs text-slate-500 font-normal">
+            已选：<b class="text-purple-700">${summary.count || 0}</b> 笔质押信息，解押数量：<b class="text-purple-700">${summary.totalQty || '-'}</b>，解押重量：<b class="text-purple-700">${summary.totalWeight || '-'}</b>，解押货值：<b class="text-purple-700">${summary.totalValue || '-'}</b>
+          </span>
+        </h3>
+        <div class="rel-frame">
+          <div class="overflow-x-auto">
+            <table class="rel-table w-full text-sm">
+              <thead class="text-slate-600 text-xs">
+                <tr class="bg-purple-50">
+                  <th class="text-left px-3 py-2.5 whitespace-nowrap">库点</th>
+                  <th class="text-left px-3 py-2.5 whitespace-nowrap">仓房-货位</th>
+                  <th class="text-left px-3 py-2.5 whitespace-nowrap">入库单号</th>
+                  <th class="text-left px-3 py-2.5 whitespace-nowrap">货品名称</th>
+                  <th class="text-right px-3 py-2.5 whitespace-nowrap">质押数量</th>
+                  <th class="text-center px-3 py-2.5 whitespace-nowrap">数量单位</th>
+                  <th class="text-right px-3 py-2.5 whitespace-nowrap">质押重量</th>
+                  <th class="text-center px-3 py-2.5 whitespace-nowrap">重量单位</th>
+                  <th class="text-right px-3 py-2.5 whitespace-nowrap">单价（元/千克）</th>
+                  <th class="text-right px-3 py-2.5 whitespace-nowrap sticky-end bg-purple-50">解押数量</th>
+                  <th class="text-right px-3 py-2.5 whitespace-nowrap sticky-end">解押重量</th>
+                  <th class="text-right px-3 py-2.5 whitespace-nowrap sticky-end">解押货值</th>
+                </tr>
+              </thead>
+              <tbody>${renderReleaseItems(detail.releaseItems || [])}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. 出库/还款信息 -->
+      <div class="bg-white border border-slate-200 rounded-xl px-6 py-5 mb-8">
+        <h3 class="text-base font-bold text-slate-800 mb-3"><span class="inline-block w-1 h-4 bg-blue-500 rounded mr-2 align-middle"></span>出库/还款信息</h3>
+        <div class="border border-slate-200 rounded overflow-hidden">
+          ${finRow3('拟还款日期', repay.planDate || '2026-03-22', '计息天数（天）', repay.interestDays ?? 120, '逾期天数（天）', repay.overdueDays ?? 0)}
+          ${finRow3('应还本金（元）', `<span class="num-focus">${Utils.fmtMoney(repay.principal || 300000)}</span>`, '应还利息（元）', `<span class="num-focus">${Utils.fmtMoney(repay.interest || 10000)}</span>`, '应还罚息（元）', `<span class="num-focus">${Utils.fmtMoney(repay.penalty || 0)}</span>`)}
+          ${finRow3('应还总金额（元）', `<span class="num-focus font-bold">${Utils.fmtMoney(repay.totalAmount || 320000)}</span>`, '还款账户', `<span class="num-focus text-blue-700">${repay.repayAccount || '中国银行西安华陆大厦支行 102084339010'}</span>`)}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderSteps(steps = []) {
+    return steps.map((s, i) => {
+      const cls = s.done ? 'done' : (s.active ? 'active' : 'future');
+      const circleContent = s.done
+        ? `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>`
+        : s.idx;
+      return `
+        <div class="stp-node ${cls}">
+          <div class="stp-circle">${circleContent}</div>
+          <div class="stp-label">${s.label}</div>
+        </div>
+        ${i < steps.length - 1 ? '<div class="stp-line"></div>' : ''}
+      `;
+    }).join('');
+  }
+
+  function finRow(label, val) {
+    return `
+      <div class="grid grid-cols-12 border-b border-slate-200 last:border-b-0">
+        <div class="col-span-2 px-4 py-3 text-sm text-slate-500 bg-slate-50">${label}</div>
+        <div class="col-span-10 px-4 py-3 text-sm text-slate-800">${val}</div>
+      </div>
+    `;
+  }
+  function finRow3(label1, val1, label2, val2, label3, val3) {
+    return `
+      <div class="grid grid-cols-12 border-b border-slate-200 last:border-b-0">
+        <div class="col-span-2 px-4 py-3 text-sm text-slate-500 bg-slate-50">${label1}</div>
+        <div class="col-span-2 px-4 py-3 text-sm text-slate-800">${val1}</div>
+        <div class="col-span-2 px-4 py-3 text-sm text-slate-500 bg-slate-50">${label2}</div>
+        <div class="col-span-2 px-4 py-3 text-sm text-slate-800">${val2}</div>
+        <div class="col-span-2 px-4 py-3 text-sm text-slate-500 bg-slate-50">${label3}</div>
+        <div class="col-span-2 px-4 py-3 text-sm text-slate-800">${val3}</div>
+      </div>
+    `;
+  }
+
+  function renderReleaseItems(items) {
+    if (!items.length) return `<tr><td colspan="12" class="py-12 text-center text-slate-400 text-sm">📭 暂无拟解押信息</td></tr>`;
+    return items.map(row => `
+      <tr class="border-t border-purple-100">
+        <td class="px-3 py-3 text-slate-800 text-xs whitespace-nowrap">${row.warehouse}</td>
+        <td class="px-3 py-3 text-slate-700 text-xs whitespace-nowrap">${row.position}</td>
+        <td class="px-3 py-3 text-blue-600 font-mono text-xs whitespace-nowrap hover:underline">${row.inboundNo}</td>
+        <td class="px-3 py-3 text-slate-800 text-xs whitespace-nowrap">${row.productName}</td>
+        <td class="px-3 py-3 text-right num-focus text-slate-700 text-xs whitespace-nowrap">${row.pledgeQty}</td>
+        <td class="px-3 py-3 text-center text-slate-500 text-xs">${row.qtyUnit}</td>
+        <td class="px-3 py-3 text-right num-focus text-slate-700 text-xs whitespace-nowrap">${row.pledgeWeight.toLocaleString()}</td>
+        <td class="px-3 py-3 text-center text-slate-500 text-xs">${row.weightUnit}</td>
+        <td class="px-3 py-3 text-right num-focus text-slate-700 text-xs whitespace-nowrap">${row.unitPrice}</td>
+        <td class="px-3 py-3 text-right num-focus font-medium text-slate-800 text-xs whitespace-nowrap sticky-end">${row.releaseQty}</td>
+        <td class="px-3 py-3 text-right num-focus text-slate-800 text-xs whitespace-nowrap sticky-end">${row.releaseWeight.toLocaleString()}</td>
+        <td class="px-3 py-3 text-right num-focus text-slate-800 text-xs whitespace-nowrap sticky-end">${Utils.fmtMoney(row.releaseValue)}</td>
+      </tr>
+    `).join('');
+  }
+
+  // ============ Events ============
+  window.copyText = async (text, label) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      Utils.toast(`已复制${label}：${text}`, 'success');
+    } catch (e) {
+      Utils.toast('复制失败，请手动选择', 'error');
+    }
+  };
+
+  function statusText(s) {
+    return ({ draft: '待提交', pending_supervisor: '待监管方确认', pending_supervisor_seal: '待监管方盖章', pending_guarantor: '待担保方确认', pending_guarantor_seal: '待担保方盖章', pending_funding: '待融资方盖章', pending_discharge: '待还款', completed: '已还款', rejected: '驳回', invalid: '无效' })[s] || '-';
+  }
+
+  function refresh() {
+    document.getElementById('app').innerHTML = Components.pageShell({
+      title: '解押出库申请',
+      currentPath: '/customer/outbound',
+      breadcrumb: [
+        { label: '解押出库管理', path: '/customer/outbound' },
+        { label: '解押出库申请', path: '/customer/outbound' },
+        { label: '解押出库申请详情', path: '/customer/outbound-detail' },
+      ],
+      extra: '',
+      content: render(),
+    });
+  }
+</script>
+</body>
+</html>

@@ -182,9 +182,8 @@ const MockData = {
         { icon: 'file', label: '融资申请', path: '/customer/financing' },
         { icon: 'list', label: '质物清单', path: '/customer/pledge-list' },
       ]},
-      { group: '出库与还款', items: [
-        { icon: 'logistics', label: '解押/出库', path: '/customer/outbound' },
-        { icon: 'cash', label: '月度账单', path: '/customer/bills' },
+      { group: '解押出库管理', items: [
+        { icon: 'logistics', label: '解押出库申请', path: '/customer/outbound' },
       ]},
       { group: '贷后管理', items: [
         { icon: 'chart', label: '额度管理', path: '/customer/limit-management' },
@@ -761,8 +760,8 @@ const MockData = {
       businessScope: '',
       // 法人信息
       legalName: '张三',
-      legalIdCard: '410123456789922555',
-      legalPhone: '15512345678',
+      legalIdCard: '11000019800101XXXX',
+      legalPhone: '155 0000 9999',
       legalIdValidFrom: '2020-01-01',
       legalIdValidTo: '2040-01-01',
       // 股权结构（默认空，让用户在详情页「添加一行」录入）
@@ -1094,12 +1093,15 @@ const MockData = {
       loanAmount: 100000.00,           // 图 2 放款金额
       creator: '张三',
       createdAt: '2022-08-12 12:22:32',
-      // 4 个出入库快照 tab
+      // 5 个出入库快照 tab
+      // 视觉顺序（左 → 右）：当前 → 最新出库 → ... → 最旧入库
+      // 时序（从右 → 左 = 最早 → 最新）：入库 → 出库 → 出库 → 出库 → 当前
       snapshots: [
-        { id: 'current',    label: '当前信息',     tag: 'new',       tagType: 'badge-new' },  // 新
-        { id: 'out_20260611', label: '2026-06-11', date: '2026-06-11', tag: '出库',  tagType: 'badge-out' },
-        { id: 'in_20260601',  label: '2026-06-01', date: '2026-06-01', tag: '入库',  tagType: 'badge-in',  selected: true },
-        { id: 'out_20260520', label: '2026-05-20', date: '2026-05-20', tag: '出库',  tagType: 'badge-out' },
+        { id: 'current',       label: '当前信息',                                                 tag: '新',         tagType: 'pd-badge-new' },
+        { id: 'out_20260611',  label: '2026-06-11', date: '2026-06-11',                            tag: '出库',       tagType: 'pd-badge-out' },
+        { id: 'out_20260520',  label: '2026-05-20', date: '2026-05-20',                            tag: '出库',       tagType: 'pd-badge-out' },
+        { id: 'out_20260422',  label: '2026-04-22', date: '2026-04-22',                            tag: '出库',       tagType: 'pd-badge-out' },
+        { id: 'in_20260415',   label: '2026-04-15', date: '2026-04-15',                            tag: '入库',       tagType: 'pd-badge-in', selected: true },
       ],
       // 4 个快照共用同一份存货信息（按 tab 切换显示）
       // 同一笔质押有多个入库单（3 笔货物，已选 3 笔）
@@ -1116,6 +1118,106 @@ const MockData = {
       ],
       attachments: [
         { type: '质物清单', uploadedAt: '2023-12-12 12:23:32', filename: '质物清单.pdf' },
+      ],
+    },
+  },
+
+  // ========== v1.7.23 解押出库申请列表（图1） ==========
+  // 状态机 9 tab：draft / pending_supervisor / pending_supervisor_seal / pending_guarantor
+  //             / pending_guarantor_seal / pending_funding / pending_discharge / completed / rejected / invalid
+  // (按图 1 命名待对方：待提交/待监管方确认/待担保方确认/待融资方盖章/待还款/已还款/驳回/无效)
+  dischargeList: (function() {
+    const REGS = ['大河智链供应链管理有限公司', '大河智链物流（郑州）有限公司'];
+    const PRODUCTS = ['民生e货', '中原e货', '冷链现货质押融资（90天）', 'e仓融'];
+    const WAREHOUSES = ['郑州融万冷库', '郑州酷万冷库', '大河物流园二期冻库'];
+    const POSITIONS = ['智链监管仓-1号位', '冻品-监管位', '冷藏-1号仓-1层'];
+    const labels = ['draft','pending_supervisor','pending_supervisor','pending_supervisor',
+                    'pending_guarantor','pending_guarantor','pending_funding','pending_funding',
+                    'pending_discharge','completed','completed','rejected','invalid'];
+    const list = [];
+    for (let i = 0; i < labels.length; i++) {
+      const date = String(20260611 + i).replace(/(.{4})(.{2})(.{2})/, '$1-$2-$3');
+      list.push({
+        id: 'jy_' + String(i + 1).padStart(3, '0'),
+        applyNo: 'JY' + (490900000000 + (i + 1) * 100),
+        warehouse: WAREHOUSES[i % WAREHOUSES.length],
+        position: POSITIONS[i % POSITIONS.length],
+        releaseQty: 100 + (i * 17) % 200,
+        qtyUnit: '箱',
+        releaseWeight: 15000 + (i * 1300) % 25000,
+        weightUnit: '千克',
+        releaseValue: 1500000 + (i * 230000) % 12000000,
+        pledgeFinancingNo: 'RZ' + (435465678900 + i * 10 + i),
+        inventoryAssetNo: 'CHZC' + date.replace(/-/g, '') + (i + 1).toString().padStart(2, '0'),
+        product: PRODUCTS[i % PRODUCTS.length],
+        status: labels[i],
+      });
+    }
+    return list;
+  })(),
+
+  dischargeDetail: {
+    jy_001: {
+      applyNo: 'JY4910955281409',
+      pledgeAssetNo: 'MPCB_14910955281409',
+      creator: '张三',
+      createdAt: '2022-08-12 12:22:32',
+      statusTag: 'pending_supervisor',     // 当前 tab = 待监管方确认
+      approvalSteps: [                      // 6 步步骤条
+        { idx: 1, label: '提交',     done: true,  active: false },
+        { idx: 2, label: '待融资方盖章', done: true,  active: false },
+        { idx: 3, label: '待监管方确认', done: false, active: true  },
+        { idx: 4, label: '待监管方盖章', done: false, active: false },
+        { idx: 5, label: '待担保方确认', done: false, active: false },
+        { idx: 6, label: '待担保方盖章', done: false, active: false },
+      ],
+      financingInfo: {
+        financingNo: 'RZ202411280002',
+        pledgor: '河南军牧原国际贸易有限公司',
+        product: '中原e货',
+        bank: '中原银行股份有限公司',
+        interestRate: '2.3%',
+        loanDate: '2024-11-21',
+        dueDate: '2025-11-16',
+        loanNote: 'sn0018288',
+        counterNo: 'sn0018288',
+        loanAmount: 300000.00,
+        repaidAmount: 300000.00,
+        remainingAmount: 300000.00,
+      },
+      pledgeAssetInfo: {
+        pledgeNo: 'MPCB_14910955281409',
+        pledgor: '河南军牧原国际贸易有限公司',
+        pledgee: '郑州农业融担保股份有限公司',
+        pledgeQty: 700,
+        pledgeWeight: 10000,
+        pledgeValue: 10000.00,            // 图 3 红字
+      },
+      // ========== 拟解押 4 条（图 3） ==========
+      releaseSummary: {
+        count: 3,
+        totalQty: '300 箱/件',
+        totalWeight: '15000 千克',
+        totalValue: '15,000,000.00 元',
+      },
+      releaseItems: [
+        { warehouse: '大河物流园二期', position: '冻品-监管位', inboundNo: 'IN-20231010-00001', productName: '牛肉-胸肉', pledgeQty: 140, qtyUnit: '箱', pledgeWeight: 3000, weightUnit: '千克', unitPrice: 76, releaseQty: 140, releaseWeight: 3000, releaseValue: 300000.00 },
+        { warehouse: '大河物流园二期', position: '冻品-监管位', inboundNo: 'IN-20231010-00002', productName: '牛肉-胸肉', pledgeQty: 140, qtyUnit: '箱', pledgeWeight: 3000, weightUnit: '千克', unitPrice: 76, releaseQty: 140, releaseWeight: 3000, releaseValue: 300000.00 },
+        { warehouse: '大河物流园二期', position: '冻品-监管位', inboundNo: 'IN-20231010-00003', productName: '牛肉-胸肉', pledgeQty: 140, qtyUnit: '箱', pledgeWeight: 3000, weightUnit: '千克', unitPrice: 76, releaseQty: 140, releaseWeight: 3000, releaseValue: 300000.00 },
+        { warehouse: '大河物流园二期', position: '冻品-监管位', inboundNo: 'IN-20231010-00004', productName: '牛肉-胸肉', pledgeQty: 140, qtyUnit: '箱', pledgeWeight: 3000, weightUnit: '千克', unitPrice: 76, releaseQty: 140, releaseWeight: 3000, releaseValue: 300000.00 },
+      ],
+      repaymentInfo: {
+        planDate: '2026-03-22',
+        interestDays: 120,
+        overdueDays: 0,
+        principal: 300000.00,
+        interest: 10000.00,
+        penalty: 0,
+        totalAmount: 320000.00,
+        repayAccount: '中国银行西安华陆大厦支行 102084339010',
+      },
+      attachments: [
+        // 图 3 详情页的附件可空（demo 数据）
       ],
     },
   },

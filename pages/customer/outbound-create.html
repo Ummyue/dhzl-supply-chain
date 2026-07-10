@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新增解押申请 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+  <style>
+    /* ========== 关键：解押数量/重量/货值 sticky 行尾 3 列（用户硬需求） ========== */
+    .rel-table { min-width: 1380px; border-collapse: separate; border-spacing: 0; }
+    .rel-table th, .rel-table td { background: #fff; }
+    .rel-table thead th.sticky-end {
+      position: sticky; right: 0;
+      background: #faf5ff !important;
+      z-index: 2;
+      box-shadow: inset 2px 0 0 #a855f7;
+    }
+    .rel-table tbody td.sticky-end {
+      position: sticky; right: 0;
+      background: #ffffff !important;
+      z-index: 1;
+      box-shadow: inset 2px 0 0 #a855f7;
+    }
+    .rel-table thead th { background: #f8fafc; }
+    /* 紫色虚线框 */
+    .rel-frame { border: 1.5px dashed #a855f7; border-radius: 10px; overflow: hidden; }
+    .rel-header-row {
+      background: #faf5ff; padding: 12px 18px;
+      border-bottom: 1.5px dashed #d8b4fe;
+    }
+  </style>
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.23 新增解押申请（按用户图2） ============
+  // 5 大区块：融资信息 / 质押资产信息 / 拟解押货物信息 / 出库/还款信息 / 附件 + [取消][提交]
+  // 关键设计：拟解押表 12 列，解押数量/重量/货值 sticky 行尾
+
+  const detail = (MockData.dischargeDetail && MockData.dischargeDetail.jy_001) || {};
+  const financing = detail.financingInfo || {};
+  const pledge = detail.pledgeAssetInfo || {};
+  const summary = detail.releaseSummary || { count: 0, totalQty: '-', totalWeight: '-', totalValue: '-' };
+
+  // 编辑态：拟解押行可调整解押数量；自动算解押重量 + 解押货值
+  let editItems = (detail.releaseItems || []).map((r, i) => ({
+    ...r,
+    selected: i < 3,    // 默认选 3 行
+    inputQty: r.releaseQty,
+    inputWeight: r.releaseWeight,
+    inputValue: r.releaseValue,
+  }));
+
+  // 单位重量：每箱多少千克，用于"调整数量 自动算重量"
+  const PER_QTY_WEIGHT = (item) => item.pledgeWeight / item.pledgeQty;     // 千克/箱
+
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '新增解押申请',
+    currentPath: '/customer/outbound',
+    breadcrumb: [
+      { label: '解押出库管理',     path: '/customer/outbound' },
+      { label: '解押出库申请',     path: '/customer/outbound' },
+      { label: '新增解押申请',     path: '/customer/outbound-create' },
+    ],
+    extra: '',
+    content: render(),
+  });
+
+  function render() {
+    return `
+      <div class="bg-white border border-slate-200 rounded-xl px-6 py-5 mb-4">
+        <h2 class="text-lg font-bold text-slate-800 mb-4"><span class="inline-block w-1 h-4 bg-blue-500 rounded mr-2 align-middle"></span>解押出库申请</h2>
+
+        <!-- 1. 融资信息（4 行 × 4 列）-->
+        <h3 class="text-sm font-bold text-slate-700 mb-3 mt-2"><span class="inline-block w-1 h-3.5 bg-blue-500 rounded mr-1.5 align-middle"></span>融资信息</h3>
+        <div class="border border-slate-200 rounded overflow-hidden">
+          ${financingRow('融资编号', `<span class="text-blue-600 font-mono">${financing.financingNo || 'RZ202411280002'}</span>`, '')}
+          ${financingRow('融资方',  financing.pledgor || '河南军牧原国际贸易有限公司', '金融产品', financing.product || '中原 e 货')}
+          ${financingRow('金融机构', financing.bank || '中原银行股份有限公司', '融资利率', financing.interestRate || '2.3%', '融资放款日期', financing.loanDate || '2024-11-21')}
+          ${financingRow('融资到期日期', financing.dueDate || '2025-11-16', '借据号', financing.loanNote || 'sn0018288', '柜号', financing.counterNo || 'sn0018288')}
+          ${financingRow('放款金额（元）', `<span class="text-rose-600 font-bold num-focus">${Utils.fmtMoney(financing.loanAmount || 300000)}</span>`, '已还款金额（元）', `<span class="text-rose-600 font-bold num-focus">${Utils.fmtMoney(financing.repaidAmount || 300000)}</span>`, '剩余还款金额（元）', `<span class="text-rose-600 font-bold num-focus">${Utils.fmtMoney(financing.remainingAmount || 300000)}</span>`)}
+        </div>
+
+        <!-- 2. 质押资产信息 -->
+        <h3 class="text-sm font-bold text-slate-700 mb-3 mt-5"><span class="inline-block w-1 h-3.5 bg-blue-500 rounded mr-1.5 align-middle"></span>质押资产信息</h3>
+        <div class="border border-slate-200 rounded overflow-hidden">
+          ${financingRow('质物清单编号', `<span class="text-blue-600 font-mono">${pledge.pledgeNo || 'MPCB_14910955281409'}</span>`, '出质方', pledge.pledgor || '河南军牧原国际贸易有限公司', '质权方', pledge.pledgee || '郑州农业融担保股份有限公司')}
+          ${financingRow('质押数量（件）', `<span class="text-rose-600 font-bold num-focus">${pledge.pledgeQty || 700}</span>`, '质押重量（千克）', `<span class="text-rose-600 font-bold num-focus">${(pledge.pledgeWeight || 10000).toLocaleString()}.0000</span>`, '质押货值（元）', `<span class="text-rose-600 font-bold num-focus">${Utils.fmtMoney(pledge.pledgeValue || 10000)}</span>`)}
+        </div>
+
+        <!-- 3. 拟解押货物信息（关键设计 12 列含质押单价 + sticky 3 列） -->
+        <h3 class="text-sm font-bold text-slate-700 mb-3 mt-5 flex items-center">
+          <span class="inline-block w-1 h-3.5 bg-blue-500 rounded mr-1.5 align-middle"></span>拟解押货物信息
+          <span class="ml-4 text-xs text-slate-500 font-normal">
+            已选：<b class="text-purple-700">${summary.count || 0}</b> 笔质押信息，
+            解押数量：<b class="text-purple-700">${calcTotals().totalQty}</b>，
+            解押重量：<b class="text-purple-700">${calcTotals().totalWeight}</b>，
+            解押货值：<b class="text-purple-700">${calcTotals().totalValue}</b>
+          </span>
+        </h3>
+        <div class="rel-frame">
+          <div class="rel-header-row text-sm font-medium text-purple-900">已选：${summary.count || 0} 笔质押信息</div>
+          <div class="overflow-x-auto">
+            <table class="rel-table w-full text-sm">
+              <thead class="text-slate-600 text-xs">
+                <tr class="bg-purple-50">
+                  <th class="text-left px-3 py-2.5 whitespace-nowrap w-10"><input type="checkbox" ${allSelected() ? 'checked' : ''} onchange="toggleAll(this.checked)"></th>
+                  <th class="text-left px-3 py-2.5 whitespace-nowrap">库点</th>
+                  <th class="text-left px-3 py-2.5 whitespace-nowrap">仓房-货位</th>
+                  <th class="text-left px-3 py-2.5 whitespace-nowrap">入库单号</th>
+                  <th class="text-left px-3 py-2.5 whitespace-nowrap">货品名称</th>
+                  <th class="text-right px-3 py-2.5 whitespace-nowrap">质押数量</th>
+                  <th class="text-center px-3 py-2.5 whitespace-nowrap">数量单位</th>
+                  <th class="text-right px-3 py-2.5 whitespace-nowrap">质押重量</th>
+                  <th class="text-center px-3 py-2.5 whitespace-nowrap">重量单位</th>
+                  <th class="text-right px-3 py-2.5 whitespace-nowrap">质押单价（元/千克）</th>
+                  <!-- 行尾 sticky 3 列 -->
+                  <th class="text-right px-3 py-2.5 whitespace-nowrap sticky-end bg-purple-50">解押数量</th>
+                  <th class="text-right px-3 py-2.5 whitespace-nowrap sticky-end">解押重量</th>
+                  <th class="text-right px-3 py-2.5 whitespace-nowrap sticky-end">解押货值</th>
+                </tr>
+              </thead>
+              <tbody>${renderItems()}</tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 4. 出库/还款信息 -->
+        <h3 class="text-sm font-bold text-slate-700 mb-3 mt-5"><span class="inline-block w-1 h-3.5 bg-blue-500 rounded mr-1.5 align-middle"></span>出库/还款信息</h3>
+        <div class="border border-slate-200 rounded px-4 py-3 max-w-md">
+          <div class="flex items-start gap-3">
+            <label class="text-sm text-slate-600 w-24 pt-2"><span class="text-rose-500">*</span> 拟还款日期</label>
+            <input id="planRepayDate" type="date" class="flex-1 px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none">
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. [取消][提交] -->
+      <div class="flex justify-center gap-3 pb-8">
+        <button onclick="cancelEdit()" class="px-12 py-2 border border-slate-300 rounded text-sm text-slate-700 hover:bg-slate-50">取消</button>
+        <button onclick="submitForm()" class="px-12 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">提交</button>
+      </div>
+    `;
+  }
+
+  function financingRow(label1, val1, label2, val2, label3, val3) {
+    const cell = (l, v) => `
+      <div class="grid grid-cols-12 border-b border-slate-200 last:border-b-0">
+        <div class="col-span-3 px-4 py-3 text-sm text-slate-500 bg-slate-50">${l}</div>
+        <div class="col-span-9 px-4 py-3 text-sm text-slate-800">${v}</div>
+      </div>
+    `;
+    const isTriple = label3 !== undefined;
+    if (isTriple) {
+      return `
+        <div class="grid grid-cols-12 border-b border-slate-200 last:border-b-0">
+          <div class="col-span-${label1 ? '2' : '0'} px-4 py-3 text-sm text-slate-500 bg-slate-50">${label1}</div>
+          <div class="col-span-2 px-4 py-3 text-sm text-slate-800">${val1}</div>
+          <div class="col-span-2 px-4 py-3 text-sm text-slate-500 bg-slate-50">${label2}</div>
+          <div class="col-span-2 px-4 py-3 text-sm text-slate-800">${val2}</div>
+          <div class="col-span-2 px-4 py-3 text-sm text-slate-500 bg-slate-50">${label3}</div>
+          <div class="col-span-2 px-4 py-3 text-sm text-slate-800">${val3}</div>
+        </div>
+      `;
+    } else if (label2 !== undefined) {
+      return `
+        <div class="grid grid-cols-12 border-b border-slate-200 last:border-b-0">
+          <div class="col-span-2 px-4 py-3 text-sm text-slate-500 bg-slate-50">${label1}</div>
+          <div class="col-span-3 px-4 py-3 text-sm text-slate-800">${val1}</div>
+          <div class="col-span-2 px-4 py-3 text-sm text-slate-500 bg-slate-50">${label2}</div>
+          <div class="col-span-5 px-4 py-3 text-sm text-slate-800">${val2}</div>
+        </div>
+      `;
+    } else {
+      return `
+        <div class="grid grid-cols-12 border-b border-slate-200 last:border-b-0">
+          <div class="col-span-2 px-4 py-3 text-sm text-slate-500 bg-slate-50">${label1}</div>
+          <div class="col-span-10 px-4 py-3 text-sm text-slate-800">${val1}</div>
+        </div>
+      `;
+    }
+  }
+
+  function renderItems() {
+    return editItems.map((item, i) => {
+      const perW = PER_QTY_WEIGHT(item);
+      return `
+        <tr class="border-t border-purple-100">
+          <td class="px-3 py-3"><input type="checkbox" ${item.selected ? 'checked' : ''} onchange="toggleItem(${i}, this.checked)"></td>
+          <td class="px-3 py-3 text-slate-800 text-xs whitespace-nowrap">${item.warehouse}</td>
+          <td class="px-3 py-3 text-slate-700 text-xs whitespace-nowrap">${item.position}</td>
+          <td class="px-3 py-3 text-blue-600 font-mono text-xs whitespace-nowrap">${item.inboundNo}</td>
+          <td class="px-3 py-3 text-slate-800 text-xs whitespace-nowrap">${item.productName}</td>
+          <td class="px-3 py-3 text-right num-focus text-slate-700 text-xs whitespace-nowrap">${item.pledgeQty}</td>
+          <td class="px-3 py-3 text-center text-slate-500 text-xs">${item.qtyUnit}</td>
+          <td class="px-3 py-3 text-right num-focus text-slate-700 text-xs whitespace-nowrap">${item.pledgeWeight.toLocaleString()}</td>
+          <td class="px-3 py-3 text-center text-slate-500 text-xs">${item.weightUnit}</td>
+          <td class="px-3 py-3 text-right num-focus text-slate-700 text-xs whitespace-nowrap">${item.unitPrice}</td>
+          <td class="px-3 py-3 text-right text-xs whitespace-nowrap sticky-end">
+            <input type="number" min="0" max="${item.pledgeQty}" value="${item.inputQty}" oninput="updateQty(${i}, this.value)" class="w-20 px-2 py-1 border border-slate-300 rounded text-xs text-right focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none">
+          </td>
+          <td class="px-3 py-3 text-right num-focus text-slate-800 text-xs whitespace-nowrap sticky-end">${item.inputWeight.toLocaleString()}.0000</td>
+          <td class="px-3 py-3 text-right num-focus text-slate-800 text-xs whitespace-nowrap sticky-end">${Utils.fmtMoney(item.inputValue)}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function calcTotals() {
+    const sel = editItems.filter(i => i.selected);
+    const totalQty = sel.reduce((s, i) => s + i.inputQty, 0);
+    const totalWeight = sel.reduce((s, i) => s + i.inputWeight, 0);
+    const totalValue = sel.reduce((s, i) => s + i.inputValue, 0);
+    return {
+      count: sel.length,
+      totalQty: totalQty + ' 箱/件',
+      totalWeight: totalWeight.toLocaleString() + ' 千克',
+      totalValue: Utils.fmtMoney(totalValue),
+    };
+  }
+
+  function allSelected() {
+    return editItems.length > 0 && editItems.every(i => i.selected);
+  }
+
+  // ============ Events ============
+  window.toggleAll = (checked) => {
+    editItems.forEach(i => i.selected = checked);
+    refresh();
+  };
+  window.toggleItem = (i, checked) => {
+    editItems[i].selected = checked;
+    refresh();
+  };
+  window.updateQty = (i, v) => {
+    const item = editItems[i];
+    const qty = Number(v) || 0;
+    const max  = item.pledgeQty;
+    item.inputQty    = Math.max(0, Math.min(qty, max));
+    item.inputWeight = Math.round(item.inputQty * PER_QTY_WEIGHT(item));
+    item.inputValue  = Math.round(item.inputQty * PER_QTY_WEIGHT(item) * item.unitPrice);
+    // 只 refresh 这一行（不重渲染整个 form 避免失焦）
+    const tr = document.querySelectorAll('.rel-table tbody tr')[i];
+    if (tr) {
+      tr.querySelectorAll('td')[10].innerHTML = `<input type="number" min="0" max="${max}" value="${item.inputQty}" oninput="updateQty(${i}, this.value)" class="w-20 px-2 py-1 border border-slate-300 rounded text-xs text-right focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none">`;
+      tr.querySelectorAll('td')[11].textContent = item.inputWeight.toLocaleString() + '.0000';
+      tr.querySelectorAll('td')[12].textContent = Utils.fmtMoney(item.inputValue);
+    }
+    // 更新顶部 summary
+    const summary = calcTotals();
+    const headerSpan = document.querySelector('.text-xs.text-slate-500.font-normal');
+    if (headerSpan) {
+      headerSpan.innerHTML = `已选：<b class="text-purple-700">${summary.count}</b> 笔质押信息，解押数量：<b class="text-purple-700">${summary.totalQty}</b>，解押重量：<b class="text-purple-700">${summary.totalWeight}</b>，解押货值：<b class="text-purple-700">${summary.totalValue}</b>`;
+    }
+  };
+  window.cancelEdit = () => { if (confirm('取消将丢失所有未保存内容，确认离开？')) history.back(); };
+  window.submitForm = () => {
+    const dateEl = document.getElementById('planRepayDate');
+    if (!dateEl.value) return Utils.toast('请选择「拟还款日期」', 'error');
+    if (editItems.filter(i => i.selected).length === 0) return Utils.toast('请至少勾选一笔质押信息', 'error');
+    Utils.toast('解押申请已提交，进入「待监管方确认」状态', 'success');
+    setTimeout(() => history.back(), 1200);
+  };
+
+  function refresh() {
+    document.getElementById('app').innerHTML = Components.pageShell({
+      title: '新增解押申请',
+      currentPath: '/customer/outbound',
+      breadcrumb: [
+        { label: '解押出库管理',     path: '/customer/outbound' },
+        { label: '解押出库申请',     path: '/customer/outbound' },
+        { label: '新增解押申请',     path: '/customer/outbound-create' },
+      ],
+      extra: '',
+      content: render(),
+    });
+  }
+</script>
+</body>
+</html>
