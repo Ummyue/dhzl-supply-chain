@@ -1041,6 +1041,85 @@ const MockData = {
     },
   ],
 
+  // ========== v1.7.22 质物清单（按用户图1+图2 重设计） ==========
+  // 状态机：pending_regulator → pending_bank → pending_guarantor → completed
+  // 任意阶段驳回 → rejected（终态）
+  pledgeList: (function() {
+    const REGS = ['大河智链供应链管理有限公司', '大河智链物流（郑州）有限公司', '智链监管仓（郑州）有限公司'];
+    const BANKS = ['中原银行股份有限公司', '郑州农业融担保联合体', '中融信托·冷链金融部'];
+    const GUA = ['中原再担保股份有限公司', '郑州农业融担保股份有限公司', '河南中小企业信用担保有限责任公司'];
+    const PRODUCTS = ['民生e贷', '中原e货', '冷链现货质押融资（90天）', 'e仓融'];
+    const CATEGORIES = ['牛肉-胸肉', '猪肉-后腿肉', '鸡肉-鸡胸', '鸭肉-鸭腿', '冻品-带鱼', '水产-罗非鱼'];
+    const WAREHOUSES = ['郑州酷万冷库', '大河物流园二期冻库', '郑州中原冷链港3号库', '郑州航空港监管仓'];
+    const POSITIONS = ['智链监管仓-1号位', '冻品-监管位', '冷藏-1号仓-1层', '保税仓-A区-02位'];
+    const UNITS_Q = ['箱', '件', '袋', '桶'];
+    const UNITS_W = ['千克', '吨'];
+    const list = [];
+    const statuses = ['pending_regulator', 'pending_regulator', 'pending_bank', 'pending_bank',
+                      'pending_guarantor', 'pending_guarantor', 'completed', 'completed', 'completed',
+                      'rejected', 'pending_regulator', 'pending_guarantor'];
+    for (let i = 0; i < statuses.length; i++) {
+      const date = String(20260611 + i).replace(/(.{4})(.{2})(.{2})/, '$1-$2-$3');
+      list.push({
+        id: 'pl_' + String(i + 1).padStart(3, '0'),
+        pledgeNo: 'CHZC' + date.replace(/-/g, '') + '0'.repeat(5 - String(i + 1).length) + (i + 1),
+        warehouse: WAREHOUSES[i % WAREHOUSES.length],
+        position: POSITIONS[i % POSITIONS.length],
+        product: PRODUCTS[i % PRODUCTS.length],
+        pledgeFinancingNo: 'RZ' + (435465678900 + i * 10 + i),
+        category: CATEGORIES[i % CATEGORIES.length],
+        pledgeQty: 100 + (i * 17) % 230,
+        pledgeWeight: 15000 + (i * 1300) % 25000,
+        pledgeValue: 1200000 + (i * 230000) % 15000000,
+        qtyUnit: UNITS_Q[i % UNITS_Q.length],
+        weightUnit: UNITS_W[i % UNITS_W.length],
+        regulator: REGS[i % REGS.length],
+        bank: BANKS[i % BANKS.length],
+        guarantor: GUA[i % GUA.length],
+        status: statuses[i],
+      });
+    }
+    return list;
+  })(),
+
+  pledgeDetail: {
+    pl_001: {
+      pledgeNo: 'MPCB_14910955281409',
+      financingNo: 'RZ202202250014',
+      pledgor: '河南军牧原国际贸易有限公司',
+      pledgee: '郑州农业融担保股份有限公司',
+      product: '中原e货',
+      bank: '中原银行股份有限公司',
+      regulator: '大河智链物流（郑州）有限公司',
+      loanAmount: 100000.00,           // 图 2 放款金额
+      creator: '张三',
+      createdAt: '2022-08-12 12:22:32',
+      // 4 个出入库快照 tab
+      snapshots: [
+        { id: 'current',    label: '当前信息',     tag: 'new',       tagType: 'badge-new' },  // 新
+        { id: 'out_20260611', label: '2026-06-11', date: '2026-06-11', tag: '出库',  tagType: 'badge-out' },
+        { id: 'in_20260601',  label: '2026-06-01', date: '2026-06-01', tag: '入库',  tagType: 'badge-in',  selected: true },
+        { id: 'out_20260520', label: '2026-05-20', date: '2026-05-20', tag: '出库',  tagType: 'badge-out' },
+      ],
+      // 4 个快照共用同一份存货信息（按 tab 切换显示）
+      // 同一笔质押有多个入库单（3 笔货物，已选 3 笔）
+      inventorySummary: {
+        totalCount: 3,
+        totalQty: '700 箱/件',
+        totalWeight: '15000 千克',
+        totalValue: '15,000,000.00 元',
+      },
+      inventory: [
+        { warehouse: '大河物流园二期', position: '冻品-监管位', inboundNo: 'IN-20231010-00001', inboundAt: '2026-05-10 12:33:34', productName: '保乐肩-巴西-4490', inboundQty: 140, availableQty: 140, qtyUnit: '箱', inboundWeight: 3000, availableWeight: 3000, weightUnit: '千克' },
+        { warehouse: '大河物流园二期', position: '冻品-监管位', inboundNo: 'IN-20231010-00002', inboundAt: '2026-04-22 09:15:08', productName: '保乐肩-巴西-4490', inboundQty: 280, availableQty: 280, qtyUnit: '箱', inboundWeight: 6000, availableWeight: 6000, weightUnit: '千克' },
+        { warehouse: '大河物流园二期', position: '冻品-监管位', inboundNo: 'IN-20231010-00003', inboundAt: '2026-03-18 14:42:51', productName: '保乐肩-巴西-4490', inboundQty: 280, availableQty: 280, qtyUnit: '箱', inboundWeight: 6000, availableWeight: 6000, weightUnit: '千克' },
+      ],
+      attachments: [
+        { type: '质物清单', uploadedAt: '2023-12-12 12:23:32', filename: '质物清单.pdf' },
+      ],
+    },
+  },
+
   // ========== 融资申请（v1.7.8 扩展：18 字段覆盖全状态机） ==========
   // 状态机：pending → pending_supervisor_eval → pending_owner_confirm → pending_supervisor
   //       → pending_guarantor → pending_funding → pending_disbursement → released → settled

@@ -4,18 +4,26 @@
   <script>
 (function() {
   var p = window.location.pathname;
-  // GitHub Pages 子路径部署 vs Vercel 根路径部署
   var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
   document.write('<base href="' + base + '">');
 })();
 </script>
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>质物清单 - 大河智链</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
-<link rel="stylesheet" href="/shared/css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>质物清单 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+  <style>
+    /* tab 下划线 + 选中态 */
+    .pledge-tab { position: relative; padding: 10px 16px; cursor: pointer; color: #475569; font-size: 13px; white-space: nowrap; transition: color .15s; border-bottom: 2px solid transparent; }
+    .pledge-tab:hover { color: #2563eb; }
+    .pledge-tab.active { color: #2563eb; font-weight: 600; border-bottom-color: #2563eb; }
+    .pledge-tab .count { margin-left: 4px; color: #94a3b8; font-weight: 400; }
+    .pledge-tab.active .count { color: #2563eb; }
+    .pledge-tab-divider { width: 1px; background: #e2e8f0; align-self: stretch; margin: 6px 0; }
+  </style>
 </head>
 <body class="bg-slate-50">
 <div id="app"></div>
@@ -24,157 +32,308 @@
 <script src="/shared/js/components.js"></script>
 <script>
   Components.bindGlobalClose();
+
+  // ============ v1.7.22 质物清单（按用户图1重设计） ============
+  // 顶部 9 筛选（3×3 行） / 状态机 tab 6 个（全部/待监管/待资方/待担保/已完成/驳回）
+  // 14 列数据表格 / 数据导出 / 共 400 条 / 第 1/80 页 / 跳至 5
+
+  const filters = {
+    pledgeNo: '',     // 质物清单编号
+    warehouse: '',    // 库点
+    position: '',     // 仓房-货位
+    product: '',      // 金融产品
+    category: '',     // 货物品类
+    pledgeFinancingNo: '',  // 货押融资编号
+    bank: '',         // 金融机构
+    regulator: '',    // 监管方
+    guarantor: '',    // 担保方
+  };
+  let activeTab = 'all';  // all / pending_regulator / pending_bank / pending_guarantor / completed / rejected
+
+  const STATUS_LABEL = {
+    pending_regulator: '待监管方盖章',
+    pending_bank:      '待融资方盖章',
+    pending_guarantor: '待担保方盖章',
+    completed:         '已完成',
+    rejected:          '驳回',
+  };
+  const TAB_ORDER = [
+    'all', 'pending_regulator', 'pending_bank', 'pending_guarantor', 'completed', 'rejected',
+  ];
+
   document.getElementById('app').innerHTML = Components.pageShell({
     title: '质物清单',
     currentPath: '/customer/pledge-list',
-    breadcrumb: [{ label: '融资管理', path: '/customer/financing' }, '质物清单'],
-    content: `
-      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6 text-xs text-blue-800">
-        <span class="font-medium">说明（v1.7 按甲方 drawio 调整）：</span>质物清单由系统根据入库单自动生成，需经<strong>监管方 → 货主方 → 担保方 → 货主方 → 资金方</strong>五步确认+盖章（货主方盖章 2 次）。任一方驳回 → 重新出具。
-      </div>
-
-      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
-            <tr>
-              <th class="text-left px-4 py-3">清单编号</th>
-              <th class="text-left px-4 py-3">关联融资</th>
-              <th class="text-left px-4 py-3">货品</th>
-              <th class="text-right px-4 py-3">入库日期</th>
-              <th class="text-right px-4 py-3">评估货值</th>
-              <th class="text-right px-3 py-3">质押金额</th>
-              <th class="text-center px-3 py-3">三方签章进度（v1.7）</th>
-              <th class="text-center px-3 py-3">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${MockData.bizList.slice(0, 4).map(b => `
-              <tr class="border-t border-slate-100 hover:bg-slate-50">
-                <td class="px-4 py-3 font-mono text-xs">PL_${b.bizNo.replace('DHZL_', '')}</td>
-                <td class="px-4 py-3 font-mono text-xs text-blue-600">${b.loanNo}</td>
-                <td class="px-4 py-3">
-                  <div class="font-medium">${b.productName}</div>
-                  <div class="text-xs text-slate-400">${b.weight.toLocaleString()} kg</div>
-                </td>
-                <td class="px-4 py-3 text-right text-slate-500">${Utils.fmtDate(b.inboundDate)}</td>
-                <td class="px-4 py-3 text-right num-focus font-medium">${Utils.fmtMoney(b.evaluateValue)}</td>
-                <td class="px-3 py-3 text-right num-focus text-blue-600 font-bold">${Utils.fmtMoney(b.loanAmount)}</td>
-                <td class="px-3 py-3 text-center">
-                  <div class="flex items-center justify-center gap-1 text-xs flex-wrap">
-                    <span class="px-1.5 py-0.5 rounded ${b.status === 'released' ? 'bg-emerald-100 text-emerald-700' : 'bg-purple-100 text-purple-700'}" title="监管方盖章">${b.status === 'released' ? '✓' : '⏳'}监管</span>
-                    <span class="px-1.5 py-0.5 rounded ${b.status === 'released' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}" title="货主方盖章①">${b.status === 'released' ? '✓' : '⏳'}货主①</span>
-                    <span class="px-1.5 py-0.5 rounded ${b.status === 'released' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}" title="担保方盖章">${b.status === 'released' ? '✓' : '⏳'}担保</span>
-                    <span class="px-1.5 py-0.5 rounded ${b.status === 'released' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}" title="货主方盖章②">${b.status === 'released' ? '✓' : '⏳'}货主②</span>
-                    <span class="px-1.5 py-0.5 rounded ${b.status === 'released' ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'}" title="资金方盖章">${b.status === 'released' ? '✓' : '⏳'}资金</span>
-                  </div>
-                </td>
-                <td class="px-3 py-3 text-center">
-                  <button onclick="viewPledge('${b.bizNo}')" class="text-blue-600 hover:underline text-xs">查看清单</button>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    `
+    breadcrumb: [
+      { label: '融资管理', path: '/customer/financing' },
+      { label: '质物清单', path: '/customer/pledge-list' },
+    ],
+    extra: ``,
+    content: render(),
   });
 
-  function viewPledge(bizNo) {
-    const b = MockData.bizList.find(x => x.bizNo === bizNo) || MockData.bizList[0];
-    const modal = document.createElement('div');
-    modal.className = 'modal-backdrop';
-    modal.innerHTML = `
-      <div class="bg-white rounded-xl w-[800px] max-h-[90vh] overflow-y-auto shadow-2xl" onclick="event.stopPropagation()">
-        <div class="px-6 py-4 border-b border-slate-200 sticky top-0 bg-white flex items-center justify-between">
-          <h3 class="font-bold text-slate-800 text-lg">质物清单</h3>
-          <button onclick="this.closest('.modal-backdrop').remove()" class="text-slate-400 hover:text-slate-600 text-2xl">×</button>
+  function render() {
+    return `
+      <!-- 当前搜索 tag + 清除全部 -->
+      <div class="bg-white border border-slate-200 rounded-xl px-5 py-3 mb-3 flex items-center justify-between text-sm">
+        <div class="flex items-center flex-wrap gap-1.5 min-h-[24px]">
+          <span class="text-slate-500">当前搜索：</span>
+          ${renderActiveTags()}
         </div>
-        <div class="p-6">
-          <!-- 抬头 -->
-          <div class="text-center mb-6 pb-4 border-b-2 border-slate-800">
-            <h2 class="text-xl font-bold">质 物 清 单</h2>
-            <div class="text-xs text-slate-500 mt-1">Pledge Inventory List</div>
-          </div>
+        ${hasAnyFilter() ? `<button onclick="resetAllFilters()" class="text-xs text-rose-500 hover:text-rose-700">清除全部</button>` : ''}
+      </div>
 
-          <!-- 基础信息 -->
-          <div class="grid grid-cols-2 gap-3 text-sm mb-6">
-            <div><span class="text-slate-500">清单编号：</span><span class="font-mono">PL_${b.bizNo.replace('DHZL_', '')}</span></div>
-            <div><span class="text-slate-500">入库日期：</span>${Utils.fmtDate(b.inboundDate)}</div>
-            <div><span class="text-slate-500">货主方：</span>${b.customer}</div>
-            <div><span class="text-slate-500">银行借据号：</span><span class="font-mono text-xs">${b.loanNo}</span></div>
-            <div><span class="text-slate-500">监管仓库：</span>${b.warehouse}</div>
-            <div><span class="text-slate-500">评估日期：</span>${Utils.fmtDate(b.loanDate)}</div>
+      <!-- 9 个筛选器（3×3） -->
+      <div class="bg-white border border-slate-200 rounded-xl px-5 py-4 mb-3">
+        <div class="grid grid-cols-3 gap-x-6 gap-y-3 mb-3">
+          <div>
+            <label class="text-xs text-slate-500 mb-1 block">质物清单编号</label>
+            <input type="text" value="${filters.pledgeNo}" oninput="updateFilter('pledgeNo', this.value)" placeholder="请输入质物清单编号" class="w-full px-3 py-2 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
           </div>
+          <div>
+            <label class="text-xs text-slate-500 mb-1 block">库点</label>
+            <select onchange="updateFilter('warehouse', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              <option value="">请选择</option>
+              ${uniqueValues('warehouse').map(v => `<option ${filters.warehouse === v ? 'selected' : ''}>${v}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-500 mb-1 block">仓房-货位</label>
+            <select onchange="updateFilter('position', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              <option value="">请选择</option>
+              ${uniqueValues('position').map(v => `<option ${filters.position === v ? 'selected' : ''}>${v}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-x-6 gap-y-3 mb-3">
+          <div>
+            <label class="text-xs text-slate-500 mb-1 block">金融产品</label>
+            <select onchange="updateFilter('product', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              <option value="">请选择</option>
+              ${uniqueValues('product').map(v => `<option ${filters.product === v ? 'selected' : ''}>${v}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-500 mb-1 block">货物品类</label>
+            <select onchange="updateFilter('category', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              <option value="">请选择</option>
+              ${uniqueValues('category').map(v => `<option ${filters.category === v ? 'selected' : ''}>${v}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-500 mb-1 block">货押融资编号</label>
+            <input type="text" value="${filters.pledgeFinancingNo}" oninput="updateFilter('pledgeFinancingNo', this.value)" placeholder="请输入货押融资编号" class="w-full px-3 py-2 border border-slate-200 rounded text-sm font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-x-6 gap-y-3">
+          <div>
+            <label class="text-xs text-slate-500 mb-1 block">金融机构</label>
+            <select onchange="updateFilter('bank', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              <option value="">请选择</option>
+              ${uniqueValues('bank').map(v => `<option ${filters.bank === v ? 'selected' : ''}>${v}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-500 mb-1 block">监管方</label>
+            <select onchange="updateFilter('regulator', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              <option value="">请选择</option>
+              ${uniqueValues('regulator').map(v => `<option ${filters.regulator === v ? 'selected' : ''}>${v}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-500 mb-1 block">担保方</label>
+            <select onchange="updateFilter('guarantor', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              <option value="">请选择</option>
+              ${uniqueValues('guarantor').map(v => `<option ${filters.guarantor === v ? 'selected' : ''}>${v}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+      </div>
 
-          <!-- 货品明细 -->
-          <table class="w-full text-sm border border-slate-300 mb-6">
-            <thead class="bg-slate-100">
+      <!-- 状态机 tab 行 + 数据导出按钮（右上角） -->
+      <div class="bg-white border border-slate-200 rounded-t-xl flex items-center justify-between" style="border-bottom: 0;">
+        <div class="flex items-center overflow-x-auto">
+          ${renderTabs()}
+        </div>
+        <button onclick="exportData()" class="px-4 py-1.5 mx-5 my-2 text-xs text-slate-600 hover:text-blue-600 hover:bg-slate-50 border border-slate-200 rounded flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          数据导出
+        </button>
+      </div>
+
+      <!-- 14 列表格 -->
+      <div class="bg-white border border-slate-200 rounded-b-xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm min-w-[1280px]">
+            <thead class="bg-slate-50 text-slate-600 text-xs">
               <tr>
-                <th class="border border-slate-300 px-2 py-2">序号</th>
-                <th class="border border-slate-300 px-2 py-2 text-left">货物名称</th>
-                <th class="border border-slate-300 px-2 py-2">生产日期</th>
-                <th class="border border-slate-300 px-2 py-2">批次号</th>
-                <th class="border border-slate-300 px-2 py-2">件数</th>
-                <th class="border border-slate-300 px-2 py-2">入库重量(kg)</th>
-                <th class="border border-slate-300 px-2 py-2">评估单价(¥/kg)</th>
-                <th class="border border-slate-300 px-2 py-2">评估货值</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">质物清单编号</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">库点</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">仓房-货位</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">金融产品</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">货押融资编号</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">货物品类</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">质押数量</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">质押重量</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">质押货值（元）</th>
+                <th class="text-center px-3 py-3 whitespace-nowrap">数量单位</th>
+                <th class="text-center px-3 py-3 whitespace-nowrap">质量单位</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">监管方</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">金融机构</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">担保方</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td class="border border-slate-300 px-2 py-2 text-center">1</td>
-                <td class="border border-slate-300 px-2 py-2 font-medium">${b.productName}</td>
-                <td class="border border-slate-300 px-2 py-2 text-center">${Utils.fmtDate(b.produceDate)}</td>
-                <td class="border border-slate-300 px-2 py-2 font-mono text-xs text-center">${b.batchNo.substring(0, 10)}</td>
-                <td class="border border-slate-300 px-2 py-2 text-center num-focus">${Utils.fmtNum(b.pieces)}</td>
-                <td class="border border-slate-300 px-2 py-2 text-center num-focus">${Utils.fmtNum(b.weight)}</td>
-                <td class="border border-slate-300 px-2 py-2 text-center num-focus">${b.evaluatePrice.toFixed(2)}</td>
-                <td class="border border-slate-300 px-2 py-2 text-right num-focus font-medium">${Utils.fmtMoney(b.evaluateValue)}</td>
-              </tr>
-              <tr class="bg-slate-50 font-bold">
-                <td colspan="7" class="border border-slate-300 px-2 py-2 text-right">合计评估货值（大写）：</td>
-                <td class="border border-slate-300 px-2 py-2 text-right num-focus text-blue-700">${Utils.fmtMoney(b.evaluateValue)}</td>
-              </tr>
-            </tbody>
+            <tbody>${renderRows(applyFilters())}</tbody>
           </table>
-
-          <!-- 关键金额 -->
-          <div class="grid grid-cols-3 gap-3 mb-6">
-            <div class="bg-blue-50 rounded p-3 text-center">
-              <div class="text-xs text-slate-500">评估货值</div>
-              <div class="text-lg font-bold text-blue-700 num-focus">${Utils.fmtMoney(b.evaluateValue)}</div>
-            </div>
-            <div class="bg-violet-50 rounded p-3 text-center">
-              <div class="text-xs text-slate-500">质押率</div>
-              <div class="text-lg font-bold text-violet-700">${(b.pledgeRatio * 100).toFixed(0)}%</div>
-            </div>
-            <div class="bg-emerald-50 rounded p-3 text-center">
-              <div class="text-xs text-slate-500">放款金额</div>
-              <div class="text-lg font-bold text-emerald-700 num-focus">${Utils.fmtMoney(b.loanAmount)}</div>
-            </div>
-          </div>
-
-          <!-- 三方签章 -->
-          <div class="grid grid-cols-3 gap-4 mb-4">
-            ${['出质人（客户）', '监管方（大河智链）', '担保方'].map(p => `
-              <div class="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center">
-                <div class="text-xs text-slate-500 mb-2">${p}</div>
-                <div class="w-20 h-20 mx-auto rounded-full border-2 border-green-400 flex items-center justify-center text-green-600 text-3xl mb-2">✓</div>
-                <div class="text-xs text-slate-400">电子签章完成</div>
-                <div class="text-[10px] text-slate-400 mt-1">${Utils.fmtDate(b.loanDate)}</div>
-              </div>
-            `).join('')}
-          </div>
         </div>
-        <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-2 sticky bottom-0 bg-white">
-          <button onclick="Utils.toast('正在下载 PDF...','info')" class="px-4 py-2 border border-slate-300 rounded-md text-sm hover:bg-slate-50">下载 PDF</button>
-          <button onclick="Utils.toast('正在发送电子签章链接...','success')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm">发送签章</button>
+        ${renderPagination()}
+      </div>
+    `;
+  }
+
+  // ===== 数据过滤 / tab / pagination =====
+  function uniqueValues(field) {
+    const set = new Set();
+    (MockData.pledgeList || []).forEach(p => p[field] && set.add(p[field]));
+    return Array.from(set);
+  }
+
+  function applyFilters() {
+    let list = (MockData.pledgeList || []);
+    if (activeTab !== 'all') list = list.filter(p => p.status === activeTab);
+    if (filters.pledgeNo)         list = list.filter(p => (p.pledgeNo || '').includes(filters.pledgeNo));
+    if (filters.warehouse)        list = list.filter(p => p.warehouse === filters.warehouse);
+    if (filters.position)         list = list.filter(p => p.position === filters.position);
+    if (filters.product)          list = list.filter(p => p.product === filters.product);
+    if (filters.category)         list = list.filter(p => p.category === filters.category);
+    if (filters.pledgeFinancingNo) list = list.filter(p => (p.pledgeFinancingNo || '').includes(filters.pledgeFinancingNo));
+    if (filters.bank)             list = list.filter(p => p.bank === filters.bank);
+    if (filters.regulator)        list = list.filter(p => p.regulator === filters.regulator);
+    if (filters.guarantor)        list = list.filter(p => p.guarantor === filters.guarantor);
+    return list;
+  }
+
+  function tabCounts() {
+    const all = MockData.pledgeList || [];
+    const c = { all: all.length };
+    Object.keys(STATUS_LABEL).forEach(k => c[k] = all.filter(p => p.status === k).length);
+    return c;
+  }
+
+  function renderTabs() {
+    const counts = tabCounts();
+    return TAB_ORDER.map((k, i) => {
+      // 在「已完成」和「驳回」之间插分隔线
+      const divider = (k === 'rejected') ? '' : '';
+      // 把"已完成"和"驳回"中间加一条线 → 简化实现：所有 tab 都连续
+      const label = k === 'all' ? '全部' : STATUS_LABEL[k];
+      const isActive = k === activeTab;
+      const countText = `(${counts[k]})`;
+      return `
+        <div class="flex items-stretch">
+          <div class="pledge-tab ${isActive ? 'active' : ''}" onclick="switchTab('${k}')">
+            ${label}<span class="count">${counts[k] || 0 > 0 ? countText : ''}</span>
+          </div>
+          ${i === 4 ? '<div class="pledge-tab-divider"></div>' : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderRows(list) {
+    if (!list.length) return `<tr><td colspan="14" class="py-12 text-center text-slate-400 text-sm">📭 当前筛选条件下无质物清单</td></tr>`;
+    return list.map(p => `
+      <tr class="border-t border-slate-100 hover:bg-blue-50/30 cursor-pointer" onclick="goDetail('${p.id}')">
+        <td class="px-3 py-3 font-mono text-xs text-slate-700 whitespace-nowrap">${p.pledgeNo}</td>
+        <td class="px-3 py-3 text-slate-700 text-xs whitespace-nowrap">${p.warehouse}</td>
+        <td class="px-3 py-3 text-slate-700 text-xs whitespace-nowrap">${p.position}</td>
+        <td class="px-3 py-3 text-slate-700 text-xs whitespace-nowrap">${p.product}</td>
+        <td class="px-3 py-3 text-blue-600 font-mono text-xs whitespace-nowrap hover:underline">${p.pledgeFinancingNo}</td>
+        <td class="px-3 py-3 text-slate-700 text-xs whitespace-nowrap">${p.category}</td>
+        <td class="px-3 py-3 text-right text-slate-700 num-focus text-xs whitespace-nowrap">${p.pledgeQty.toLocaleString()}</td>
+        <td class="px-3 py-3 text-right text-slate-700 num-focus text-xs whitespace-nowrap">${p.pledgeWeight.toLocaleString()}</td>
+        <td class="px-3 py-3 text-right num-focus font-medium text-slate-800 text-xs whitespace-nowrap">${Utils.fmtMoney(p.pledgeValue)}</td>
+        <td class="px-3 py-3 text-center text-slate-500 text-xs">${p.qtyUnit}</td>
+        <td class="px-3 py-3 text-center text-slate-500 text-xs">${p.weightUnit}</td>
+        <td class="px-3 py-3 text-slate-700 text-xs">${p.regulator}</td>
+        <td class="px-3 py-3 text-slate-700 text-xs">${p.bank}</td>
+        <td class="px-3 py-3 text-slate-700 text-xs">${p.guarantor}</td>
+      </tr>
+    `).join('');
+  }
+
+  function renderPagination() {
+    return `
+      <div class="px-4 py-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+        <span>共 <b class="text-slate-800">400</b> 条记录，第 1 / 80 页</span>
+        <div class="flex items-center gap-1">
+          <button class="px-2 py-1 border border-slate-200 rounded hover:bg-slate-50 disabled:opacity-50" disabled>
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          ${[1,2,3,4,5,6,7,8,9].map(n => `<button class="px-2 py-1 border ${n === 1 ? 'bg-blue-600 text-white border-blue-600' : 'border-slate-200 hover:bg-slate-50'} rounded">${n}</button>`).join('')}
+          <button class="px-2 py-1 border border-slate-200 rounded hover:bg-slate-50">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+          <select class="ml-3 px-2 py-1 border border-slate-200 rounded text-xs">
+            <option>5 条/页</option><option>10 条/页</option><option>20 条/页</option>
+          </select>
+          <span class="ml-2">跳至</span>
+          <input type="number" value="5" class="w-12 px-2 py-1 border border-slate-200 rounded text-xs text-center">
+          <span>页</span>
         </div>
       </div>
     `;
-    // v1.7.8 表单类弹窗：屏蔽点击外面关闭
-    modal.onclick = () => {};
-    document.body.appendChild(modal);
+  }
+
+  function hasAnyFilter() {
+    return Object.values(filters).some(v => v);
+  }
+
+  function renderActiveTags() {
+    const labels = [
+      ['pledgeNo', `编号：${filters.pledgeNo}`],
+      ['warehouse', `库点：${filters.warehouse}`],
+      ['position', `仓房-货位：${filters.position}`],
+      ['product', `金融产品：${filters.product}`],
+      ['category', `货物品类：${filters.category}`],
+      ['pledgeFinancingNo', `融资编号：${filters.pledgeFinancingNo}`],
+      ['bank', `金融机构：${filters.bank}`],
+      ['regulator', `监管方：${filters.regulator}`],
+      ['guarantor', `担保方：${filters.guarantor}`],
+    ];
+    const tags = labels.filter(([k]) => filters[k]).map(([k, label]) => `
+      <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-slate-100 text-slate-700 rounded">
+        ${label}<button onclick="removeTag('${k}')" class="text-slate-400 hover:text-slate-700">×</button>
+      </span>
+    `);
+    if (!tags.length) return '<span class="text-slate-400 text-xs">（无筛选条件 / 默认显示全部）</span>';
+    return tags.join('');
+  }
+
+  // ============ Events ============
+  window.updateFilter = (k, v) => { filters[k] = v; };
+  window.switchTab = (k) => { activeTab = k; refresh(); };
+  window.removeTag = (k) => { filters[k] = ''; refresh(); };
+  window.resetAllFilters = () => {
+    Object.keys(filters).forEach(k => filters[k] = '');
+    refresh();
+  };
+  window.exportData = () => Utils.toast('已导出当前筛选数据（占位）', 'success');
+  window.goDetail = (id) => {
+    window.location.href = `${Utils.nav('/customer/pledge-detail')}?id=${id}`;
+  };
+
+  function refresh() {
+    document.getElementById('app').innerHTML = Components.pageShell({
+      title: '质物清单',
+      currentPath: '/customer/pledge-list',
+      breadcrumb: [
+        { label: '融资管理', path: '/customer/financing' },
+        { label: '质物清单', path: '/customer/pledge-list' },
+      ],
+      extra: '',
+      content: render(),
+    });
   }
 </script>
 </body>
