@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>额度详情 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } </script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.19 额度详情页（按用户图2） ============
+  // 15 字段基本信息（5 行 × 3 列）+ 合同附件表格
+
+  const urlId = new URLSearchParams(window.location.search).get('id');
+  const limit = (MockData.limitList || []).find(r => r.id === urlId);
+
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '额度详情',
+    currentPath: '/customer/limit-management',
+    breadcrumb: [
+      { label: '贷后管理', path: '/customer/limit-management' },
+      { label: '额度管理', path: '/customer/limit-management' },
+      { label: '额度详情', path: '/customer/limit-detail' },
+    ],
+    extra: '',
+    content: render(),
+  });
+
+  function render() {
+    if (!limit) {
+      return `
+        <div class="bg-white border border-slate-200 rounded-xl p-12 text-center">
+          <p class="text-slate-600 mb-2">📭 未找到该额度记录</p>
+          <p class="text-xs text-slate-400 mb-4">URL 参数 id 缺失或已失效</p>
+          <a href="${Utils.nav('/customer/limit-management')}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">返回额度管理</a>
+        </div>
+      `;
+    }
+
+    return `
+      <!-- 顶部 header -->
+      <div class="flex items-center justify-between mb-4 bg-white border border-slate-200 rounded-xl px-5 py-3">
+        <div class="flex items-center gap-3">
+          <a href="${Utils.nav('/customer/limit-management')}" class="flex items-center gap-1 text-slate-600 hover:text-blue-600 text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            返回额度管理
+          </a>
+          <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">额</div>
+          <div>
+            <h2 class="text-base font-bold text-slate-800">${limit.bank} · ${limit.productName}</h2>
+            <p class="text-xs text-slate-500 font-mono">授权批复编号 ${limit.authorizedNo}</p>
+          </div>
+          ${limit.state === '启用'
+            ? '<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded">启用</span>'
+            : '<span class="px-2 py-0.5 bg-slate-100 text-slate-500 text-xs rounded">停用</span>'}
+        </div>
+        <div class="text-xs text-slate-500">有效期限：<span class="text-slate-700 font-mono">${limit.startDate} ~ ${limit.maturityDate}</span></div>
+      </div>
+
+      <!-- 1. 基本信息（按用户图2：5×3 = 15 字段，dt/dd 双列布局，深灰底标题） -->
+      <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div class="px-6 py-3 border-b border-slate-200">
+          <h3 class="font-bold text-slate-800 flex items-center gap-2">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            基本信息
+          </h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <tbody>
+              ${renderInfoRow('金融机构', limit.bank, '产品名称', limit.productName, '授信类型', limit.creditType)}
+              ${renderMoneyRow('授信额度（元）', limit.totalAmount, '冻结额度（元）', limit.frozenAmount, '已用额度（元）', limit.usedAmount)}
+              ${renderMoneyRow('剩余额度（元）', limit.availableAmount, '起始日期', limit.startDate, '到期日期', limit.maturityDate)}
+              ${renderInfoRow('额度是否循环', limit.circular ? '是' : '否', '额度情况', `<span class="px-2 py-0.5 text-xs ${limit.state === '启用' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'} rounded">${limit.state}</span>`, '核心企业', limit.coreCompany)}
+              ${renderInfoRow('监管企业', limit.supervisorCompany, '仓储企业', limit.warehouseCompany, '担保公司', limit.guarantorCompany)}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 2. 合同附件 -->
+      <section class="bg-white border border-slate-200 rounded-xl mt-4 overflow-hidden">
+        <div class="px-6 py-3 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="font-bold text-slate-800 flex items-center gap-2">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            合同附件
+          </h3>
+          <button onclick="downloadAllAttachments()" class="text-sm text-blue-600 hover:underline">一键下载</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-slate-600 border-b border-slate-200">
+                <th class="text-left py-3 px-4 w-40">附件类型</th>
+                <th class="text-left py-3 px-4">文件名称</th>
+                <th class="text-left py-3 px-4 w-40">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(limit.attachments && limit.attachments.length ? limit.attachments : []).map(a => `
+                <tr class="border-t border-slate-100">
+                  <td class="py-3 px-4 text-slate-700">${a.type}</td>
+                  <td class="py-3 px-4">
+                    <a href="javascript:void(0)" onclick="downloadFile('${a.name}')" class="text-blue-600 hover:underline">${a.name}</a>
+                  </td>
+                  <td class="py-3 px-4 flex items-center gap-3">
+                    <button onclick="viewFile('${a.name}')" class="text-blue-600 hover:underline">查看</button>
+                    <button onclick="downloadFile('${a.name}')" class="text-blue-600 hover:underline">下载</button>
+                  </td>
+                </tr>
+              `).join('')}
+              ${!(limit.attachments && limit.attachments.length) ? '<tr><td colspan="3" class="py-8 text-center text-slate-400 text-sm">暂无附件</td></tr>' : ''}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    `;
+  }
+
+  // dt/dd 双列表格行（深灰底标题）
+  function renderInfoRow(k1, v1, k2, v2, k3, v3) {
+    return `
+      <tr class="border-t border-slate-100">
+        <td class="px-4 py-3 bg-slate-50 text-sm text-slate-500 font-medium w-32 align-top">${k1}</td>
+        <td class="px-4 py-3 text-sm text-slate-800 align-top">${v1}</td>
+        <td class="px-4 py-3 bg-slate-50 text-sm text-slate-500 font-medium w-32 align-top">${k2}</td>
+        <td class="px-4 py-3 text-sm text-slate-800 align-top">${v2}</td>
+        <td class="px-4 py-3 bg-slate-50 text-sm text-slate-500 font-medium w-32 align-top">${k3}</td>
+        <td class="px-4 py-3 text-sm text-slate-800 align-top">${v3}</td>
+      </tr>
+    `;
+  }
+
+  // 金额行（数字右对齐 + 大字号）
+  function renderMoneyRow(k1, v1, k2, v2, k3, v3) {
+    return `
+      <tr class="border-t border-slate-100">
+        <td class="px-4 py-3 bg-slate-50 text-sm text-slate-500 font-medium w-32 align-top">${k1}</td>
+        <td class="px-4 py-3 text-sm text-slate-800 align-top num-focus">${typeof v1 === 'number' ? Utils.fmtMoney(v1) : v1}</td>
+        <td class="px-4 py-3 bg-slate-50 text-sm text-slate-500 font-medium w-32 align-top">${k2}</td>
+        <td class="px-4 py-3 text-sm text-slate-800 align-top num-focus">${typeof v2 === 'number' ? Utils.fmtMoney(v2) : v2}</td>
+        <td class="px-4 py-3 bg-slate-50 text-sm text-slate-500 font-medium w-32 align-top">${k3}</td>
+        <td class="px-4 py-3 text-sm text-slate-800 align-top num-focus">${typeof v3 === 'number' ? Utils.fmtMoney(v3) : v3}</td>
+      </tr>
+    `;
+  }
+
+  // ============ Events ============
+  window.viewFile = (name) => Utils.toast('查看附件：' + name + '（占位）', 'info');
+  window.downloadFile = (name) => Utils.toast('下载附件：' + name + '（占位）', 'info');
+  window.downloadAllAttachments = () => Utils.toast('一键下载全部附件（占位）', 'info');
+</script>
+</body>
+</html>
