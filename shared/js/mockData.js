@@ -184,6 +184,7 @@ const MockData = {
       ]},
       { group: '解押出库管理', items: [
         { icon: 'logistics', label: '解押出库申请', path: '/customer/outbound' },
+        { icon: 'list', label: '放还款详情', path: '/customer/disburse-repayment' },
       ]},
       { group: '贷后管理', items: [
         { icon: 'chart', label: '额度管理', path: '/customer/limit-management' },
@@ -1221,6 +1222,60 @@ const MockData = {
       ],
     },
   },
+
+  // ========== v1.7.24 放还款详情（资金↔客户看的视角） ==========
+  // 状态机：disbursed（已放款）/ partial（部分还款）/ cleared（已结清）/ overdue（逾期）
+  // 每行关联一笔"存贷资产编号"（即质押清单 MPCB_），查看跳转质押详情
+  disburseRepaymentList: (function() {
+    // 公共常量
+    const PRODUCTS = ['民生e货', '中原e货', '冷链现货质押融资（90天）', 'e仓融'];
+    const productBanks = {
+      '民生e货': '中国民生银行郑州分行',
+      '中原e货': '中原银行股份有限公司',
+      '冷链现货质押融资（90天）': '郑州农业融担保联合体',
+      'e仓融': '中原银行股份有限公司',
+    };
+    const statuses = [
+      'disbursed','disbursed','disbursed','disbursed','disbursed',
+      'partial','partial','partial',
+      'cleared','cleared','cleared','cleared',
+      'overdue','overdue',
+    ];
+    // 关联到 pledgeList 中已有的 pl_001..pl_012（循环复用）
+    const pledgeIds   = ['pl_001','pl_002','pl_003','pl_004','pl_005','pl_006','pl_007','pl_008','pl_009','pl_010','pl_011','pl_012','pl_001','pl_002'];
+    const pledgeNos   = [
+      'MPCB_14910955281409','MPCB_14910955281410','MPCB_14910955281411','MPCB_14910955281412','MPCB_14910955281413',
+      'MPCB_14910955281414','MPCB_14910955281415','MPCB_14910955281416','MPCB_14910955281417','MPCB_14910955281418',
+      'MPCB_14910955281419','MPCB_14910955281420','MPCB_14910955281409','MPCB_14910955281410',
+    ];
+    const baseLoan = 20000;  // 截图样例：20000.0000
+    const list = [];
+    for (let i = 0; i < statuses.length; i++) {
+      const st = statuses[i];
+      const product = PRODUCTS[i % PRODUCTS.length];
+      const remainingRatio = st === 'cleared' ? 0 : (st === 'partial' ? 0.6 : 1);
+      const remainingPrincipal = Math.round(baseLoan * remainingRatio);
+      list.push({
+        id: 'dr_' + String(i + 1).padStart(3, '0'),
+        financingNo: 'RZ2024112800' + String(i + 1).padStart(2, '0'),
+        product,
+        bank: productBanks[product],
+        loanAmount: baseLoan,
+        currentValue: baseLoan,
+        loanDate: '2025-03-28',
+        repayDate: '2025-06-27',
+        repaidPrincipal: baseLoan - remainingPrincipal,
+        repaidInterest: 200,
+        remainingPrincipal,
+        // 关联存贷资产编号 + 质押清单 ID（查看跳转用）
+        pledgeNo: pledgeNos[i],
+        pledgeId: pledgeIds[i],
+        bankDraftNo: 'ZXT202511' + String(12001 + i * 3).padStart(4, '0'),
+        status: st,
+      });
+    }
+    return list;
+  })(),
 
   // ========== 融资申请（v1.7.8 扩展：18 字段覆盖全状态机） ==========
   // 状态机：pending → pending_supervisor_eval → pending_owner_confirm → pending_supervisor
