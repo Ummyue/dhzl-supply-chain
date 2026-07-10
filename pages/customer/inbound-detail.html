@@ -13,7 +13,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>入库详情 - 大河智链</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } }</script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
   <link rel="stylesheet" href="/shared/css/style.css">
 </head>
 <body class="bg-slate-50">
@@ -75,8 +75,9 @@
     return 0;
   }
 
-  // 当前详情数据
-  const data = (urlId && MockData.inboundList.find(i => i.id === urlId)) || {
+  // 当前详情数据：url ?id= 命中 inboundList 时合并 DOM 物料，否则用 DEMO 兜底
+  const fromList = (urlId && MockData.inboundList.find(i => i.id === urlId)) || null;
+  const data = {
     id: 'demo',
     bizNo: DEMO.bizNo,
     applicant: '河南军牧原国际贸易有限公司',
@@ -90,6 +91,9 @@
     warehouse: '郑州仓',
     status: 'pending_supervisor',
     pledgeRows: DEMO.pledgeRows,
+    ...(fromList || {}),
+    // 覆盖 pledgeRows：mockData 里的 list 通常没有 pledgeRows，需要用 DEMO
+    pledgeRows: (fromList && fromList.pledgeRows) || DEMO.pledgeRows,
   };
 
   const currentStepIdx = statusToStep(data.status);

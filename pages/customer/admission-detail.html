@@ -292,14 +292,14 @@
             <button onclick="uploadAttachment(${i})" class="px-2.5 py-1 text-xs border border-blue-500 text-blue-600 rounded hover:bg-blue-50">+ 选择文件</button>
           </td>
           <td class="py-3 px-4 align-top">
-            <div id="att_${i}" class="flex flex-wrap gap-1.5">${renderAttachmentFiles(a)}</div>
+            <div id="att_${i}" class="flex flex-wrap gap-1.5">${renderAttachmentFiles(a, i)}</div>
           </td>
         </tr>
       `;
     }).join('');
   }
 
-  function renderAttachmentFiles(a) {
+  function renderAttachmentFiles(a, i) {
     if (!a.files || !a.files.length) return '<span class="text-slate-300 text-xs">（暂无文件）</span>';
     return a.files.map((f, j) => `
       <div class="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-50 rounded text-xs">
