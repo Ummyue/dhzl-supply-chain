@@ -162,11 +162,13 @@ const MockData = {
   // 2 个顶层模块：① 供应链综合服务（含「运营管理」） ② 产品设置（数字供应链/智慧仓储/供应链金融）
   // 当前所有原型归属于【产品设置 → 智慧仓储】（智慧仓储 = 大河智链 · 现货质押融资平台）
   // 其他子产品 = 数字供应链 / 供应链金融 / 运营管理 = 占位跳转 portal.html
+  // v1.7.27：subtitle 联动 topbar 「大河智链」下方副标题（按子产品切换）
   productLines: [
     {
       id: 'integrated',
       label: '供应链综合服务',
       description: '运营管理后台',
+      subtitle: '运营管理平台',
       active: false,
       subItems: [
         { id: 'ops', label: '运营管理', path: '/portal/ops', status: 'placeholder',
@@ -177,132 +179,167 @@ const MockData = {
       id: 'products',
       label: '产品设置',
       description: '数字供应链 / 智慧仓储 / 供应链金融',
+      subtitle: '智慧仓储管理平台',
       active: true,
       subItems: [
         { id: 'digital',   label: '数字供应链', path: '/portal/digital',   status: 'placeholder',
-          description: '订单 / 物流跟踪 / 区块链溯源' },
+          description: '订单 / 物流跟踪 / 区块链溯源',
+          subtitle: '数字供应链平台' },
         { id: 'warehouse', label: '智慧仓储',   path: '/dashboard',     status: 'active',
-          description: '大河智链 · 现货质押融资平台（当前）' },
+          description: '大河智链 · 现货质押融资平台（当前）',
+          subtitle: '现货质押融资监管平台' },
         { id: 'finance',   label: '供应链金融', path: '/portal/finance',   status: 'placeholder',
-          description: '订单融资 / 保理 / 担保服务' },
+          description: '客户准入 / 融资 / 解押出库 / 贷后 / 盯市',
+          subtitle: '供应链金融服务平台' },
       ],
     },
   ],
 
-  // ========== 角色菜单配置 ==========
+  // ========== 角色菜单配置（按子产品分组 v1.7.27） ==========
+  // 智慧仓储 = 库存/货物/视频监控相关（货主方+监管方+仓储方都看得到）
+  // 供应链金融 = 客户准入/融资/解押出库/贷后/盯市（金融业务集中区域）
+  // 数字供应链 / 运营管理 = 占位（暂无菜单）
   menus: {
-    customer: [
-      { group: '工作台', items: [
-        { icon: 'home', label: '首页概览', path: '/dashboard' },
-      ]},
-      { group: '库存管理', items: [
-        { icon: 'list', label: '库存台账', path: '/customer/inventory-ledger' },
-      ]},
-      { group: '客户准入', items: [
-        { icon: 'shield', label: '准入申请', path: '/customer/admission' },
-      ]},
-      { group: '货物管理', items: [
-        { icon: 'box', label: '入库申请', path: '/customer/inbound' },
-        { icon: 'package', label: '在库货物', path: '/customer/monitoring' },
-        { icon: 'list', label: '出/入库详情', path: '/customer/in-out-detail' },
-      ]},
-      { group: '视频监控', items: [
-        { icon: 'video', label: '监控概览', path: '/customer/video' },
-      ]},
-      { group: '融资管理', items: [
-        { icon: 'file', label: '融资申请', path: '/customer/financing' },
-        { icon: 'list', label: '质物清单', path: '/customer/pledge-list' },
-      ]},
-      { group: '解押出库管理', items: [
-        { icon: 'logistics', label: '解押出库申请', path: '/customer/outbound' },
-        { icon: 'list', label: '放还款详情', path: '/customer/disburse-repayment' },
-      ]},
-      { group: '贷后管理', items: [
-        { icon: 'chart', label: '额度管理', path: '/customer/limit-management' },
-      ]},
-    ],
-    platform: [
-      { group: '工作台', items: [
-        { icon: 'home', label: '首页概览', path: '/dashboard' },
-      ]},
-      { group: '准入审批', items: [
-        { icon: 'shield-check', label: '准入审批', path: '/platform/approval-admission' },
-      ]},
-      { group: '货物管理', items: [
-        { icon: 'box', label: '入库审批', path: '/platform/approval-inbound' },
-        { icon: 'package', label: '在库监控', path: '/platform/monitoring-dashboard' },
-      ]},
-      { group: '融资管理', items: [
-        { icon: 'file', label: '融资审核', path: '/platform/approval-financing' },
-        { icon: 'list', label: '质物清单', path: '/customer/pledge-list' },
-      ]},
-      { group: '出库审批', items: [
-        { icon: 'logistics', label: '解押/出库审批', path: '/platform/approval-outbound' },
-      ]},
-      { group: '视频监控', items: [
-        { icon: 'video', label: '监控概览', path: '/customer/video' },
-      ]},
-      { group: '数据中心', items: [
-        { icon: 'alert', label: '风险预警', path: '/platform/risk-alerts' },
-        { icon: 'cash', label: '追保管理', path: '/platform/supplementary' },
-        { icon: 'list', label: '还款管理', path: '/platform/loan-repayment' },
-        { icon: 'package', label: '资产管理', path: '/platform/asset-management' },
-        { icon: 'chart', label: '综合统计', path: '/platform/data-statistics' },
-      ]},
-    ],
-    guarantor: [
-      { group: '工作台', items: [
-        { icon: 'home', label: '首页概览', path: '/dashboard' },
-      ]},
-      { group: '融资审核', items: [
-        { icon: 'shield-check', label: '融资审核', path: '/guarantor/approval-financing' },
-      ]},
-      { group: '质押管理', items: [
-        { icon: 'list', label: '质押货物台账', path: '/guarantor/pledge-ledger' },
-        { icon: 'alert', label: '风险监控', path: '/guarantor/risk-monitoring' },
-      ]},
-      { group: '视频监控', items: [
-        { icon: 'video', label: '监控概览', path: '/customer/video' },
-      ]},
-    ],
-    bank: [
-      { group: '工作台', items: [
-        { icon: 'home', label: '首页概览', path: '/dashboard' },
-      ]},
-      { group: '融资审核', items: [
-        { icon: 'shield-check', label: '融资审核', path: '/bank/approval-financing' },
-      ]},
-      { group: '授信与放款', items: [
-        { icon: 'shield-check', label: '授信录入', path: '/bank/approval-credit' },
-        { icon: 'cash', label: '放款审核', path: '/bank/approval-loan' },
-      ]},
-      { group: '贷后管理', items: [
-        { icon: 'list', label: '质押货物台账', path: '/bank/pledge-ledger' },
-        { icon: 'cash', label: '放还款记录', path: '/bank/loan-records' },
-        { icon: 'alert', label: '到期预警', path: '/bank/due-alerts' },
-        { icon: 'chart', label: '额度管理', path: '/bank/limit-management' },
-      ]},
-      { group: '视频监控', items: [
-        { icon: 'video', label: '监控概览', path: '/customer/video' },
-      ]},
-    ],
-    warehouse: [
-      { group: '工作台', items: [
-        { icon: 'home', label: '首页概览', path: '/dashboard' },
-      ]},
-      { group: '入库作业', items: [
-        { icon: 'box', label: '入库执行', path: '/warehouse/inbound' },
-      ]},
-      { group: '出库作业', items: [
-        { icon: 'logistics', label: '出库执行', path: '/warehouse/outbound' },
-      ]},
-      { group: '在库管理', items: [
-        { icon: 'package', label: '库存台账', path: '/warehouse/inventory' },
-      ]},
-      { group: '视频监控', items: [
-        { icon: 'video', label: '监控概览', path: '/customer/video' },
-      ]},
-    ],
+    // ============== 智慧仓储 ==============
+    warehouse: {
+      customer: [
+        { group: '工作台', items: [
+          { icon: 'home', label: '首页概览', path: '/dashboard' },
+        ]},
+        { group: '库存管理', items: [
+          { icon: 'list', label: '库存台账', path: '/customer/inventory-ledger' },
+        ]},
+        { group: '货物管理', items: [
+          { icon: 'box', label: '入库申请', path: '/customer/inbound' },
+          { icon: 'package', label: '在库货物', path: '/customer/monitoring' },
+          { icon: 'list', label: '出/入库详情', path: '/customer/in-out-detail' },
+        ]},
+        { group: '视频监控', items: [
+          { icon: 'video', label: '监控概览', path: '/customer/video' },
+        ]},
+      ],
+      platform: [
+        { group: '工作台', items: [
+          { icon: 'home', label: '首页概览', path: '/dashboard' },
+        ]},
+        { group: '货物管理', items: [
+          { icon: 'box', label: '入库审批', path: '/platform/approval-inbound' },
+          { icon: 'package', label: '在库监控', path: '/platform/monitoring-dashboard' },
+        ]},
+        { group: '视频监控', items: [
+          { icon: 'video', label: '监控概览', path: '/customer/video' },
+        ]},
+      ],
+      guarantor: [
+        { group: '工作台', items: [
+          { icon: 'home', label: '首页概览', path: '/dashboard' },
+        ]},
+        { group: '视频监控', items: [
+          { icon: 'video', label: '监控概览', path: '/customer/video' },
+        ]},
+      ],
+      bank: [
+        { group: '工作台', items: [
+          { icon: 'home', label: '首页概览', path: '/dashboard' },
+        ]},
+        { group: '视频监控', items: [
+          { icon: 'video', label: '监控概览', path: '/customer/video' },
+        ]},
+      ],
+      warehouse: [
+        { group: '工作台', items: [
+          { icon: 'home', label: '首页概览', path: '/dashboard' },
+        ]},
+        { group: '入库作业', items: [
+          { icon: 'box', label: '入库执行', path: '/warehouse/inbound' },
+        ]},
+        { group: '出库作业', items: [
+          { icon: 'logistics', label: '出库执行', path: '/warehouse/outbound' },
+        ]},
+        { group: '在库管理', items: [
+          { icon: 'package', label: '库存台账', path: '/warehouse/inventory' },
+        ]},
+        { group: '视频监控', items: [
+          { icon: 'video', label: '监控概览', path: '/customer/video' },
+        ]},
+      ],
+    },
+
+    // ============== 供应链金融 ==============
+    finance: {
+      customer: [
+        { group: '客户准入', items: [
+          { icon: 'shield', label: '准入申请', path: '/customer/admission' },
+        ]},
+        { group: '融资管理', items: [
+          { icon: 'file', label: '融资申请', path: '/customer/financing' },
+          { icon: 'list', label: '质物清单', path: '/customer/pledge-list' },
+        ]},
+        { group: '解押出库管理', items: [
+          { icon: 'logistics', label: '解押出库申请', path: '/customer/outbound' },
+          { icon: 'list', label: '放还款详情', path: '/customer/disburse-repayment' },
+        ]},
+        { group: '贷后管理', items: [
+          { icon: 'chart', label: '额度管理', path: '/customer/limit-management' },
+        ]},
+        { group: '盯市管理', items: [
+          { icon: 'chart', label: '价格看板', path: '/customer/market' },  // v1.7.27 新建占位
+        ]},
+      ],
+      platform: [
+        { group: '准入审批', items: [
+          { icon: 'shield-check', label: '准入审批', path: '/platform/approval-admission' },
+        ]},
+        { group: '融资审核', items: [
+          { icon: 'file', label: '融资审核', path: '/platform/approval-financing' },
+        ]},
+        { group: '质物清单', items: [
+          { icon: 'list', label: '质物清单', path: '/customer/pledge-list' },
+        ]},
+        { group: '出库审批', items: [
+          { icon: 'logistics', label: '解押/出库审批', path: '/platform/approval-outbound' },
+        ]},
+        // ===== 「数据中心」归属 =====
+        // 现状：5 项全放「供应链金融」下（风险/追保/还款/资产/统计 都是金融风控相关）
+        // 如有意见请告知调整
+        { group: '数据中心', items: [
+          { icon: 'alert',   label: '风险预警',   path: '/platform/risk-alerts' },
+          { icon: 'cash',    label: '追保管理',   path: '/platform/supplementary' },
+          { icon: 'list',    label: '还款管理',   path: '/platform/loan-repayment' },
+          { icon: 'package', label: '资产管理',   path: '/platform/asset-management' },
+          { icon: 'chart',   label: '综合统计',   path: '/platform/data-statistics' },
+        ]},
+      ],
+      guarantor: [
+        { group: '融资审核', items: [
+          { icon: 'shield-check', label: '融资审核', path: '/guarantor/approval-financing' },
+        ]},
+        { group: '质押管理', items: [
+          { icon: 'list', label: '质押货物台账', path: '/guarantor/pledge-ledger' },
+          { icon: 'alert', label: '风险监控', path: '/guarantor/risk-monitoring' },
+        ]},
+      ],
+      bank: [
+        { group: '融资审核', items: [
+          { icon: 'shield-check', label: '融资审核', path: '/bank/approval-financing' },
+        ]},
+        { group: '授信与放款', items: [
+          { icon: 'shield-check', label: '授信录入', path: '/bank/approval-credit' },
+          { icon: 'cash', label: '放款审核', path: '/bank/approval-loan' },
+        ]},
+        { group: '贷后管理', items: [
+          { icon: 'list',  label: '质押货物台账', path: '/bank/pledge-ledger' },
+          { icon: 'cash',  label: '放还款记录', path: '/bank/loan-records' },
+          { icon: 'alert', label: '到期预警', path: '/bank/due-alerts' },
+          { icon: 'chart', label: '额度管理', path: '/bank/limit-management' },
+        ]},
+      ],
+      warehouse: [],  // 仓储方无金融业务
+    },
+
+    // ============== 占位子产品（暂无菜单） ==============
+    digital: { customer: [], platform: [], guarantor: [], bank: [], warehouse: [] },
+    ops:     { customer: [], platform: [], guarantor: [], bank: [], warehouse: [] },
   },
 
   // ========== 货品 SKU 库（来自真实盯市台账） ==========

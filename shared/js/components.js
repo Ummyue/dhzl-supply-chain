@@ -18,7 +18,7 @@ const Components = {
           <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white font-bold shadow-md">大</div>
           <div>
             <div class="font-bold text-slate-800 text-lg leading-tight">大河智链</div>
-            <div class="text-xs text-slate-500 leading-tight">供应链综合服务平台</div>
+            <div class="text-xs text-slate-500 leading-tight">${(currentTop && currentTop.subtitle) || '供应链综合服务平台'}</div>
           </div>
         </div>
 
@@ -159,7 +159,35 @@ const Components = {
   // ============ 侧边栏（Sidebar）============
   sidebar(currentPath = '') {
     const role = Utils.getRole();
-    const menu = MockData.menus[role] || [];
+    // v1.7.27：menus 是 { productLine: { role: [...] } } 二层结构
+    const productId = Utils.getProductLine();
+    const productMenus = (MockData.menus && MockData.menus[productId]) || {};
+    const menu = productMenus[role] || [];
+
+    // 如果当前子产品在这个角色下没有菜单（占位子产品数字供应链/运营管理），
+    // 显示一个简洁提示，避免空白页
+    if (!menu.length) {
+      const product = Utils.resolveProductLine(productId);
+      return `
+        <aside class="w-60 bg-white border-r border-slate-200 h-[calc(100vh-4rem)] sticky top-16 overflow-y-auto flex-shrink-0">
+          <nav class="py-4">
+            <div class="px-4 py-3 text-sm text-slate-500">
+              <div class="text-slate-400 text-xs uppercase tracking-wider mb-2">${product ? product.topLine.label : '当前子产品'}</div>
+              <div class="font-medium text-slate-800 mb-2">${product ? product.label : '该模块'}</div>
+              <div class="text-xs leading-relaxed">当前角色在该子产品下还没有具体功能。点击顶部「产品设置」可切换到其他子产品。</div>
+              <button onclick="Components.toggleProductMenu()" class="mt-4 inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-blue-300 text-blue-700 rounded hover:bg-blue-50">
+                <span>切换子产品</span>
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+            </div>
+          </nav>
+          <div class="px-4 py-3 mx-2 mb-4 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100">
+            <div class="text-xs text-blue-700 font-medium mb-1">💡 演示小贴士</div>
+            <div class="text-xs text-blue-600 leading-relaxed">点击顶部"角色"切换不同用户视角，所有页面联动变化</div>
+          </div>
+        </aside>
+      `;
+    }
 
     // 图标 SVG 路径
     const icons = {

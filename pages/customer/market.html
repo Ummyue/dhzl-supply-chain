@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>价格看板 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.27 客户方【盯市管理 → 价格看板】 ============
+  // 暂未确定具体字段，先做一个干净的占位 dashboard
+  // 等用户提供商品库 / 数据源 / 走势截图后，再迭代
+
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '价格看板',
+    currentPath: '/customer/market',
+    breadcrumb: [
+      { label: '供应链金融服务平台', path: '' },
+      { label: '盯市管理', path: '/customer/market' },
+      { label: '价格看板', path: '/customer/market' },
+    ],
+    extra: '',
+    content: `
+      <div class="bg-white border border-slate-200 rounded-xl px-6 py-5 mb-4">
+        <h2 class="text-lg font-bold text-slate-800 mb-1"><span class="inline-block w-1 h-4 bg-blue-500 rounded mr-2 align-middle"></span>价格看板</h2>
+        <p class="text-sm text-slate-500">常用商品价格走势 · 数据源标注（自动更新 / 人工操作）</p>
+      </div>
+
+      <!-- 占位说明：等待用户细化 -->
+      <div class="bg-white border border-amber-200 rounded-xl px-6 py-8 text-center">
+        <div class="w-16 h-16 mx-auto mb-4 bg-amber-50 rounded-full flex items-center justify-center text-2xl">🚧</div>
+        <div class="text-base font-medium text-amber-700 mb-2">价格看板正在搭建</div>
+        <p class="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+          该模块归属于【供应链金融 → 盯市管理】，<br/>
+          需要在确认数据源（USDA / 农业农村部 / 大商所 等真实 API 或演示 mock）后逐字段迭代。
+        </p>
+        <div class="mt-4 inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+          v1.7.27 占位 · 等你给具体字段/截图后再补
+        </div>
+      </div>
+    `,
+  });
+</script>
+</body>
+</html>
