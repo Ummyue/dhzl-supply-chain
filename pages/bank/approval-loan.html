@@ -4,18 +4,17 @@
   <script>
 (function() {
   var p = window.location.pathname;
-  // GitHub Pages 子路径部署 vs Vercel 根路径部署
   var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
   document.write('<base href="' + base + '">');
 })();
 </script>
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>放款审核 - 大河智链</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
-<link rel="stylesheet" href="/shared/css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>放款登记 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
 </head>
 <body class="bg-slate-50">
 <div id="app"></div>
@@ -24,120 +23,260 @@
 <script src="/shared/js/components.js"></script>
 <script>
   Components.bindGlobalClose();
+
+  // ============ v1.7.17 放款登记（资金方操作页面，按用户图2） ============
+  // 阴需规则：实际资金操作由资金方线下完成（银行转账），系统仅留痕
+  // 录入：借据号 / 柜号 / 放款本金 / 起息日期 / 到期日期 + 上传电子回单/放款证明凭证
+
+  // 关联融资单
+  const demo = {
+    bizNo: 'RZ202411280002',
+    pledgor: '河南军牧原国际贸易有限公司',
+    financeProduct: '中原e贷',
+    bank: '中原银行股份有限公司',
+    interestRate: '2.3%',
+    applyAmount: '20000.00',
+  };
+
+  // 录入表单
+  const form = {
+    loanReceipt: '',
+    cabinetNo: '',
+    loanAmount: '',
+    startDate: '',
+    maturityDate: '',
+  };
+
   document.getElementById('app').innerHTML = Components.pageShell({
-    title: '放款审核工作台',
+    title: '放款登记',
     currentPath: '/bank/approval-loan',
-    breadcrumb: [{ label: '授信与放款', path: '/bank/approval-loan' }, '放款审核'],
-    content: `
-      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-xs text-blue-800">
-        <span class="font-medium">v1.7 流程：</span>本页面是<strong>3 级审核的第 3 步</strong>（监管方 + 担保方均已通过 → <strong>您（资金方）</strong>）。审核通过后，<br>
-        ① 货主方需在《质物清单》上盖章③<br>
-        ② 您需<strong>线下完成银行打款</strong>（受托支付）<br>
-        ③ 您需<strong>上传放款证明 + 电子回单</strong>完成放款登记
-      </div>
-
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <div class="bg-violet-50 rounded-xl p-4 border border-violet-200">
-          <div class="text-xs text-violet-700">待放款</div>
-          <div class="text-2xl font-bold text-violet-700 num-focus mt-1">¥1.19M</div>
-          <div class="text-xs text-slate-500 mt-1">2 笔</div>
-        </div>
-        <div class="bg-white rounded-xl p-4 border border-slate-200">
-          <div class="text-xs text-slate-500">本月放款</div>
-          <div class="text-2xl font-bold text-green-600 num-focus mt-1">¥1.2亿</div>
-        </div>
-        <div class="bg-white rounded-xl p-4 border border-slate-200">
-          <div class="text-xs text-slate-500">在贷客户</div>
-          <div class="text-2xl font-bold text-slate-800 mt-1">23</div>
-        </div>
-        <div class="bg-white rounded-xl p-4 border border-slate-200">
-          <div class="text-xs text-slate-500">不良率</div>
-          <div class="text-2xl font-bold text-emerald-600 num-focus mt-1">0.32%</div>
-        </div>
-      </div>
-
-      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div class="px-5 py-3 border-b border-slate-200">
-          <h3 class="font-semibold text-slate-800">待放款融资（担保函已出具）</h3>
-        </div>
-        <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
-            <tr>
-              <th class="text-left px-4 py-3">融资编号</th>
-              <th class="text-left px-4 py-3">客户</th>
-              <th class="text-left px-4 py-3">货品/质押</th>
-              <th class="text-right px-4 py-3">放款金额</th>
-              <th class="text-right px-4 py-3">期限</th>
-              <th class="text-right px-4 py-3">利率</th>
-              <th class="text-center px-4 py-3">状态</th>
-              <th class="text-center px-4 py-3">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${MockData.financingList.map(f => `
-              <tr class="border-t border-slate-100 hover:bg-slate-50">
-                <td class="px-4 py-3 font-mono text-xs">${f.bizNo}</td>
-                <td class="px-4 py-3 font-medium">${f.applicant}</td>
-                <td class="px-4 py-3">
-                  <div class="text-xs">${f.products[0]?.name || '-'}</div>
-                  <div class="text-xs text-slate-400">货值 ${Utils.fmtMoney(f.evaluateValue)}</div>
-                </td>
-                <td class="px-4 py-3 text-right num-focus font-bold text-violet-600">${Utils.fmtMoney(f.applyAmount)}</td>
-                <td class="px-4 py-3 text-right">${f.duration}天</td>
-                <td class="px-4 py-3 text-right">4.35%</td>
-                <td class="px-4 py-3 text-center"><span class="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded">待放款</span></td>
-                <td class="px-4 py-3 text-center">
-                  <button onclick="confirmLoan('${f.id}')" class="px-3 py-1 bg-violet-600 hover:bg-violet-700 text-white text-xs rounded">确认放款</button>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    `
+    breadcrumb: [
+      { label: '授信与放款', path: '/bank/approval-loan' },
+      { label: '放款登记', path: '/bank/approval-loan' },
+    ],
+    extra: `
+      <a href="${Utils.nav('/bank/loan-records')}" class="px-3 py-1.5 text-sm border border-slate-300 rounded hover:bg-slate-50">放还款记录 →</a>
+    `,
+    content: render(),
   });
 
-  function confirmLoan(id) {
-    const f = MockData.financingList.find(x => x.id === id) || MockData.financingList[0];
-    const modal = document.createElement('div');
-    modal.className = 'modal-backdrop';
-    modal.innerHTML = `
-      <div class="bg-white rounded-xl w-[700px] max-h-[90vh] overflow-y-auto shadow-2xl" onclick="event.stopPropagation()">
-        <div class="px-6 py-4 border-b border-slate-200 sticky top-0 bg-white">
-          <h3 class="font-bold text-slate-800 text-lg">确认放款 - ${f.bizNo}</h3>
+  function render() {
+    return `
+      <!-- 业务头部 -->
+      <div class="flex items-center justify-between mb-4 bg-white border border-slate-200 rounded-xl px-5 py-3">
+        <div class="flex items-center gap-3">
+          <a href="javascript:history.back()" class="flex items-center gap-1 text-slate-600 hover:text-blue-600 text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            返回
+          </a>
+          <h2 class="text-base font-bold text-slate-800">放款登记 <span class="ml-2 text-xs font-mono text-slate-500">${demo.bizNo}</span></h2>
+          <span class="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded">资金方视角</span>
         </div>
-        <div class="p-6 space-y-4">
-          <div class="bg-violet-50 border border-violet-200 rounded-lg p-4 text-sm space-y-2">
-            <div class="flex justify-between"><span class="text-slate-600">放款金额：</span><span class="text-2xl font-bold text-violet-700 num-focus">${Utils.fmtMoney(f.applyAmount)}</span></div>
-            <div class="flex justify-between"><span class="text-slate-600">收款账户：</span><span>${f.applicant} · 民生银行郑州分行</span></div>
-            <div class="flex justify-between"><span class="text-slate-600">还款方式：</span>到期一次性还本付息</div>
-            <div class="flex justify-between"><span class="text-slate-600">放款执行利率：</span>4.35%</div>
-            <div class="flex justify-between"><span class="text-slate-600">结息方式：</span>按月结息，到期还本</div>
-            <div class="flex justify-between"><span class="text-slate-600">担保方式：</span>动产质押 + 中原担保连带责任</div>
-            <div class="flex justify-between"><span class="text-slate-600">担保函编号：</span><span class="font-mono text-xs">GUAR_${f.bizNo.replace('FN_', '')}_001</span></div>
+        <div class="text-xs text-slate-500">操作人：<span class="text-slate-700 font-medium">刘敏（资金方）</span></div>
+      </div>
+
+      <!-- 1. 融资信息（5 字段：融资编号 / 融资方 / 金融产品 / 金融机构 / 融资利率） -->
+      <section class="bg-white border border-slate-200 rounded-xl mb-4 overflow-hidden">
+        <div class="px-6 py-3 border-b border-slate-200">
+          <h3 class="font-bold text-slate-800">融资信息</h3>
+        </div>
+        <div class="px-6 py-5">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4">
+            <div><dt class="text-xs text-slate-500 mb-1">融资编号</dt><dd><a class="text-blue-600 hover:underline font-mono text-sm" href="${Utils.nav('/customer/financing-detail')}?id=fn_005">${demo.bizNo}</a></dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1">融资方</dt><dd class="text-sm text-slate-800">${demo.pledgor}</dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1">金融产品</dt><dd class="text-sm text-slate-800">${demo.financeProduct}</dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1">金融机构</dt><dd class="text-sm text-slate-800">${demo.bank}</dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1">融资利率</dt><dd class="text-sm text-slate-800">${demo.interestRate}</dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1">拟融资金额</dt><dd class="text-sm text-blue-700 num-focus font-bold">¥${demo.applyAmount}</dd></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. 放款信息（5 字段） -->
+      <section class="bg-white border border-slate-200 rounded-xl mb-4 overflow-hidden">
+        <div class="px-6 py-3 border-b border-slate-200">
+          <h3 class="font-bold text-slate-800">放款信息</h3>
+          <p class="text-xs text-slate-500 mt-1">⚠ 系统仅做流程留痕，实际资金操作由资金方通过银行完成（线下），请上传电子回单 + 放款证明</p>
+        </div>
+        <div class="p-6 space-y-6">
+          <!-- 行 1：借据号 / 柜号 / 放款本金 -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label class="block text-xs text-slate-600 mb-1.5"><span class="text-red-500">*</span> 借据号</label>
+              <input type="text" id="loan_receipt" value="${form.loanReceipt}" oninput="onFormInput()" placeholder="请输入借据号" class="w-full px-3 py-2.5 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none font-mono">
+              <p class="text-xs text-slate-400 mt-1">银行系统内唯一借据号</p>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-600 mb-1.5"><span class="text-red-500">*</span> 柜号</label>
+              <input type="text" id="cabinet_no" value="${form.cabinetNo}" oninput="onFormInput()" placeholder="请输入柜号" class="w-full px-3 py-2.5 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none font-mono">
+              <p class="text-xs text-slate-400 mt-1">业务受理柜号</p>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-600 mb-1.5"><span class="text-red-500">*</span> 放款本金（元）</label>
+              <input type="number" id="loan_amount" value="${form.loanAmount}" oninput="onFormInput()" placeholder="请输入放款本金" class="w-full px-3 py-2.5 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none num-focus">
+              <p class="text-xs text-slate-400 mt-1">实际放款金额，≤拟融资金额 ¥${demo.applyAmount}</p>
+            </div>
           </div>
 
-          <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
-            ⚠ 放款后，资金将通过受托支付方式支付至客户指定账户。请确认收款方合规性
+          <!-- 行 2：融资起息日期 / 融资到期日期 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-xs text-slate-600 mb-1.5"><span class="text-red-500">*</span> 融资起息日期</label>
+              <input type="date" id="start_date" value="${form.startDate}" onchange="onFormInput()" class="w-full px-3 py-2.5 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none">
+              <p class="text-xs text-slate-400 mt-1">系统起息日（实际放款日 T+0 或 T+1）</p>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-600 mb-1.5"><span class="text-red-500">*</span> 融资到期日期</label>
+              <input type="date" id="maturity_date" value="${form.maturityDate}" onchange="onFormInput()" onblur="checkMaturity()" class="w-full px-3 py-2.5 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none">
+              <p id="maturityHint" class="text-xs text-slate-400 mt-1">最迟不超过质押到期日（系统校验）</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. 附件（电子回单 + 放款证明 + 上传时间气泡） -->
+      <section class="bg-white border border-slate-200 rounded-xl mb-6 overflow-hidden">
+        <div class="px-6 py-3 border-b border-slate-200">
+          <h3 class="font-bold text-slate-800">附件</h3>
+        </div>
+        <div class="p-6">
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700 mb-4 flex items-start gap-2">
+            <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+            <span>可支持格式为 jpg、jpeg、png、pdf 的附件，支持多张，单个附件大小不得超过 100M 的文件。</span>
           </div>
 
-          <div>
-            <label class="flex items-start gap-2 text-sm text-slate-700">
-              <input type="checkbox" class="mt-1">
-              <span>本人确认放款信息无误，同意按上述条款执行放款操作。已按反洗钱及客户身份识别要求完成核查。</span>
-            </label>
-          </div>
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-slate-600 border-b border-slate-200">
+                <th class="text-left py-2 px-3 w-40">单据类型</th>
+                <th class="text-center py-2 px-3 w-32 relative">
+                  <span>操作</span>
+                  <div id="uploadTip" class="absolute left-1/2 top-full -translate-x-1/2 mt-1 bg-slate-800 text-white text-xs px-2.5 py-1.5 rounded whitespace-nowrap shadow-lg hidden z-10">
+                    📅 上传时间：<span id="uploadTimeText">2023-12-12 12:23:32</span>
+                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-slate-800"></div>
+                  </div>
+                </th>
+                <th class="text-left py-2 px-3">文件名</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${renderAttachmentRow('* 电子回单', 'rect')}
+              ${renderAttachmentRow('* 放款证明', 'cert')}
+            </tbody>
+          </table>
         </div>
-        <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-2 sticky bottom-0 bg-white">
-          <button onclick="this.closest('.modal-backdrop').remove()" class="px-4 py-2 border border-slate-300 rounded-md text-sm hover:bg-slate-50">取消</button>
-          <button onclick="Utils.toast('✓ 放款成功！资金已发放至客户账户','success'); this.closest('.modal-backdrop').remove(); setTimeout(()=>location.reload(),800)" class="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-md text-sm font-medium">确认放款</button>
-        </div>
+      </section>
+
+      <!-- 底部按钮 -->
+      <div class="flex justify-center gap-3 pb-8">
+        <button onclick="cancelLoan()" class="px-8 py-2 border border-slate-300 rounded text-sm text-slate-700 hover:bg-slate-50">取消</button>
+        <button onclick="submitLoan()" class="px-8 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">提交</button>
       </div>
     `;
-    // v1.7.8 表单类弹窗：屏蔽点击外面关闭
-    modal.onclick = () => {};
-    document.body.appendChild(modal);
   }
+
+  function renderAttachmentRow(label, key) {
+    const required = label.includes('*');
+    const cleanLabel = label.replace(/\* \?/, '').replace(/\* /, '');
+    return `
+      <tr class="border-t border-slate-100">
+        <td class="py-3 px-3 align-top">
+          ${required ? '<span class="text-rose-500">* </span>' : ''}${cleanLabel}
+          ${key === 'rect' ? '<p class="text-xs text-slate-400 mt-1">（必传：实际放款银行回单）</p>' : ''}
+          ${key === 'cert' ? '<p class="text-xs text-slate-400 mt-1">（必传：银行放款证明含借据号）</p>' : ''}
+        </td>
+        <td class="py-3 px-3 align-top text-center">
+          <button onmouseenter="showUploadTip()" onmouseleave="hideUploadTip()" onclick="doUpload('${key}')" class="px-3 py-1 border border-blue-500 text-blue-600 rounded text-xs hover:bg-blue-50">+ 上传</button>
+        </td>
+        <td class="py-3 px-3 align-top">
+          <div id="files_${key}" class="flex items-center gap-2 flex-wrap">
+            <span class="text-slate-300 text-xs">（暂无文件）</span>
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
+  // ============ Events ============
+  window.onFormInput = () => {
+    form.loanReceipt = document.getElementById('loan_receipt').value;
+    form.cabinetNo = document.getElementById('cabinet_no').value;
+    form.loanAmount = document.getElementById('loan_amount').value;
+    form.startDate = document.getElementById('start_date').value;
+    form.maturityDate = document.getElementById('maturity_date').value;
+  };
+
+  window.checkMaturity = () => {
+    const s = document.getElementById('start_date').value;
+    const e = document.getElementById('maturity_date').value;
+    const hint = document.getElementById('maturityHint');
+    if (!s || !e) return;
+    const sd = new Date(s), ed = new Date(e);
+    if (ed <= sd) {
+      hint.textContent = '⚠ 到期日必须晚于起息日';
+      hint.classList.add('text-rose-500');
+      hint.classList.remove('text-slate-400');
+    } else {
+      const days = Math.round((ed - sd) / 86400000);
+      hint.textContent = `融资期 ${days} 天，按 360 天年化基准可计提利息 ¥${(Number(form.loanAmount || demo.applyAmount) * 0.023 * days / 360).toFixed(2)}`;
+      hint.classList.add('text-slate-400');
+      hint.classList.remove('text-rose-500');
+    }
+  };
+
+  window.showUploadTip = () => document.getElementById('uploadTip')?.classList.remove('hidden');
+  window.hideUploadTip = () => document.getElementById('uploadTip')?.classList.add('hidden');
+
+  window.doUpload = (key) => {
+    const wrap = document.getElementById('files_' + key);
+    if (!wrap) return;
+    const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const fileName = (key === 'rect' ? '电子回单' : '放款证明') + '_' + Date.now().toString().slice(-6) + '.png';
+    wrap.innerHTML = `
+      <div class="relative group inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">
+        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>
+        ${fileName}
+        <button onclick="removeFile(this, '${key}')" class="ml-1 -mr-1 -mt-1 absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-slate-500 hover:bg-rose-500 text-white text-[10px] flex items-center justify-center">×</button>
+      </div>
+    `;
+    Utils.toast('已选择' + fileName, 'success');
+    document.getElementById('uploadTimeText').textContent = now;
+  };
+
+  window.removeFile = (btn, key) => {
+    btn.parentElement.remove();
+    const wrap = document.getElementById('files_' + key);
+    if (wrap && !wrap.children.length) {
+      wrap.innerHTML = '<span class="text-slate-300 text-xs">（暂无文件）</span>';
+    }
+  };
+
+  window.cancelLoan = () => {
+    if (confirm('确认取消放款登记？未保存的数据将丢失。')) history.back();
+  };
+
+  window.submitLoan = () => {
+    const missing = [];
+    if (!form.loanReceipt) missing.push('借据号');
+    if (!form.cabinetNo) missing.push('柜号');
+    if (!form.loanAmount || Number(form.loanAmount) <= 0) missing.push('放款本金');
+    if (!form.startDate) missing.push('融资起息日期');
+    if (!form.maturityDate) missing.push('融资到期日期');
+    if (missing.length) return Utils.toast('请填写：' + missing.join('、'), 'error');
+    if (form.loanAmount && Number(form.loanAmount) > Number(demo.applyAmount)) {
+      return Utils.toast('放款本金不能超过拟融资金额 ¥' + demo.applyAmount, 'error');
+    }
+    if (form.startDate && form.maturityDate) {
+      const sd = new Date(form.startDate), ed = new Date(form.maturityDate);
+      if (ed <= sd) return Utils.toast('到期日必须晚于起息日', 'error');
+    }
+    const rect = document.querySelectorAll('#files_rect > div').length;
+    const cert = document.querySelectorAll('#files_cert > div').length;
+    if (rect === 0) return Utils.toast('请上传电子回单（必传）', 'error');
+    if (cert === 0) return Utils.toast('请上传放款证明（必传）', 'error');
+    Utils.toast('放款登记已提交，融资状态变更为「已放款」', 'success');
+    setTimeout(() => history.back(), 1200);
+  };
 </script>
 </body>
 </html>

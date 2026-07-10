@@ -4,18 +4,17 @@
   <script>
 (function() {
   var p = window.location.pathname;
-  // GitHub Pages 子路径部署 vs Vercel 根路径部署
   var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
   document.write('<base href="' + base + '">');
 })();
 </script>
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>还款回单确认 - 大河智链</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
-<link rel="stylesheet" href="/shared/css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>还款登记 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
 </head>
 <body class="bg-slate-50">
 <div id="app"></div>
@@ -24,164 +23,251 @@
 <script src="/shared/js/components.js"></script>
 <script>
   Components.bindGlobalClose();
+
+  // ============ v1.7.17 还款登记（资金方/货主方操作页面，按用户图1） ============
+  // 数据流：录入实际还款本金 + 实际还款利息 + 还款日期（线下已完成资金操作，系统留痕）
+  // 上传电子回单凭证（线下银行流水截图/PDF）—— 阴需规则：实际金额可能≠试算（截图显示 已还款 ¥0 / 未还本金 ¥3,181.5）
+
+  // demo 融资记录数据
+  const demo = {
+    bizNo: 'RZ202411280002',
+    pledgor: '河南军牧原国际贸易有限公司',
+    financeProduct: '中原e贷',
+    bank: '中原银行股份有限公司',
+    interestRate: '2.3%',
+    loanDate: '2024-11-21',
+    maturityDate: '2025-11-16',
+    loanReceipt: 'sn0018288',
+    cabinetNo: 'sn0018288',
+    loanAmount: '300000.00',
+    repaidAmount: '0.00',
+    remainingAmount: '300000.00',
+    notRepaidPrincipal: '3181.5', // 待还本金（剩余未结）
+  };
+
+  // 表单数据（实际录入）
+  const form = {
+    repayPrincipal: '',
+    repayInterest: '',
+    repayDate: '',
+  };
+
+  // 当前账户角色（资金方刘敏/货主方都能登录登记）
+  const _role = Utils.getRole();
+  const _isBank = _role === 'bank';
+
   document.getElementById('app').innerHTML = Components.pageShell({
-    title: '还款回单确认',
+    title: '还款登记',
     currentPath: '/bank/confirm-repayment',
-    breadcrumb: [{ label: '授信与放款', path: '/bank/approval-loan' }, '还款回单确认'],
-    content: `
-      <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-sm text-amber-800">
-        <div class="font-medium mb-1">💡 v1.7 阴需核心：还款回单确认</div>
-        <div>货主方在 <code class="bg-amber-100 px-1 rounded">/customer/outbound</code> 完成<strong>阶段A：还款登记</strong>（线下还款+上传回单）后，您（资金方）需在此页面<strong>确认实际收款</strong>。</div>
-        <div class="text-xs mt-2">⚠ 系统<strong>无实际扣款能力</strong>，仅做流程化登记。请核对实际银行收款后再确认。</div>
-      </div>
-
-      <div class="grid grid-cols-3 gap-3 mb-6">
-        <div class="bg-white rounded-xl p-4 border border-slate-200">
-          <div class="text-xs text-slate-500">待确认回单</div>
-          <div class="text-3xl font-bold text-amber-600 mt-1">${MockData.repaymentRecords.filter(r => !r.fundingConfirmed).length}</div>
-        </div>
-        <div class="bg-white rounded-xl p-4 border border-slate-200">
-          <div class="text-xs text-slate-500">本月已确认</div>
-          <div class="text-3xl font-bold text-emerald-600 mt-1">${MockData.repaymentRecords.filter(r => r.fundingConfirmed).length}</div>
-        </div>
-        <div class="bg-white rounded-xl p-4 border border-slate-200">
-          <div class="text-xs text-slate-500">待确认总金额</div>
-          <div class="text-2xl font-bold text-orange-600 mt-1 num-focus">${Utils.fmtMoney(MockData.repaymentRecords.filter(r => !r.fundingConfirmed).reduce((s, r) => s + r.offLineAmount, 0))}</div>
-        </div>
-      </div>
-
-      <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
-        <span class="w-1 h-4 bg-amber-500 rounded"></span>
-        待确认回单（${MockData.repaymentRecords.filter(r => !r.fundingConfirmed).length}）
-      </h3>
-      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-6">
-        <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
-            <tr>
-              <th class="text-left px-4 py-3">登记编号</th>
-              <th class="text-left px-4 py-3">业务编号</th>
-              <th class="text-left px-4 py-3">货主/货品</th>
-              <th class="text-right px-4 py-3">系统试算</th>
-              <th class="text-right px-4 py-3">线下实际</th>
-              <th class="text-left px-4 py-3">还款方式</th>
-              <th class="text-left px-4 py-3">凭证</th>
-              <th class="text-center px-4 py-3">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${MockData.repaymentRecords.filter(r => !r.fundingConfirmed).map(r => `
-              <tr class="border-t border-slate-100">
-                <td class="px-4 py-3 font-mono text-xs">${r.id}</td>
-                <td class="px-4 py-3 font-mono text-xs text-blue-600">${r.bizNo}</td>
-                <td class="px-4 py-3">
-                  <div class="font-medium text-xs">${r.customer}</div>
-                  <div class="text-xs text-slate-500">${r.product}</div>
-                </td>
-                <td class="px-4 py-3 text-right num-focus text-xs text-slate-500">${Utils.fmtMoney(r.systemEstimate)}</td>
-                <td class="px-4 py-3 text-right num-focus font-bold text-blue-600">${Utils.fmtMoney(r.offLineAmount)}</td>
-                <td class="px-4 py-3 text-xs">${r.offLineMethod}</td>
-                <td class="px-4 py-3 text-xs">
-                  <div>${r.voucherFiles.slice(0, 2).map(f => `<div class="text-blue-600 hover:underline cursor-pointer">📎 ${f}</div>`).join('')}</div>
-                  ${r.voucherCount > 2 ? `<div class="text-slate-400 text-xs">+${r.voucherCount - 2} 个</div>` : ''}
-                </td>
-                <td class="px-4 py-3 text-center">
-                  <button onclick="confirmRepay('${r.id}')" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded mr-1">✓ 确认收款</button>
-                  <button onclick="rejectRepay('${r.id}')" class="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white text-xs rounded">✗ 驳回</button>
-                </td>
-              </tr>
-            `).join('')}
-            ${MockData.repaymentRecords.filter(r => !r.fundingConfirmed).length === 0 ? `
-              <tr><td colspan="8" class="px-4 py-12 text-center text-slate-400">📭 暂无待确认回单</td></tr>
-            ` : ''}
-          </tbody>
-        </table>
-      </div>
-
-      <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
-        <span class="w-1 h-4 bg-emerald-500 rounded"></span>
-        已确认记录（${MockData.repaymentRecords.filter(r => r.fundingConfirmed).length}）
-      </h3>
-      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <table class="w-full text-sm">
-          <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
-            <tr>
-              <th class="text-left px-4 py-3">登记编号</th>
-              <th class="text-left px-4 py-3">业务编号</th>
-              <th class="text-left px-4 py-3">货主/货品</th>
-              <th class="text-right px-4 py-3">实际金额</th>
-              <th class="text-left px-4 py-3">登记时间</th>
-              <th class="text-left px-4 py-3">确认人/时间</th>
-              <th class="text-center px-4 py-3">状态</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${MockData.repaymentRecords.filter(r => r.fundingConfirmed).map(r => `
-              <tr class="border-t border-slate-100">
-                <td class="px-4 py-3 font-mono text-xs">${r.id}</td>
-                <td class="px-4 py-3 font-mono text-xs text-blue-600">${r.bizNo}</td>
-                <td class="px-4 py-3">
-                  <div class="font-medium text-xs">${r.customer}</div>
-                  <div class="text-xs text-slate-500">${r.product}</div>
-                </td>
-                <td class="px-4 py-3 text-right num-focus font-bold text-emerald-600">${Utils.fmtMoney(r.offLineAmount)}</td>
-                <td class="px-4 py-3 text-xs text-slate-500">${r.registeredAt} (${r.registeredBy})</td>
-                <td class="px-4 py-3 text-xs text-slate-500">${r.confirmedAt || '-'} (${r.confirmedBy || '-'})</td>
-                <td class="px-4 py-3 text-center">${Components.badge('confirmed')}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    `
+    breadcrumb: [
+      { label: '授信与放款', path: '/bank/approval-loan' },
+      { label: '还款登记', path: '/bank/confirm-repayment' },
+    ],
+    extra: `
+      <a href="${Utils.nav('/bank/loan-records')}" class="px-3 py-1.5 text-sm border border-slate-300 rounded hover:bg-slate-50">放还款记录 →</a>
+    `,
+    content: render(),
   });
 
-  function confirmRepay(id) {
-    const r = MockData.repaymentRecords.find(x => x.id === id);
-    if (!r) return;
-    Utils.toast(`✓ 已确认收款 ${Utils.fmtMoney(r.offLineAmount)}，可通知货主发起解押申请`, 'success');
-  }
-
-  function rejectRepay(id) {
-    const r = MockData.repaymentRecords.find(x => x.id === id);
-    if (!r) return;
-    const modal = document.createElement('div');
-    modal.className = 'modal-backdrop';
-    modal.innerHTML = `
-      <div class="bg-white rounded-xl w-[500px] shadow-2xl" onclick="event.stopPropagation()">
-        <div class="px-6 py-4 border-b border-slate-200">
-          <h3 class="font-bold text-slate-800 text-lg">🔴 驳回还款回单</h3>
-          <p class="text-xs text-slate-500 mt-1">${r.id} · ${r.customer} · ${Utils.fmtMoney(r.offLineAmount)}</p>
+  function render() {
+    return `
+      <!-- 业务头部 -->
+      <div class="flex items-center justify-between mb-4 bg-white border border-slate-200 rounded-xl px-5 py-3">
+        <div class="flex items-center gap-3">
+          <a href="javascript:history.back()" class="flex items-center gap-1 text-slate-600 hover:text-blue-600 text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            返回
+          </a>
+          <h2 class="text-base font-bold text-slate-800">还款登记 <span class="ml-2 text-xs font-mono text-slate-500">${demo.bizNo}</span></h2>
+          ${_isBank ? '<span class="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded">资金方视角</span>' : '<span class="px-2 py-0.5 text-xs bg-slate-100 text-slate-700 rounded">货主方视角</span>'}
         </div>
-        <div class="p-6 space-y-4">
-          <div>
-            <label class="block text-xs text-slate-600 mb-2">驳回原因 <span class="text-red-500">*</span></label>
-            <div class="space-y-2">
-              <label class="flex items-center gap-2 p-2 border border-slate-200 rounded cursor-pointer hover:bg-slate-50">
-                <input type="radio" name="rejectReason" value="未实际收款">
-                <span class="text-sm">未实际收到这笔款项（请重新核对银行流水）</span>
-              </label>
-              <label class="flex items-center gap-2 p-2 border border-slate-200 rounded cursor-pointer hover:bg-slate-50">
-                <input type="radio" name="rejectReason" value="金额不符">
-                <span class="text-sm">实际金额 ${Utils.fmtMoney(r.offLineAmount)} 与试算 ${Utils.fmtMoney(r.systemEstimate)} 不符</span>
-              </label>
-              <label class="flex items-center gap-2 p-2 border border-slate-200 rounded cursor-pointer hover:bg-slate-50">
-                <input type="radio" name="rejectReason" value="凭证有疑">
-                <span class="text-sm">回单凭证有疑（图片模糊/非银行回单/印章不清）</span>
-              </label>
-            </div>
-            <textarea rows="2" placeholder="补充说明..." class="w-full mt-3 px-3 py-2 border border-slate-300 rounded-md text-sm"></textarea>
+        <div class="text-xs text-slate-500">操作人：<span class="text-slate-700 font-medium">${_isBank ? '刘敏（资金方）' : '陈志强（货主方）'}</span></div>
+      </div>
+
+      <!-- 1. 融资信息（13 字段 4×3 网格） -->
+      <section class="bg-white border border-slate-200 rounded-xl mb-4 overflow-hidden">
+        <div class="px-6 py-3 border-b border-slate-200">
+          <h3 class="font-bold text-slate-800">融资信息</h3>
+        </div>
+        <div class="px-6 py-5">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4">
+            <div><dt class="text-xs text-slate-500 mb-1">融资编号</dt><dd><a class="text-blue-600 hover:underline font-mono text-sm" href="${Utils.nav('/customer/financing-detail')}?id=fn_007">${demo.bizNo}</a></dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1">融资方</dt><dd class="text-sm text-slate-800">${demo.pledgor}</dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1">金融产品</dt><dd class="text-sm text-slate-800">${demo.financeProduct}</dd></div>
+
+            <div><dt class="text-xs text-slate-500 mb-1">金融机构</dt><dd class="text-sm text-slate-800">${demo.bank}</dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1">融资利率</dt><dd class="text-sm text-slate-800">${demo.interestRate}</dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1">融资放款日期</dt><dd class="text-sm text-slate-800 font-mono">${demo.loanDate}</dd></div>
+
+            <div><dt class="text-xs text-slate-500 mb-1">融资到期日期</dt><dd class="text-sm text-slate-800 font-mono">${demo.maturityDate}</dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1">借据号</dt><dd class="text-sm text-slate-800 font-mono">${demo.loanReceipt}</dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1">柜号</dt><dd class="text-sm text-slate-800 font-mono">${demo.cabinetNo}</dd></div>
+
+            <div><dt class="text-xs text-slate-500 mb-1">放款金额（元）</dt><dd class="text-base font-bold text-blue-700 num-focus">¥${demo.loanAmount}</dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1">已还款金额（元）</dt><dd class="text-base font-bold text-blue-700 num-focus">¥${demo.repaidAmount}</dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1">剩余还款金额（元）</dt><dd class="text-base font-bold text-rose-700 num-focus">¥${demo.remainingAmount}</dd></div>
           </div>
         </div>
-        <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-2">
-          <button onclick="this.closest('.modal-backdrop').remove()" class="px-4 py-2 border border-slate-300 rounded-md text-sm">取消</button>
-          <button onclick="Utils.toast('已驳回，货主方将收到通知','warning'); this.closest('.modal-backdrop').remove()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-md text-sm font-medium">确认驳回</button>
+      </section>
+
+      <!-- 2. 还款信息（2 卡汇总 + 3 字段输入） -->
+      <section class="bg-white border border-slate-200 rounded-xl mb-4 overflow-hidden">
+        <div class="px-6 py-3 border-b border-slate-200">
+          <h3 class="font-bold text-slate-800">还款信息</h3>
+          <p class="text-xs text-slate-500 mt-1">⚠ 系统仅做流程留痕，实际资金操作由${_isBank ? '货主方' : '货主方自行'}通过银行完成（线下），请上传电子回单凭证</p>
         </div>
+        <div class="p-6">
+          <!-- 2 张汇总卡 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5">
+              <div class="text-xs text-blue-600 mb-1.5">本次还款总额</div>
+              <div class="text-3xl font-bold text-blue-700 num-focus">¥${(Number(form.repayPrincipal || 0) + Number(form.repayInterest || 0)).toFixed(2)}</div>
+              <div class="text-xs text-blue-500 mt-2">= 还款本金 + 还款利息</div>
+            </div>
+            <div class="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5">
+              <div class="text-xs text-amber-600 mb-1.5">剩余未还本金</div>
+              <div class="text-3xl font-bold text-amber-700 num-focus">¥${demo.notRepaidPrincipal}</div>
+              <div class="text-xs text-amber-600 mt-2">（按试算，含未结利息 ¥${(demo.notRepaidPrincipal * 0.023/12).toFixed(2)}/本期）</div>
+            </div>
+          </div>
+
+          <!-- 3 字段输入 -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label class="block text-xs text-slate-600 mb-1.5"><span class="text-red-500">*</span> 还款本金（元）</label>
+              <input type="number" id="repay_principal" value="${form.repayPrincipal}" oninput="onFormInput()" placeholder="请输入还款本金" class="w-full px-3 py-2.5 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none num-focus">
+              <p class="text-xs text-slate-400 mt-1">示例：300,000.00</p>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-600 mb-1.5"><span class="text-red-500">*</span> 还款利息（元）</label>
+              <input type="number" id="repay_interest" value="${form.repayInterest}" oninput="onFormInput()" placeholder="请输入还款利息" class="w-full px-3 py-2.5 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none num-focus">
+              <p class="text-xs text-slate-400 mt-1">按日计提，本期 ¥${(Number(demo.notRepaidPrincipal) * 0.023 / 365 * 30).toFixed(2)}（30天/参考）</p>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-600 mb-1.5"><span class="text-red-500">*</span> 还款日期</label>
+              <input type="date" id="repay_date" value="${form.repayDate}" onchange="onFormInput()" class="w-full px-3 py-2.5 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none">
+              <p class="text-xs text-slate-400 mt-1">格式：YYYY-MM-DD</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. 附件（电子回单 + 上传日期气泡提示） -->
+      <section class="bg-white border border-slate-200 rounded-xl mb-6 overflow-hidden">
+        <div class="px-6 py-3 border-b border-slate-200">
+          <h3 class="font-bold text-slate-800">附件</h3>
+        </div>
+        <div class="p-6">
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700 mb-4 flex items-start gap-2">
+            <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+            <span>可支持格式为 jpg、jpeg、png、pdf 的附件，支持多张，单个附件大小不得超过 100M 的文件。</span>
+          </div>
+
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-slate-600 border-b border-slate-200">
+                <th class="text-left py-2 px-3 w-40">单据类型</th>
+                <th class="text-center py-2 px-3 w-32 relative">
+                  <span>操作</span>
+                  <div id="uploadTip" class="absolute left-1/2 top-full -translate-x-1/2 mt-1 bg-slate-800 text-white text-xs px-2.5 py-1.5 rounded whitespace-nowrap shadow-lg hidden z-10">
+                    📅 上传时间：<span id="uploadTimeText">2023-12-12 12:23:32</span>
+                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-slate-800"></div>
+                  </div>
+                </th>
+                <th class="text-left py-2 px-3">文件名</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-t border-slate-100">
+                <td class="py-3 px-3 align-top">
+                  <span class="text-rose-500">* </span>
+                  电子回单
+                  <p class="text-xs text-slate-400 mt-1">（必传：实际还款银行回单截图/PDF）</p>
+                </td>
+                <td class="py-3 px-3 align-top text-center">
+                  <button id="uploadBtn" onmouseenter="showUploadTip()" onmouseleave="hideUploadTip()" onclick="doUpload()" class="px-3 py-1 border border-blue-500 text-blue-600 rounded text-xs hover:bg-blue-50">+ 上传</button>
+                </td>
+                <td class="py-3 px-3 align-top">
+                  <div id="uploadedFiles" class="flex items-center gap-2 flex-wrap">
+                    <span class="text-slate-300 text-xs">（暂无文件）</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 底部按钮 -->
+      <div class="flex justify-center gap-3 pb-8">
+        <button onclick="cancelRepay()" class="px-8 py-2 border border-slate-300 rounded text-sm text-slate-700 hover:bg-slate-50">取消</button>
+        <button onclick="submitRepay()" class="px-8 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">提交</button>
       </div>
     `;
-    // v1.7.8 表单类弹窗：屏蔽点击外面关闭
-    modal.onclick = () => {};
-    document.body.appendChild(modal);
   }
+
+  // ============ Events ============
+  window.onFormInput = () => {
+    form.repayPrincipal = document.getElementById('repay_principal').value;
+    form.repayInterest = document.getElementById('repay_interest').value;
+    form.repayDate = document.getElementById('repay_date').value;
+    // 重渲染以更新汇总卡（轻量 partial refresh — 只更新第一个卡的总额）
+    const totalCard = document.querySelector('.bg-gradient-to-br.from-blue-50 .text-3xl');
+    if (totalCard) {
+      const total = (Number(form.repayPrincipal || 0) + Number(form.repayInterest || 0)).toFixed(2);
+      totalCard.textContent = '¥' + total;
+    }
+  };
+
+  window.showUploadTip = () => {
+    const tip = document.getElementById('uploadTip');
+    if (tip) tip.classList.remove('hidden');
+  };
+  window.hideUploadTip = () => {
+    const tip = document.getElementById('uploadTip');
+    if (tip) tip.classList.add('hidden');
+  };
+
+  window.doUpload = () => {
+    // 模拟"已上传文件"
+    const wrap = document.getElementById('uploadedFiles');
+    if (!wrap) return;
+    const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    wrap.innerHTML = `
+      <div class="relative group inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">
+        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>
+        电子回单_${Date.now().toString().slice(-6)}.png
+        <button onclick="removeFile(this)" class="ml-1 -mr-1 -mt-1 absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-slate-500 hover:bg-rose-500 text-white text-[10px] flex items-center justify-center">×</button>
+      </div>
+    `;
+    Utils.toast('已选择文件', 'success');
+    // 更新气泡时间
+    document.getElementById('uploadTimeText').textContent = now;
+  };
+
+  window.removeFile = (btn) => {
+    btn.parentElement.remove();
+    const wrap = document.getElementById('uploadedFiles');
+    if (wrap && !wrap.children.length) {
+      wrap.innerHTML = '<span class="text-slate-300 text-xs">（暂无文件）</span>';
+    }
+  };
+
+  window.cancelRepay = () => {
+    if (confirm('确认取消还款登记？未保存的数据将丢失。')) history.back();
+  };
+
+  window.submitRepay = () => {
+    const missing = [];
+    if (!form.repayPrincipal || Number(form.repayPrincipal) <= 0) missing.push('还款本金');
+    if (!form.repayInterest || Number(form.repayInterest) < 0) missing.push('还款利息');
+    if (!form.repayDate) missing.push('还款日期');
+    if (missing.length) return Utils.toast('请填写：' + missing.join('、'), 'error');
+    const files = document.querySelectorAll('#uploadedFiles > div');
+    if (files.length === 0) return Utils.toast('请上传电子回单（必传）', 'error');
+    Utils.toast('还款登记已提交，资金方将在系统中确认', 'success');
+    setTimeout(() => history.back(), 1200);
+  };
 </script>
 </body>
 </html>
