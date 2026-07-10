@@ -140,9 +140,11 @@
            </span>`
         : '';
       const sep = idx > 0 ? '<span class="text-slate-200">|</span>' : '';
-      const onClick = a.enabled
-        ? `Utils.toast('${a.label}：${item.name}', 'info')`
-        : `Utils.toast('【${a.label}】功能待客户确认后启用', 'info')`;
+      const onClick = a.key === 'view'
+        ? `window.location.href = Utils.nav('/enterprise/detail') + '?id=' + '${item.id}' + '&tab=basic'`
+        : a.enabled
+          ? `Utils.toast('${a.label}：${item.name}', 'info')`
+          : `Utils.toast('【${a.label}】功能待客户确认后启用', 'info')`;
       return `${sep}<a href="javascript:void(0)" onclick="${onClick}" class="text-xs ${a.cls}">${a.label}</a>${hint}`;
     }).join('');
   }

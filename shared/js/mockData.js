@@ -1606,7 +1606,105 @@ const MockData = {
     { id: 'ent_009', name: '山西晋商信用担保有限公司',     shortName: '晋商担保', creditCode: '91XXXXXXXXMAXXXXXXXX', type: '担保方',       legalPerson: '高翔',   admin: '林涛',   status: 'frozen',  materialsReceived: 'none',     authChannel: 'thirdparty', createDate: '2026-04-22' },
     { id: 'ent_010', name: '上海浦东供应链金融服务有限公司', shortName: '浦链金融', creditCode: '91XXXXXXXXMAXXXXXXXX', type: '资金方',       legalPerson: '杨帆',   admin: '邓超',   status: 'normal',  materialsReceived: 'received', authChannel: 'regulator',  createDate: '2026-05-17' },
   ],
-  // 数据管理筛选字典（v1.7.28.2）
+  // ========== 企业详情（v1.7.28.3） ==========
+  // 7 tabs 详情：基本信息 / 电子签章 / 银行账户信息 / 开票信息 / 联系人信息 / 企业员工 / 企业财报
+  // 当前 mock 完整 ent_001（郑州某冷链贸易有限公司）；其他 id 显示「数据待补充」
+  enterpriseDetails: {
+    ent_001: {
+      // ===== 头部（7 tabs 共用）=====
+      header: {
+        name: '郑州某冷链贸易有限公司',
+        shortName: '郑州冷链',
+        certStatus: '已认证',
+        creditCode: '91XXXXXXXXMAXXXXXXXX',
+        legalPerson: '陈志强',
+        admin: '李雪',
+        certDate: '2025-08-12',
+      },
+      // ===== Tab 1: 基本信息 =====
+      basic: {
+        company: {
+          name: '郑州某冷链贸易有限公司',
+          shortName: '郑州冷链',
+          shortNamePinyin: 'ZZLC',
+          creditCode: '91XXXXXXXXMAXXXXXXXX',
+          established: '2018-05-12',
+          nature: '有限责任公司',
+          expireDate: '2038-05-11',
+          address: '河南省郑州市金水区花园路 66 号建业凯旋广场 A 座 18 楼',
+          scope: '冷链仓储服务；冻品批发与零售；进出口贸易代理；普通货运；货物专用运输（冷藏保鲜）；供应链管理服务；电子商务信息咨询；冷链技术开发。',
+          licenseNo: '91410100MAXXXXXXXX',
+        },
+        legal: {
+          name: '陈志强',
+          idCard: '410XXXXXXXXXXXXXXX',
+          phone: '138 XXXX XXXX',
+          idValidFrom: '2018-03-15',
+          idValidTo: '2038-03-15',
+        },
+        admin: {
+          name: '李雪',
+          idCard: '410XXXXXXXXXXXXXXX',
+          phone: '139 XXXX XXXX',
+          idValidFrom: '2019-06-20',
+          idValidTo: '2039-06-20',
+          authFrom: '2025-08-12',
+          authTo: '2030-08-12',
+        },
+      },
+      // ===== Tab 2: 电子签章（4 状态，按 enterpriseDetails.ent_001.signatureStatus 决定显示哪个）=====
+      signatureStatus: 'active',  // active / none / reviewing / rejected
+      signature: {
+        issuer: '中国金融认证中心 CFCA',
+        period: '3 年',
+        signer: '李雪',
+        certNo: 'CFCA-2025-XXXX-XXXX',
+        activeAt: '2025-08-15',
+        reviewReason: '营业执照图片不清晰，请重新上传',
+      },
+      // ===== Tab 3: 银行账户信息 =====
+      bankAccounts: [
+        { id: 'b_001', type: '回款账户', name: '郑州某冷链贸易有限公司', account: '6225 7600 1234 5678', bank: '中国银行 郑州金水支行', city: '河南省郑州市', remark: '主营业务收款' },
+        { id: 'b_002', type: '回款账户', name: '郑州某冷链贸易有限公司', account: '6228 4802 9876 5432', bank: '工商银行 郑州花园路支行', city: '河南省郑州市', remark: '保证金专户' },
+        { id: 'b_003', type: '付款账户', name: '郑州某冷链贸易有限公司', account: '6217 8510 2233 4455', bank: '建设银行 郑州东风路支行', city: '河南省郑州市', remark: '货款支付' },
+        { id: 'b_004', type: '回款账户', name: '郑州某冷链贸易有限公司', account: '6225 7600 9988 7766', bank: '中国银行 郑州金水支行', city: '河南省郑州市', remark: '备用' },
+      ],
+      // ===== Tab 4: 开票信息 =====
+      invoice: {
+        name: '郑州某冷链贸易有限公司',
+        taxNo: '91410100MAXXXXXXXX',
+        address: '河南省郑州市金水区花园路 66 号',
+        phone: '0371-65888888',
+        bank: '中国银行 郑州金水支行',
+        account: '6225 7600 1234 5678',
+      },
+      // ===== Tab 5: 联系人信息（9 行 mock，演示分页效果）=====
+      contacts: [
+        { id: 'c1', name: '陈志强', phone: '13800000001', region: '河南省/郑州市/金水区',   address: '花园路 66 号建业凯旋广场 A 座 1801 室', email: 'chenzq@example.com' },
+        { id: 'c2', name: '李雪',   phone: '13900000002', region: '河南省/郑州市/中原区',   address: '中原中路 22 号万达广场 B 座 1503 室', email: 'lixue@example.com' },
+        { id: 'c3', name: '王建国', phone: '13700000003', region: '河南省/郑州市/二七区',   address: '大学路 50 号鑫苑国际广场 二单元 902', email: 'wangjg@example.com' },
+        { id: 'c4', name: '刘敏',   phone: '13600000004', region: '河南省/郑州市/管城区',   address: '城东路 18 号正商和谐大厦 2305 室',   email: 'liumin@example.com' },
+        { id: 'c5', name: '张伟',   phone: '13500000005', region: '河南省/郑州市/惠济区',   address: '开元路 100 号怡丰森林湖 12 号楼',     email: 'zhangw@example.com' },
+        { id: 'c6', name: '陈丽',   phone: '13400000006', region: '河南省/郑州市/郑东新区', address: '商务外环 30 号绿地之窗 8 号楼 16 层', email: 'chenli@example.com' },
+        { id: 'c7', name: '李娜',   phone: '13300000007', region: '河南省/郑州市/高新区',   address: '科学大道 88 号正弘高新数码港 22 楼', email: 'lina@example.com' },
+        { id: 'c8', name: '王磊',   phone: '13200000008', region: '河南省/郑州市/经开区',   address: '航海东路 1505 号永茂大厦 B 座 1902', email: 'wanglei@example.com' },
+        { id: 'c9', name: '张勇',   phone: '13100000009', region: '河南省/郑州市/航空港区', address: '华夏大道 168 号裕鸿世界港 5 号楼 25F', email: 'zhangy@example.com' },
+      ],
+      // ===== Tab 6: 企业员工（5 行 mock）=====
+      employees: [
+        { id: 'e1', name: '陈志强', phone: '138****0001', gender: '男', verified: '已认证', roles: '企业管理员、业务管理、业务执行、签章员、财务员、观察员' },
+        { id: 'e2', name: '李雪',   phone: '139****0002', gender: '女', verified: '已认证', roles: '业务管理、业务执行、签章员、财务员、观察员' },
+        { id: 'e3', name: '王建国', phone: '137****0003', gender: '男', verified: '已认证', roles: '财务员' },
+        { id: 'e4', name: '刘敏',   phone: '136****0004', gender: '女', verified: '未认证', roles: '签章员' },
+        { id: 'e5', name: '张伟',   phone: '135****0005', gender: '男', verified: '未认证', roles: '观察员' },
+      ],
+      // ===== Tab 7: 企业财报 =====
+      finance: [
+        { id: 'f1', type: '财务报表', fileName: '2025年度财务报表.pdf',      uploadTime: '2026-03-15 14:30:00', uploader: '陈志强' },
+        { id: 'f2', type: '财务报表', fileName: '2025年Q4财务报表.pdf',     uploadTime: '2026-01-20 10:15:00', uploader: '陈志强' },
+      ],
+    },
+  },
   enterpriseDict: {
     type: ['核心企业', '上游供应商', '下游经销商', '担保方', '资金方', '监管方', '仓储方'],
     status: [

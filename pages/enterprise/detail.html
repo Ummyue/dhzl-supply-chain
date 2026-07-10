@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>查看详情 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } } </script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.28.3 企业详情页（7 tabs）============
+  // 归属：运营管理中心 / 企业信息管理 / 企业概览 / 数据管理 / 查看详情
+  // URL: ?id=ent_001&tab=basic|signature|bank|invoice|contact|employee|finance
+
+  if (Utils.getProductLine() !== 'enterprise') {
+    Utils.setProductLine('enterprise');
+  }
+
+  const TABS = [
+    { key: 'basic',     label: '基本信息' },
+    { key: 'signature', label: '电子签章' },
+    { key: 'bank',      label: '银行账户信息' },
+    { key: 'invoice',   label: '开票信息' },
+    { key: 'contact',   label: '联系人信息' },
+    { key: 'employee',  label: '企业员工' },
+    { key: 'finance',   label: '企业财报' },
+  ];
+
+  // ============ 状态 ============
+  const params = new URLSearchParams(window.location.search);
+  const entId = params.get('id') || 'ent_001';
+  const tab   = params.get('tab') && TABS.some(t => t.key === params.get('tab')) ? params.get('tab') : 'basic';
+  const detail = (MockData.enterpriseDetails || {})[entId] || null;
+  const PAGE_SIZE = 10;
+  let contactPage = 1;
+  let employeePage = 1;
+
+  // ============ 工具：证照占位图（不引入外部图片）============
+  function licenseImg(caption) {
+    return `
+      <div class="w-44 flex-shrink-0">
+        <div class="aspect-[3/4] bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-300 rounded-md flex flex-col items-center justify-center text-slate-400">
+          <svg class="w-10 h-10 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          <span class="text-xs">${caption}</span>
+        </div>
+        <div class="text-center text-xs text-slate-500 mt-2">${caption}</div>
+      </div>
+    `;
+  }
+
+  // ============ Tab 1: 基本信息 ============
+  function renderTabBasic() {
+    const b = detail.basic;
+    return `
+      <!-- 块 1: 基本信息 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-5 mb-4">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <span class="w-1 h-4 bg-blue-600 rounded"></span>
+            <h3 class="font-semibold text-slate-800">基本信息</h3>
+          </div>
+          <a href="javascript:void(0)" onclick="Utils.toast('变更企业信息（待开通）', 'info')" class="text-xs text-blue-600 hover:text-blue-800">变更企业信息</a>
+        </div>
+        <div class="flex gap-6">
+          <div class="flex-1 grid grid-cols-3 gap-x-8 gap-y-4 text-sm">
+            <div><div class="text-slate-400 text-xs mb-1">企业名称</div><div class="text-slate-700">${b.company.name}</div></div>
+            <div><div class="text-slate-400 text-xs mb-1">社会统一信用代码</div><div class="text-slate-700">${b.company.creditCode}</div></div>
+            <div><div class="text-slate-400 text-xs mb-1">企业简称</div><div class="text-slate-700">${b.company.shortName}</div></div>
+            <div><div class="text-slate-400 text-xs mb-1">企业简称首字母</div><div class="text-slate-700">${b.company.shortNamePinyin}</div></div>
+            <div><div class="text-slate-400 text-xs mb-1">成立日期</div><div class="text-slate-700">${b.company.established}</div></div>
+            <div><div class="text-slate-400 text-xs mb-1">企业性质</div><div class="text-slate-700">${b.company.nature}</div></div>
+            <div><div class="text-slate-400 text-xs mb-1">营业期限（止）</div><div class="text-slate-700">${b.company.expireDate}</div></div>
+            <div class="col-span-2"><div class="text-slate-400 text-xs mb-1">注册地址</div><div class="text-slate-700">${b.company.address}</div></div>
+            <div class="col-span-3"><div class="text-slate-400 text-xs mb-1">经营范围</div><div class="text-slate-700 leading-relaxed">${b.company.scope}</div></div>
+          </div>
+          ${licenseImg('营业执照')}
+        </div>
+      </div>
+
+      <!-- 块 2: 法人信息 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-5 mb-4">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <span class="w-1 h-4 bg-blue-600 rounded"></span>
+            <h3 class="font-semibold text-slate-800">法人信息</h3>
+          </div>
+          <a href="javascript:void(0)" onclick="Utils.toast('变更法定代表人（待开通）', 'info')" class="text-xs text-blue-600 hover:text-blue-800">变更法定代表人</a>
+        </div>
+        <div class="flex gap-6">
+          <div class="flex-1 grid grid-cols-3 gap-x-8 gap-y-4 text-sm">
+            <div><div class="text-slate-400 text-xs mb-1">姓名</div><div class="text-slate-700">${b.legal.name}</div></div>
+            <div><div class="text-slate-400 text-xs mb-1">身份证号码</div><div class="text-slate-700 font-mono">${b.legal.idCard}</div></div>
+            <div><div class="text-slate-400 text-xs mb-1">手机号码</div><div class="text-slate-700">${b.legal.phone}</div></div>
+            <div><div class="text-slate-400 text-xs mb-1">身份证有效期（起）</div><div class="text-slate-700">${b.legal.idValidFrom}</div></div>
+            <div><div class="text-slate-400 text-xs mb-1">身份证有效期（止）</div><div class="text-slate-700">${b.legal.idValidTo}</div></div>
+          </div>
+          ${licenseImg('身份证复印件')}
+        </div>
+      </div>
+
+      <!-- 块 3: 企业管理员信息 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-5 mb-4">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <span class="w-1 h-4 bg-blue-600 rounded"></span>
+            <h3 class="font-semibold text-slate-800">企业管理员信息</h3>
+          </div>
+          <div class="flex items-center gap-4 text-xs">
+            <a href="javascript:void(0)" onclick="Utils.toast('变更企业管理员（待开通）', 'info')" class="text-blue-600 hover:text-blue-800">变更企业管理员</a>
+            <a href="javascript:void(0)" onclick="Utils.toast('修改手机号（待开通）', 'info')" class="text-blue-600 hover:text-blue-800">修改手机号</a>
+            <a href="javascript:void(0)" onclick="Utils.toast('变更授权期（待开通）', 'info')" class="text-blue-600 hover:text-blue-800">变更授权期</a>
+          </div>
+        </div>
+        <div class="flex gap-6">
+          <div class="flex-1 grid grid-cols-3 gap-x-8 gap-y-4 text-sm">
+            <div><div class="text-slate-400 text-xs mb-1">姓名</div><div class="text-slate-700">${b.admin.name}</div></div>
+            <div><div class="text-slate-400 text-xs mb-1">身份证号码</div><div class="text-slate-700 font-mono">${b.admin.idCard}</div></div>
+            <div><div class="text-slate-400 text-xs mb-1">手机号码</div><div class="text-slate-700">${b.admin.phone}</div></div>
+            <div><div class="text-slate-400 text-xs mb-1">身份证有效期（起）</div><div class="text-slate-700">${b.admin.idValidFrom}</div></div>
+            <div><div class="text-slate-400 text-xs mb-1">身份证有效期（止）</div><div class="text-slate-700">${b.admin.idValidTo}</div></div>
+            <div><div class="text-slate-400 text-xs mb-1">授权日期（起）</div><div class="text-slate-700">${b.admin.authFrom}</div></div>
+            <div><div class="text-slate-400 text-xs mb-1">授权日期（止）</div><div class="text-slate-700">${b.admin.authTo}</div></div>
+          </div>
+          ${licenseImg('身份证复印件')}
+        </div>
+      </div>
+    `;
+  }
+
+  // ============ Tab 2: 电子签章（4 状态之一）============
+  function renderTabSignature() {
+    const sig = detail.signature;
+    const status = detail.signatureStatus || 'active';
+    const stateBlock = {
+      active: `
+        <div class="border border-slate-200 rounded-xl p-5 mb-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-semibold text-slate-800 text-sm">有签章页面</h3>
+          </div>
+          <div class="flex items-center gap-6 p-4 border border-slate-200 rounded-lg">
+            <div class="w-28 h-20 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded flex flex-col items-center justify-center text-blue-700 font-bold flex-shrink-0">
+              <div class="text-lg tracking-wider">CFCA</div>
+              <div class="text-[9px] mt-0.5 font-normal">中国金融认证中心</div>
+            </div>
+            <div class="flex-1 text-sm text-slate-700 space-y-1">
+              <div>颁发机构：<span class="text-slate-600">${sig.issuer}</span></div>
+              <div>证书期限：<span class="text-slate-600">${sig.period}</span></div>
+              <div>签章员：<span class="text-slate-600">${sig.signer}</span></div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span class="text-emerald-600 text-sm">已激活</span>
+            </div>
+          </div>
+          <div class="mt-3 flex items-center justify-around border-t border-slate-100 pt-3 text-sm">
+            <a href="javascript:void(0)" onclick="Utils.toast('查看证书详情', 'info')" class="text-blue-600 hover:text-blue-800">查看</a>
+            <a href="javascript:void(0)" onclick="Utils.toast('更换签章员（待开通）', 'info')" class="text-blue-600 hover:text-blue-800">更换签章员</a>
+            <a href="javascript:void(0)" onclick="Utils.toast('冻结证书（待开通）', 'info')" class="text-blue-600 hover:text-blue-800">冻结</a>
+          </div>
+        </div>
+      `,
+      none: `
+        <div class="border border-slate-200 rounded-xl p-5 mb-4">
+          <h3 class="font-semibold text-slate-800 text-sm mb-6">无签章页面</h3>
+          <div class="py-12 text-center text-slate-500 text-sm">该企业尚未开通电子签章服务，开通后可使用电子签章相关服务</div>
+          <div class="text-center mt-2">
+            <button onclick="Utils.toast('申请开通电子签章服务（待开通）', 'info')" class="inline-flex items-center gap-1.5 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">申请开通电子签章服务</button>
+          </div>
+        </div>
+      `,
+      reviewing: `
+        <div class="border border-slate-200 rounded-xl p-5 mb-4">
+          <h3 class="font-semibold text-slate-800 text-sm mb-6">电子签审核中页面</h3>
+          <div class="py-16 text-center text-slate-500 text-sm">你的电子签章服务正在审核中</div>
+        </div>
+      `,
+      rejected: `
+        <div class="border border-slate-200 rounded-xl p-5 mb-4">
+          <h3 class="font-semibold text-slate-800 text-sm mb-6">电子签审核未通过页面</h3>
+          <div class="py-8 text-center text-slate-600 text-sm space-y-1">
+            <div>你的电子签章服务审核未通过</div>
+            <div>原因：${sig.reviewReason}</div>
+          </div>
+          <div class="text-center mt-2">
+            <button onclick="Utils.toast('申请开通电子签章服务（待开通）', 'info')" class="inline-flex items-center gap-1.5 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">申请开通电子签章服务</button>
+          </div>
+        </div>
+      `,
+    };
+    return stateBlock[status] || stateBlock.none;
+  }
+
+  // ============ Tab 3: 银行账户信息 ============
+  function renderTabBank() {
+    const accounts = detail.bankAccounts || [];
+    const cards = accounts.map(a => `
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div class="p-5">
+          <div class="flex items-start gap-3 mb-3">
+            <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+            </div>
+            <div class="font-semibold text-slate-800">${a.type}</div>
+          </div>
+          <div class="text-xs text-slate-500 space-y-1.5 pl-1">
+            <div>账&nbsp;&nbsp;户&nbsp;&nbsp;名：<span class="text-slate-700">${a.name}</span></div>
+            <div>账&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;号：<span class="text-slate-700 font-mono">${a.account}</span></div>
+            <div>开&nbsp;户&nbsp;&nbsp;行：<span class="text-slate-700">${a.bank}</span></div>
+            <div>开户城市：<span class="text-slate-700">${a.city}</span></div>
+            <div>备&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;注：<span class="text-slate-700">${a.remark}</span></div>
+          </div>
+        </div>
+        <div class="border-t border-slate-100 px-5 py-2 flex items-center justify-around text-xs bg-slate-50/50">
+          <a href="javascript:void(0)" onclick="Utils.toast('编辑银行账户（待开通）', 'info')" class="text-blue-600 hover:text-blue-800">编辑</a>
+          <a href="javascript:void(0)" onclick="Utils.toast('删除银行账户（待开通）', 'info')" class="text-rose-600 hover:text-rose-800">删除</a>
+        </div>
+      </div>
+    `).join('');
+    return `
+      <div class="mb-4">
+        <button onclick="Utils.toast('添加银行账户（待开通）', 'info')" class="inline-flex items-center gap-1.5 px-4 py-1.5 border border-blue-400 text-blue-700 hover:bg-blue-50 rounded text-sm">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          <span>添加银行账户</span>
+        </button>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">${cards}</div>
+    `;
+  }
+
+  // ============ Tab 4: 开票信息 ============
+  function renderTabInvoice() {
+    const inv = detail.invoice;
+    return `
+      <div class="bg-white border border-slate-200 rounded-xl p-5 mb-4">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="font-semibold text-slate-800">开票信息</h3>
+          <a href="javascript:void(0)" onclick="Utils.toast('编辑开票信息（待开通）', 'info')" class="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            <span>编辑</span>
+          </a>
+        </div>
+        <div class="grid grid-cols-2 gap-x-12 gap-y-5 text-sm">
+          <div><div class="text-slate-400 text-xs mb-1">企业名称</div><div class="text-slate-700">${inv.name}</div></div>
+          <div><div class="text-slate-400 text-xs mb-1">税&nbsp;&nbsp;&nbsp;&nbsp;号</div><div class="text-slate-700 font-mono">${inv.taxNo}</div></div>
+          <div><div class="text-slate-400 text-xs mb-1">企业地址</div><div class="text-slate-700">${inv.address}</div></div>
+          <div><div class="text-slate-400 text-xs mb-1">电话号码</div><div class="text-slate-700">${inv.phone}</div></div>
+          <div><div class="text-slate-400 text-xs mb-1">开&nbsp;户&nbsp;行</div><div class="text-slate-700">${inv.bank}</div></div>
+          <div><div class="text-slate-400 text-xs mb-1">银行账户</div><div class="text-slate-700 font-mono">${inv.account}</div></div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ============ Tab 5: 联系人信息 ============
+  function renderTabContact() {
+    const all = detail.contacts || [];
+    const total = 400;  // 模拟总数
+    const totalPages = 80;
+    const rows = all.map(c => `
+      <tr class="border-b border-slate-100 hover:bg-blue-50/30">
+        <td class="px-4 py-3 text-sm text-slate-700">${c.name}</td>
+        <td class="px-4 py-3 text-sm text-slate-700">${c.phone}</td>
+        <td class="px-4 py-3 text-sm text-slate-700">${c.region}</td>
+        <td class="px-4 py-3 text-sm text-slate-600">${c.address}</td>
+        <td class="px-4 py-3 text-sm text-slate-700">${c.email}</td>
+        <td class="px-4 py-3 text-sm">
+          <a href="javascript:void(0)" onclick="Utils.toast('编辑联系人（待开通）', 'info')" class="text-blue-600 hover:text-blue-800 mr-3">编辑</a>
+          <a href="javascript:void(0)" onclick="Utils.toast('删除联系人（待开通）', 'info')" class="text-blue-600 hover:text-blue-800">删除</a>
+        </td>
+      </tr>
+    `).join('');
+    return `
+      <div class="flex items-center justify-between mb-4">
+        <button onclick="Utils.toast('添加联系人（待开通）', 'info')" class="inline-flex items-center gap-1.5 px-4 py-1.5 border border-blue-400 text-blue-700 hover:bg-blue-50 rounded text-sm">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          <span>添加联系人</span>
+        </button>
+        <div class="text-xs text-slate-500">注：主要用于合同中的联系人信息</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden mb-3">
+        <table class="w-full">
+          <thead><tr class="bg-slate-50 border-b border-slate-200">
+            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500">联系人姓名</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500">联系人手机号</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500">联系人所在区</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500">联系人详细地址</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500">联系人电子邮箱</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500">操作</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="flex items-center justify-between text-xs text-slate-500">
+        <div>共 ${total} 条记录 第 ${contactPage} / ${totalPages} 页</div>
+        <div class="flex items-center gap-1">
+          <button class="w-6 h-6 inline-flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded">‹</button>
+          ${[1,2,3,4,5,6,7,8,9].map(p => `<button onclick="goContactPage(${p})" class="w-6 h-6 inline-flex items-center justify-center text-sm rounded ${p===contactPage?'bg-blue-600 text-white font-medium':'text-slate-700 hover:bg-slate-100 border border-slate-200'}">${p}</button>`).join('')}
+          <button class="w-6 h-6 inline-flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded">›</button>
+          <select class="ml-2 px-2 py-0.5 text-xs border border-slate-200 rounded text-slate-700"><option>10条/页</option></select>
+          <span class="ml-2">跳至</span>
+          <input id="jump-contact" type="number" min="1" max="${totalPages}" value="${contactPage}" class="w-10 px-1 py-0.5 text-xs text-center border border-slate-200 rounded" />
+          <span>页</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // ============ Tab 6: 企业员工 ============
+  function renderTabEmployee() {
+    const all = detail.employees || [];
+    const total = 400;
+    const totalPages = 80;
+    const rows = all.map(e => `
+      <tr class="border-b border-slate-100 hover:bg-blue-50/30">
+        <td class="px-4 py-3 text-sm text-slate-700">${e.name}</td>
+        <td class="px-4 py-3 text-sm text-slate-700">${e.phone}</td>
+        <td class="px-4 py-3 text-sm text-slate-700">${e.gender}</td>
+        <td class="px-4 py-3 text-sm text-slate-700">${e.verified}</td>
+        <td class="px-4 py-3 text-sm text-slate-600">${e.roles}</td>
+      </tr>
+    `).join('');
+    return `
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden mb-3">
+        <table class="w-full">
+          <thead><tr class="bg-slate-50 border-b border-slate-200">
+            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500">姓名</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500">手机</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500">性别</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500">实名认证</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500">角色</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="flex items-center justify-between text-xs text-slate-500">
+        <div>共 ${total} 条记录 第 ${employeePage} / ${totalPages} 页</div>
+        <div class="flex items-center gap-1">
+          <button class="w-6 h-6 inline-flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded">‹</button>
+          ${[1,2,3,4,5,6,7,8,9].map(p => `<button onclick="goEmployeePage(${p})" class="w-6 h-6 inline-flex items-center justify-center text-sm rounded ${p===employeePage?'bg-blue-600 text-white font-medium':'text-slate-700 hover:bg-slate-100 border border-slate-200'}">${p}</button>`).join('')}
+          <button class="w-6 h-6 inline-flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded">›</button>
+          <select class="ml-2 px-2 py-0.5 text-xs border border-slate-200 rounded text-slate-700"><option>10条/页</option></select>
+          <span class="ml-2">跳至</span>
+          <input id="jump-employee" type="number" min="1" max="${totalPages}" value="${employeePage}" class="w-10 px-1 py-0.5 text-xs text-center border border-slate-200 rounded" />
+          <span>页</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // ============ Tab 7: 企业财报 ============
+  function renderTabFinance() {
+    const all = detail.finance || [];
+    const rows = all.map(f => `
+      <tr class="border-b border-slate-100 hover:bg-blue-50/30">
+        <td class="px-4 py-3 text-sm text-slate-700">${f.type}</td>
+        <td class="px-4 py-3 text-sm text-blue-600 hover:underline cursor-pointer" onclick="Utils.toast('预览 PDF（待开通）', 'info')">${f.fileName}</td>
+        <td class="px-4 py-3 text-sm"><a href="javascript:void(0)" onclick="Utils.toast('删除文件（待开通）', 'info')" class="text-rose-600 hover:text-rose-800">删除</a></td>
+      </tr>
+    `).join('');
+    return `
+      <div class="mb-4">
+        <button onclick="Utils.toast('上传近一年财务报表（待开通）', 'info')" class="inline-flex items-center gap-1.5 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          <span>上传近一年财务报表</span>
+        </button>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <table class="w-full">
+          <thead><tr class="bg-slate-50 border-b border-slate-200">
+            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500">单据类型</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500">单据类型</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500">操作</th>
+          </tr></thead>
+          <tbody>${rows || '<tr><td colspan="3" class="px-4 py-8 text-center text-slate-400 text-sm">暂无数据</td></tr>'}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  // ============ Tab 切换 ============
+  function switchTab(newTab) {
+    if (newTab === tab) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', newTab);
+    window.location.href = url.toString();
+  }
+  window.goContactPage = function(p) { contactPage = p; render(); };
+  window.goEmployeePage = function(p) { employeePage = p; render(); };
+  window.switchTab = switchTab;
+
+  // ============ 主渲染 ============
+  function render() {
+    if (!detail) {
+      document.getElementById('app').innerHTML = `
+        ${Components.topbar('')}
+        <div class="flex">
+          ${Components.sidebar('/enterprise/data-management')}
+          <main class="flex-1 p-10 text-center">
+            <div class="max-w-md mx-auto py-20">
+              <div class="text-6xl mb-4">📋</div>
+              <h1 class="text-xl font-bold text-slate-800 mb-2">企业 ${entId} 详情数据待补充</h1>
+              <p class="text-slate-500 text-sm mb-6">该企业的详细数据正在补充中</p>
+              <a href="${Utils.nav('/enterprise/data-management')}" class="inline-block px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">← 返回数据管理</a>
+            </div>
+          </main>
+        </div>
+      `;
+      return;
+    }
+
+    const h = detail.header;
+    const tabContent = {
+      basic:     renderTabBasic(),
+      signature: renderTabSignature(),
+      bank:      renderTabBank(),
+      invoice:   renderTabInvoice(),
+      contact:   renderTabContact(),
+      employee:  renderTabEmployee(),
+      finance:   renderTabFinance(),
+    }[tab];
+
+    const tabsHtml = TABS.map(t => `
+      <button onclick="switchTab('${t.key}')" class="px-4 py-2.5 text-sm transition border-b-2 ${t.key === tab ? 'border-blue-600 text-blue-600 font-medium' : 'border-transparent text-slate-500 hover:text-slate-800'}">${t.label}</button>
+    `).join('');
+
+    document.getElementById('app').innerHTML = `
+      ${Components.topbar('')}
+      <div class="flex">
+        ${Components.sidebar('/enterprise/data-management')}
+        <main class="flex-1 overflow-y-auto bg-slate-50">
+          <div class="p-6 page-enter">
+            ${Components.breadcrumb(['企业信息管理', '企业概览', '数据管理', '查看详情'])}
+
+            <!-- 头部企业信息卡 -->
+            <div class="bg-white border border-slate-200 rounded-xl p-5 mb-4">
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                  <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                </div>
+                <h1 class="text-xl font-bold text-slate-800">${h.name}</h1>
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded text-xs font-medium">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  ${h.certStatus}
+                </span>
+              </div>
+              <div class="flex items-center gap-6 text-xs text-slate-500 pl-13" style="padding-left: 52px;">
+                <span>统一社会信用代码：<span class="text-slate-700">${h.creditCode}</span></span>
+                <span>公司法人：<span class="text-slate-700">${h.legalPerson}</span></span>
+                <span>企业管理员：<span class="text-slate-700">${h.admin}</span></span>
+                <span>认证时间：<span class="text-slate-700">${h.certDate}</span></span>
+              </div>
+            </div>
+
+            <!-- 7 tabs 导航 -->
+            <div class="bg-white border border-slate-200 rounded-t-xl border-b-0">
+              <div class="flex items-center gap-1 px-3">${tabsHtml}</div>
+            </div>
+            <div class="bg-slate-50 border border-slate-200 border-t-0 rounded-b-xl p-5">
+              ${tabContent}
+            </div>
+          </div>
+        </main>
+      </div>
+    `;
+  }
+  render();
+</script>
+</body>
+</html>
