@@ -885,32 +885,32 @@ const MockData = {
   // ========== v1.7.21 准入详情（按用户图 2） ==========
   admissionDetail: {
     adm_001: {
-      // 申请企业基本信息
+      // 申请企业基本信息（按甲方截图图1 1:1 还原，2026-07-13 校对）
       companyName: '河南测试企业有限公司',
-      creditCode: '910ASDXXXXXXXXXXX',
+      creditCode: '91XXXXXXXXMAXXXXXXXX',
       shortName: '河南测试',
-      shortNamePinyin: 'HMCS',
-      established: '2025-06-01',
+      shortNamePinyin: 'HNCS',
+      established: '2020-02-01',
       nature: '上市公司',
       businessDeadline: '长期有效',
-      registeredAddress: '河南省郑州市中原区XXXXXXXX',
-      industry: '',
-      registeredCapital: '',
-      inRenewal: true,
-      contactPhone: '',
-      contactAddress: '',
-      businessScope: '',
+      registeredAddress: '河南省郑州市中原区XXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      industry: '制造业',
+      registeredCapital: '10000万元',
+      inRenewal: false,  // 甲方截图未填，按 false 处理
+      contactPhone: '155 0000 5678',
+      contactAddress: '河南省郑州市中原区XXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      businessScope: '经营范围是XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
       // 法人信息
       legalName: '张三',
       legalIdCard: '11000019800101XXXX',
-      legalPhone: '155 0000 9999',
+      legalPhone: '134 0000 8222',
       legalIdValidFrom: '2020-01-01',
       legalIdValidTo: '2040-01-01',
-      // 股权结构（默认空，让用户在详情页「添加一行」录入）
+      // 股权结构（按甲方截图图1：张三 / 李四 / 王五 各 100 万 / 33% / 2020-01-01）
       shareholders: [
-        { name: '河南测试集团有限公司', type: '货币出资', amount: 8000000, ratio: 80, date: '2023-09-15' },
-        { name: '某投资管理合伙企业',     type: '货币出资', amount: 1500000, ratio: 15, date: '2024-03-20' },
-        { name: '张三（自然人）',          type: '技术入股', amount: 500000,  ratio: 5,  date: '2024-06-01' },
+        { name: '张三', type: '现金', amount: 1000000, ratio: 33, date: '2020-01-01' },
+        { name: '李四', type: '现金', amount: 1000000, ratio: 33, date: '2020-01-01' },
+        { name: '王五', type: '现金', amount: 1000000, ratio: 33, date: '2020-01-01' },
       ],
       // 其他信息
       otherInfo: {
@@ -932,6 +932,91 @@ const MockData = {
       applyDate: '2025-01-04',
       progress: '基础材料收集',
       applyResult: '通过',
+      // ========== v1.7.35 准入详情 5 步审核数据 ==========
+      // 第 1 步：基础信息收集（企业基本信息已在上面 companyName/creditCode 等字段）
+      // 第 2 步：资质审核（图2）
+      qualification: {
+        lawsuitSituation: '公司近三年无重大诉讼记录；2024 年 1 起合同纠纷已和解结案。',
+        businessModel: '主营冷链仓储 + 冻品贸易 + 供应链管理服务；上游为内蒙古、新西兰进口牛羊肉供应商，下游为郑州万邦农贸批发市场及全国连锁餐饮。',
+        fundSettlement: '主要采用银行电汇 + 银行承兑汇票结算，与中原银行、工商银行签订 1 年期授信合同，月均结算量约 500 万元。',
+        balanceSheet: {
+          // 单位：万元
+          periods: [
+            { label: 'YYYY年MM月', start: '2024-06', end: '2024-12' },
+            { label: 'YYYY年MM月', start: '2025-01', end: '2025-06' },
+            { label: 'YYYY年MM月', start: '2025-07', end: '2025-12' },
+          ],
+          rows: [
+            // 按甲方截图图2 顺序：24 行（无"应收票据"独立行）
+            { key: '货币资金',         items: [1200, 1500, 1800] },
+            { key: '应收账款',         items: [3500, 4200, 5000] },
+            { key: '其他应收款',       items: [180,  220,  250] },
+            { key: '预付账款',         items: [800,  900,  1100] },
+            { key: '存货',             items: [4500, 5000, 5500] },
+            { key: '__流动资产合计',   isTotal: true, items: [10180, 11820, 13650] },
+            { key: '长期股权投资',     items: [800,  800,  800] },
+            { key: '固定资产净值',     items: [3500, 3400, 3300] },
+            { key: '无形资产',         items: [200,  200,  200] },
+            { key: '长期待摊费用',     items: [120,  100,  80] },
+            { key: '__资产总计',       isTotal: true, items: [14800, 16320, 18030] },
+            { key: '短期借款',         items: [1000, 1200, 1500] },
+            { key: '应付票据',         items: [500,  600,  800] },
+            { key: '应付账款',         items: [3000, 3500, 4000] },
+            { key: '应交税金',         items: [300,  400,  500] },
+            { key: '其他应付款',       items: [200,  250,  300] },
+            { key: '__流动负债合计',   isTotal: true, items: [5000, 5950, 7100] },
+            { key: '__负债合计',       isTotal: true, items: [5500, 6450, 7600] },
+            { key: '实收资本',         items: [3000, 3000, 3000] },
+            { key: '资本公积',         items: [500,  500,  500] },
+            { key: '盈余公积',         items: [300,  330,  360] },
+            { key: '未分配利润',       items: [5500, 6040, 6570] },
+            { key: '__所有者权益',     isTotal: true, items: [9300, 9870, 10430] },
+            { key: '__负债及权益合计', isTotal: true, items: [14800, 16320, 18030] },
+          ],
+        },
+        revenueAnalysis: {
+          periods: [
+            { label: 'YYYY年MM月', start: '2024-06', end: '2024-12' },
+            { label: 'YYYY年MM月', start: '2025-01', end: '2025-06' },
+            { label: 'YYYY年MM月', start: '2025-07', end: '2025-12' },
+          ],
+          rows: [
+            { key: '主营业务收入', items: [18500, 22100, 25800] },
+            { key: '营业利润',     items: [1850,  2300,  2750] },
+            { key: '净利润',       items: [1450,  1820,  2200] },
+            { key: '销售净利率',   items: ['7.8%', '8.2%', '8.5%'] },
+            { key: 'ROE',         items: ['15.3%', '17.9%', '20.3%'] },
+            { key: '资产负债率',   items: ['36.7%', '38.8%', '41.2%'] },
+            { key: '流动比率',     items: ['2.08',  '2.04',  '1.98'] },
+            { key: '速动比率',     items: ['1.18',  '1.19',  '1.20'] },
+          ],
+        },
+      },
+      // 第 3 步：现场考察（图3）
+      siteInspection: {
+        situation: '现场考察时间：2025-01-15，地点：郑州市中原区。仓库总面积 1.2 万平方米，分 3 个温区（冷冻/冷藏/常温），现有库存约 4500 吨。现场操作规范，管理制度健全，员工 28 人，冷链车辆 6 台，监管场地监控覆盖率 100%。',
+        attachments: [
+          { type: '现场考察报告', name: '现场考察报告.pdf', time: '2025-01-15 14:30:22' },
+        ],
+      },
+      // 第 4 步：风险评估（图4）
+      riskAssessment: {
+        complianceAnalysis: '公司及实际控制人近三年无重大违法违规记录，无失信被执行人记录，无重大税收违法记录，无重大行政处罚记录。',
+        financialAnalysis: '近两年财务表现稳健：营收年增长率约 18%，净利润率 7-8%，资产负债率 36-41%（行业合理区间），流动比率 2.0+ 偿债能力良好。',
+        creditEvaluation: '客户在我行及同业信用记录良好，无不良贷款记录，无重大违约事件。建议给予 A+ 信用评级。',
+        otherNotes: '建议关注：冷链行业季节性波动风险、进口冷链监管政策变化风险。',
+        conclusion: 'pass',  // pass | reject
+        remark: '该企业资质良好，财务稳健，同意准入。',
+      },
+      // 第 5 步：办结（v1.7.35 新增）
+      completion: {
+        conclusion: '通过',  // 通过 | 不通过
+        completionTime: '2025-01-20 16:45:00',
+        operator: '王芳（监管方风控经理）',
+        creditRating: 'A+',
+        suggestedLimit: '5000万元',
+        nextSteps: '3 个工作日内通知客户签订授信协议；同步至融资管理模块开通融资申请权限。',
+      },
     },
   },
 
@@ -1705,12 +1790,12 @@ const MockData = {
         activeAt: '2025-08-15',
         reviewReason: '营业执照图片不清晰，请重新上传',
       },
-      // ===== Tab 3: 银行账户信息 =====
+      // ===== Tab 3: 银行账户信息（v1.7.35 脱敏：银行卡号保留前 4 位 BIN + 后 12 位 X 替换） =====
       bankAccounts: [
-        { id: 'b_001', type: '回款账户', name: '郑州某冷链贸易有限公司', account: '6225 7600 1234 5678', bank: '中国银行 郑州金水支行', city: '河南省郑州市', remark: '主营业务收款' },
-        { id: 'b_002', type: '回款账户', name: '郑州某冷链贸易有限公司', account: '6228 4802 9876 5432', bank: '工商银行 郑州花园路支行', city: '河南省郑州市', remark: '保证金专户' },
-        { id: 'b_003', type: '付款账户', name: '郑州某冷链贸易有限公司', account: '6217 8510 2233 4455', bank: '建设银行 郑州东风路支行', city: '河南省郑州市', remark: '货款支付' },
-        { id: 'b_004', type: '回款账户', name: '郑州某冷链贸易有限公司', account: '6225 7600 9988 7766', bank: '中国银行 郑州金水支行', city: '河南省郑州市', remark: '备用' },
+        { id: 'b_001', type: '回款账户', name: '郑州某冷链贸易有限公司', account: '6222 XXXX XXXX XXXX', bank: '中国银行 郑州金水支行', city: '河南省郑州市', remark: '主营业务收款' },
+        { id: 'b_002', type: '回款账户', name: '郑州某冷链贸易有限公司', account: '6222 XXXX XXXX XXXX', bank: '工商银行 郑州花园路支行', city: '河南省郑州市', remark: '保证金专户' },
+        { id: 'b_003', type: '付款账户', name: '郑州某冷链贸易有限公司', account: '6222 XXXX XXXX XXXX', bank: '建设银行 郑州东风路支行', city: '河南省郑州市', remark: '货款支付' },
+        { id: 'b_004', type: '回款账户', name: '郑州某冷链贸易有限公司', account: '6222 XXXX XXXX XXXX', bank: '中国银行 郑州金水支行', city: '河南省郑州市', remark: '备用' },
       ],
       // ===== Tab 4: 开票信息 =====
       invoice: {
@@ -1719,7 +1804,7 @@ const MockData = {
         address: '河南省郑州市金水区花园路 66 号',
         phone: '0371-65888888',
         bank: '中国银行 郑州金水支行',
-        account: '6225 7600 1234 5678',
+        account: '6222 XXXX XXXX XXXX',
       },
       // ===== Tab 5: 联系人信息（9 行 mock，演示分页效果）=====
       contacts: [

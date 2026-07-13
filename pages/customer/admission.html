@@ -46,13 +46,26 @@
       { label: '准入申请', path: '/customer/admission' },
     ],
     extra: `
-      <a href="${Utils.nav('/customer/admission-detail')}?id=adm_001" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium flex items-center gap-1">
+      <a href="${Utils.nav('/customer/admission-detail')}?id=adm_001&tab=basic" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium flex items-center gap-1">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         准入申请
       </a>
     `,
     content: render(),
   });
+
+  // ============ v1.7.35 准入申请状态 → 详情 tab 映射 ============
+  // draft/pending → 基础信息收集（刚提交，还在第 1 步）
+  // reviewing    → 资质审核（监管方审完了基础信息，进入第 2 步）
+  // approved     → 办结（走完全部 5 步）
+  // rejected     → 基础信息收集（驳回到第 1 步重做）
+  function mapStatusToTab(a) {
+    if (a.applyResult === '通过' || a.status === 'approved' || a.progress === 5) return 'completion';
+    if (a.status === 'reviewing' || a.progress === 2) return 'qualification';
+    if (a.status === 'rejected') return 'basic';
+    // draft / pending / progress 1 都算基础信息
+    return 'basic';
+  }
 
   // 用 list 里字段；如果某些字段没有（progress / applyResult 是新加的），做兼容回退
   function getProgressText(a) {
@@ -263,7 +276,10 @@
     refresh();
   };
   window.goDetail = (id) => {
-    window.location.href = `${Utils.nav('/customer/admission-detail')}?id=${id}`;
+    // v1.7.35：按准入状态映射详情 tab，默认跳到当前进度对应节点
+    const a = (MockData.admissionList || []).find(x => x.id === id);
+    const tab = mapStatusToTab(a || {});
+    window.location.href = `${Utils.nav('/customer/admission-detail')}?id=${id}&tab=${tab}`;
   };
 
   function refresh() {
@@ -275,7 +291,7 @@
         { label: '准入申请', path: '/customer/admission' },
       ],
       extra: `
-        <a href="${Utils.nav('/customer/admission-detail')}?id=adm_001" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium flex items-center gap-1">
+        <a href="${Utils.nav('/customer/admission-detail')}?id=adm_001&tab=basic" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium flex items-center gap-1">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
           准入申请
         </a>
