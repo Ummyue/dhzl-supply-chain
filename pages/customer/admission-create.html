@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新增准入申请 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+  <style>
+    /* 必填红色 * */
+    .req::before { content: '*'; color: #ef4444; margin-right: 2px; font-weight: 600; }
+    /* 输入控件统一样式 */
+    .form-input {
+      width: 100%;
+      padding: 6px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-size: 13px;
+      background: #fff;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .form-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.1); }
+    .form-input[readonly] { background: #f1f5f9; color: #64748b; }
+    .form-textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-size: 13px;
+      min-height: 100px;
+      resize: vertical;
+      font-family: inherit;
+      outline: none;
+    }
+    .form-textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.1); }
+    .form-label {
+      font-size: 13px;
+      color: #475569;
+      text-align: right;
+      padding-right: 12px;
+      line-height: 30px;
+      white-space: nowrap;
+    }
+    .form-label-v {
+      font-size: 13px;
+      color: #475569;
+      text-align: right;
+      padding-right: 12px;
+      line-height: 100px;
+    }
+    /* 底部固定操作栏 */
+    .footer-actions {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      background: #fff;
+      border-top: 1px solid #e2e8f0;
+      padding: 16px 0;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+    }
+    .footer-spacer { height: 80px; }
+  </style>
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.36 新增准入申请（按甲方截图 1:1 还原可编辑表单） ============
+  // 表单分组：申请企业基本信息 / 法人信息 / 股权结构 / 其他信息
+  // 必填项红色 *，底部 fixed 提交/取消
+
+  // 表单数据（内存中）
+  const form = {
+    companyName: '',
+    creditCode: '',
+    shortName: '',
+    shortNamePinyin: '',
+    established: '',
+    nature: '',
+    businessDeadline: '',
+    registeredAddress: '',
+    industry: '',
+    registeredCapital: '',
+    inRenewal: '',
+    contactPhone: '',
+    contactAddress: '',
+    businessScope: '',
+    // 法人
+    legalName: '',
+    legalIdCard: '',
+    legalPhone: '',
+    legalIdValidFrom: '',
+    legalIdValidTo: '',
+    // 股东
+    shareholders: [{ name: '', type: '', amount: '', ratio: '', date: '' }],
+    // 其他信息
+    history: '',
+    relatedEnterprises: '',
+    // 附件（6 类）
+    attachments: [
+      { type: '营业执照',                  required: true,  files: [] },
+      { type: '法人身份证复印件',          required: true,  files: [] },
+      { type: '最近一年财务报表',          required: false, files: [] },
+      { type: '完税证明',                  required: false, files: [] },
+      { type: '三个月内1-2份业务购销合同复印件、发票复印件', required: false, files: [] },
+      { type: '其他附件',                  required: false, files: [] },
+    ],
+  };
+
+  // ============ 表单更新函数 ============
+  function updateField(k, v) {
+    form[k] = v;
+  }
+
+  function addShareholder() {
+    form.shareholders.push({ name: '', type: '', amount: '', ratio: '', date: '' });
+    refresh();
+  }
+
+  function removeShareholder(idx) {
+    if (form.shareholders.length <= 1) {
+      Utils.toast('至少保留 1 行股东信息', 'warning');
+      return;
+    }
+    form.shareholders.splice(idx, 1);
+    refresh();
+  }
+
+  function updateShareholder(idx, k, v) {
+    form.shareholders[idx][k] = v;
+  }
+
+  // mock 选择文件
+  function mockUploadFile(attIdx) {
+    const att = form.attachments[attIdx];
+    const fileName = `附件-${att.type}-${new Date().toISOString().slice(0,10)}.pdf`;
+    att.files.push({ name: fileName, time: new Date().toISOString().slice(0, 19).replace('T', ' ') });
+    Utils.toast('文件上传成功（mock）', 'success');
+    refresh();
+  }
+
+  function removeUploadedFile(attIdx, fileIdx) {
+    form.attachments[attIdx].files.splice(fileIdx, 1);
+    refresh();
+  }
+
+  // ============ 渲染函数 ============
+  function renderHeader() {
+    return `
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <a href="${Utils.nav('/customer/admission')}" class="flex items-center gap-1 text-slate-600 hover:text-blue-600 text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            返回准入申请
+          </a>
+          <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">新</div>
+          <div>
+            <h2 class="text-base font-bold text-slate-800">新增准入申请</h2>
+            <p class="text-xs text-slate-500">填写完成后提交至监管方审核 · 当前步骤：基础信息收集</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">草稿态（未提交）</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // 申请企业基本信息
+  function renderCompanySection() {
+    return `
+      <div class="bg-white border border-slate-200 rounded-xl p-5">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="w-1 h-4 bg-blue-500 rounded"></span>
+          <h3 class="text-sm font-semibold text-slate-700">申请企业基本信息</h3>
+        </div>
+        <div class="grid grid-cols-[160px_1fr_160px_1fr_160px_1fr] gap-y-3 gap-x-3 items-center">
+          <div class="form-label req">企业名称</div>
+          <input type="text" class="form-input" placeholder="请输入企业名称" value="${form.companyName}" oninput="updateField('companyName', this.value)">
+
+          <div class="form-label req">社会统一信用代码</div>
+          <input type="text" class="form-input" placeholder="请输入 18 位统一社会信用代码" maxlength="20" value="${form.creditCode}" oninput="updateField('creditCode', this.value)">
+
+          <div class="form-label">企业简称</div>
+          <input type="text" class="form-input" placeholder="如：河南测试" value="${form.shortName}" oninput="updateField('shortName', this.value)">
+
+          <div class="form-label">企业简称首字母</div>
+          <input type="text" class="form-input" placeholder="如：HNCS" maxlength="10" value="${form.shortNamePinyin}" oninput="updateField('shortNamePinyin', this.value.toUpperCase())">
+
+          <div class="form-label req">成立日期</div>
+          <input type="date" class="form-input" value="${form.established}" onchange="updateField('established', this.value)">
+
+          <div class="form-label req">企业性质</div>
+          <select class="form-input" onchange="updateField('nature', this.value)">
+            <option value="">请选择</option>
+            <option value="上市公司" ${form.nature === '上市公司' ? 'selected' : ''}>上市公司</option>
+            <option value="国有企业" ${form.nature === '国有企业' ? 'selected' : ''}>国有企业</option>
+            <option value="民营企业" ${form.nature === '民营企业' ? 'selected' : ''}>民营企业</option>
+            <option value="外资企业" ${form.nature === '外资企业' ? 'selected' : ''}>外资企业</option>
+            <option value="合资企业" ${form.nature === '合资企业' ? 'selected' : ''}>合资企业</option>
+            <option value="事业单位" ${form.nature === '事业单位' ? 'selected' : ''}>事业单位</option>
+            <option value="其他" ${form.nature === '其他' ? 'selected' : ''}>其他</option>
+          </select>
+
+          <div class="form-label req">营业期限</div>
+          <input type="text" class="form-input" placeholder="如：长期有效 / 至 2050-12-31" value="${form.businessDeadline}" oninput="updateField('businessDeadline', this.value)">
+
+          <div class="form-label req">注册地址</div>
+          <input type="text" class="form-input col-span-3" placeholder="请输入注册地址" value="${form.registeredAddress}" oninput="updateField('registeredAddress', this.value)">
+
+          <div class="form-label req">所属行业</div>
+          <input type="text" class="form-input" placeholder="如：制造业" value="${form.industry}" oninput="updateField('industry', this.value)">
+
+          <div class="form-label req">注册资本</div>
+          <input type="text" class="form-input" placeholder="如：1000万元" value="${form.registeredCapital}" oninput="updateField('registeredCapital', this.value)">
+
+          <div class="form-label req">是否在续期</div>
+          <div class="flex items-center gap-3">
+            <select class="form-input" onchange="updateField('inRenewal', this.value)">
+              <option value="">请选择</option>
+              <option value="否" ${form.inRenewal === '否' ? 'selected' : ''}>否</option>
+              <option value="是" ${form.inRenewal === '是' ? 'selected' : ''}>是</option>
+            </select>
+            <button onclick="Utils.toast('续期说明：营业执照即将到期（< 90 天）需在系统内更新营业执照附件', 'info')" class="text-slate-400 hover:text-blue-600" title="查看续期说明">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </button>
+          </div>
+
+          <div class="form-label req">联系电话</div>
+          <input type="text" class="form-input" placeholder="如：138 0000 0001" value="${form.contactPhone}" oninput="updateField('contactPhone', this.value)">
+
+          <div class="form-label req">联系地址</div>
+          <input type="text" class="form-input col-span-3" placeholder="请输入联系地址" value="${form.contactAddress}" oninput="updateField('contactAddress', this.value)">
+
+          <div class="form-label-v req">经营范围</div>
+          <textarea class="form-textarea col-span-5" placeholder="请输入经营范围" maxlength="100" oninput="updateField('businessScope', this.value); document.getElementById('businessScopeCount').textContent = this.value.length;">${form.businessScope}</textarea>
+          <div></div>
+          <div class="text-xs text-slate-400 col-span-5 text-right -mt-2">
+            已输入 <span id="businessScopeCount">${form.businessScope.length}</span>/100
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // 法人信息
+  function renderLegalSection() {
+    return `
+      <div class="bg-white border border-slate-200 rounded-xl p-5">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="w-1 h-4 bg-blue-500 rounded"></span>
+          <h3 class="text-sm font-semibold text-slate-700">法人信息</h3>
+        </div>
+        <div class="grid grid-cols-[160px_1fr_160px_1fr_160px_1fr] gap-y-3 gap-x-3 items-center">
+          <div class="form-label req">法人姓名</div>
+          <input type="text" class="form-input" placeholder="请输入法人姓名" value="${form.legalName}" oninput="updateField('legalName', this.value)">
+
+          <div class="form-label req">法人身份证号码</div>
+          <input type="text" class="form-input" placeholder="18 位身份证号" maxlength="18" value="${form.legalIdCard}" oninput="updateField('legalIdCard', this.value)">
+
+          <div class="form-label req">法人手机号</div>
+          <input type="text" class="form-input" placeholder="11 位手机号" maxlength="11" value="${form.legalPhone}" oninput="updateField('legalPhone', this.value)">
+
+          <div class="form-label req">身份证有效期起</div>
+          <input type="date" class="form-input" value="${form.legalIdValidFrom}" onchange="updateField('legalIdValidFrom', this.value)">
+
+          <div class="form-label req">身份证有效期止</div>
+          <input type="date" class="form-input" value="${form.legalIdValidTo}" onchange="updateField('legalIdValidTo', this.value)">
+        </div>
+      </div>
+    `;
+  }
+
+  // 股权结构说明
+  function renderShareholderSection() {
+    return `
+      <div class="bg-white border border-slate-200 rounded-xl p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            <h3 class="text-sm font-semibold text-slate-700">股权结构说明</h3>
+          </div>
+          <button onclick="addShareholder()" class="px-3 py-1 border border-blue-300 text-blue-600 rounded text-xs hover:bg-blue-50 flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            添加一行
+          </button>
+        </div>
+        <table class="w-full text-sm border border-slate-200 rounded">
+          <thead class="bg-slate-50 text-slate-600 text-xs">
+            <tr>
+              <th class="text-left px-3 py-2 whitespace-nowrap w-[18%]">股东名称</th>
+              <th class="text-left px-3 py-2 whitespace-nowrap w-[15%]">出资方式</th>
+              <th class="text-left px-3 py-2 whitespace-nowrap w-[18%]">认缴出资额（元）</th>
+              <th class="text-left px-3 py-2 whitespace-nowrap w-[12%]">持股比例（%）</th>
+              <th class="text-left px-3 py-2 whitespace-nowrap w-[18%]">认缴出资时间</th>
+              <th class="text-center px-3 py-2 whitespace-nowrap w-[8%]">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${form.shareholders.map((s, i) => `
+              <tr class="border-t border-slate-100">
+                <td class="px-2 py-1.5"><input type="text" class="form-input" placeholder="股东名称" value="${s.name}" oninput="updateShareholder(${i}, 'name', this.value)"></td>
+                <td class="px-2 py-1.5">
+                  <select class="form-input" onchange="updateShareholder(${i}, 'type', this.value)">
+                    <option value="">请选择</option>
+                    <option value="现金" ${s.type === '现金' ? 'selected' : ''}>现金</option>
+                    <option value="实物" ${s.type === '实物' ? 'selected' : ''}>实物</option>
+                    <option value="知识产权" ${s.type === '知识产权' ? 'selected' : ''}>知识产权</option>
+                    <option value="土地使用权" ${s.type === '土地使用权' ? 'selected' : ''}>土地使用权</option>
+                    <option value="股权出资" ${s.type === '股权出资' ? 'selected' : ''}>股权出资</option>
+                  </select>
+                </td>
+                <td class="px-2 py-1.5"><input type="number" class="form-input" placeholder="金额" value="${s.amount}" oninput="updateShareholder(${i}, 'amount', this.value)"></td>
+                <td class="px-2 py-1.5"><input type="number" class="form-input" placeholder="%" min="0" max="100" value="${s.ratio}" oninput="updateShareholder(${i}, 'ratio', this.value)"></td>
+                <td class="px-2 py-1.5"><input type="date" class="form-input" value="${s.date}" onchange="updateShareholder(${i}, 'date', this.value)"></td>
+                <td class="px-2 py-1.5 text-center">
+                  <button onclick="removeShareholder(${i})" class="text-rose-500 hover:text-rose-700 text-xs">删除</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  // 其他信息
+  function renderOtherSection() {
+    return `
+      <div class="bg-white border border-slate-200 rounded-xl p-5">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="w-1 h-4 bg-blue-500 rounded"></span>
+          <h3 class="text-sm font-semibold text-slate-700">其他信息</h3>
+        </div>
+        <div class="space-y-4">
+          <div class="grid grid-cols-[160px_1fr] gap-3 items-start">
+            <div class="form-label-v !leading-[100px]">客商的历史沿革和其他需要说明的重大事项</div>
+            <div>
+              <textarea class="form-textarea" placeholder="请输入（最多 100 字）" maxlength="100" oninput="updateField('history', this.value); document.getElementById('historyCount').textContent = this.value.length;">${form.history}</textarea>
+              <div class="text-xs text-slate-400 text-right mt-1">已输入 <span id="historyCount">${form.history.length}</span>/100</div>
+            </div>
+          </div>
+          <div class="grid grid-cols-[160px_1fr] gap-3 items-start">
+            <div class="form-label-v !leading-[100px]">关联企业情况</div>
+            <div>
+              <textarea class="form-textarea" placeholder="请输入（最多 100 字）" maxlength="100" oninput="updateField('relatedEnterprises', this.value); document.getElementById('relatedCount').textContent = this.value.length;">${form.relatedEnterprises}</textarea>
+              <div class="text-xs text-slate-400 text-right mt-1">已输入 <span id="relatedCount">${form.relatedEnterprises.length}</span>/100</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // 附件
+  function renderAttachmentsSection() {
+    return `
+      <div class="bg-white border border-slate-200 rounded-xl p-5">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="w-1 h-4 bg-blue-500 rounded"></span>
+          <h3 class="text-sm font-semibold text-slate-700">附件上传</h3>
+          <span class="text-xs text-slate-500 ml-2">* 必填项需上传；支持 pdf / jpg / png，单个文件 ≤ 10MB</span>
+        </div>
+        <table class="w-full text-sm border border-slate-200 rounded">
+          <thead class="bg-slate-50 text-slate-600 text-xs">
+            <tr>
+              <th class="text-left px-3 py-2 w-[22%]">资料名称</th>
+              <th class="text-left px-3 py-2 w-[20%]">操作</th>
+              <th class="text-left px-3 py-2">附件</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${form.attachments.map((att, i) => `
+              <tr class="border-t border-slate-100">
+                <td class="px-3 py-3 text-slate-700 align-top">
+                  ${att.required ? '<span class="text-rose-500 mr-1">*</span>' : ''}${att.type}
+                </td>
+                <td class="px-3 py-3 align-top">
+                  <button onclick="mockUploadFile(${i})" class="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs flex items-center gap-1 w-fit">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    选择文件
+                  </button>
+                </td>
+                <td class="px-3 py-3 align-top">
+                  ${att.files.length ? att.files.map((f, fi) => `
+                    <div class="flex items-center gap-2 mb-1.5">
+                      <a href="javascript:void(0)" onclick="Utils.toast('文件预览（待对接）','info')" class="text-blue-600 hover:underline text-xs">${f.name}</a>
+                      <span class="text-xs text-slate-400">${f.time}</span>
+                      <button onclick="removeUploadedFile(${i}, ${fi})" class="text-rose-500 hover:text-rose-700 text-xs">删除</button>
+                    </div>
+                  `).join('') : '<span class="text-slate-400 text-xs">（未上传）</span>'}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  // 底部固定操作栏
+  function renderFooter() {
+    return `
+      <div class="footer-actions">
+        <div class="max-w-[1280px] mx-auto px-6 flex items-center justify-center gap-4">
+          <button onclick="submitForm()" class="px-12 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">提交</button>
+          <button onclick="cancelForm()" class="px-12 py-2.5 border border-blue-300 text-blue-600 hover:bg-blue-50 rounded text-sm font-medium">取消</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // ============ 提交 / 取消 ============
+  function submitForm() {
+    // 必填校验
+    const required = [
+      ['companyName', '企业名称'],
+      ['creditCode', '社会统一信用代码'],
+      ['established', '成立日期'],
+      ['nature', '企业性质'],
+      ['businessDeadline', '营业期限'],
+      ['registeredAddress', '注册地址'],
+      ['industry', '所属行业'],
+      ['registeredCapital', '注册资本'],
+      ['inRenewal', '是否在续期'],
+      ['contactPhone', '联系电话'],
+      ['contactAddress', '联系地址'],
+      ['businessScope', '经营范围'],
+      ['legalName', '法人姓名'],
+      ['legalIdCard', '法人身份证号码'],
+      ['legalPhone', '法人手机号'],
+      ['legalIdValidFrom', '身份证有效期起'],
+      ['legalIdValidTo', '身份证有效期止'],
+    ];
+    const missing = required.filter(([k]) => !form[k]);
+    if (missing.length) {
+      Utils.toast(`请补全必填项：${missing.map(([, n]) => n).join('、')}`, 'error');
+      // 滚动到第一个缺失项
+      const first = missing[0][0];
+      const labels = document.querySelectorAll('.form-label.req');
+      for (const lb of labels) {
+        if (lb.textContent.includes(missing[0][1])) {
+          lb.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          break;
+        }
+      }
+      return;
+    }
+    // 必传附件
+    const missingAtt = form.attachments.filter(a => a.required && a.files.length === 0);
+    if (missingAtt.length) {
+      Utils.toast(`请上传必传附件：${missingAtt.map(a => a.type).join('、')}`, 'error');
+      return;
+    }
+    // 通过校验 → 提示成功并跳回列表
+    Utils.toast('提交成功！基础信息已提交至监管方审核（mock）', 'success', 2500);
+    setTimeout(() => {
+      window.location.href = Utils.nav('/customer/admission');
+    }, 1500);
+  }
+
+  function cancelForm() {
+    if (confirm('确认取消新增？已填写的内容将丢失。')) {
+      window.location.href = Utils.nav('/customer/admission');
+    }
+  }
+
+  // ============ 主渲染 ============
+  function render() {
+    return `
+      <div class="space-y-4">
+        ${renderCompanySection()}
+        ${renderLegalSection()}
+        ${renderShareholderSection()}
+        ${renderOtherSection()}
+        ${renderAttachmentsSection()}
+      </div>
+      <div class="footer-spacer"></div>
+      ${renderFooter()}
+    `;
+  }
+
+  function refresh() {
+    document.getElementById('app').innerHTML = Components.pageShell({
+      title: '新增准入申请',
+      currentPath: '/customer/admission',
+      breadcrumb: [
+        { label: '客户准入', path: '/customer/admission' },
+        { label: '准入申请', path: '/customer/admission' },
+        { label: '新增准入申请', path: '/customer/admission-create' },
+      ],
+      extra: '',
+      content: renderHeader() + render(),
+    });
+  }
+
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '新增准入申请',
+    currentPath: '/customer/admission',
+    breadcrumb: [
+      { label: '客户准入', path: '/customer/admission' },
+      { label: '准入申请', path: '/customer/admission' },
+      { label: '新增准入申请', path: '/customer/admission-create' },
+    ],
+    extra: '',
+    content: renderHeader() + render(),
+  });
+</script>
+</body>
+</html>
