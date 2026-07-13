@@ -101,6 +101,23 @@ const MockData = {
       legalRep: '陈志强',
       phone: '138 0000 6688',
       avatar: '陈',
+      // v1.7.37 当前操作人企业档案（新增准入申请时自动带入前 8 字段 + 法人信息）
+      enterpriseProfile: {
+        companyName: '郑州某冷链贸易有限公司',
+        creditCode: '91XXXXXXXXMAXXXXXXXX',
+        shortName: '郑冷贸易',
+        shortNamePinyin: 'ZLMY',
+        established: '2019-06-10',
+        nature: '民营企业',
+        businessDeadline: '长期有效',
+        registeredAddress: '河南省郑州市金水区花园路 66 号建业凯旋广场 A 座 1801 室',
+        // 法人信息（与本账号挂钩：legalRep='陈志强'）
+        legalName: '陈志强',
+        legalIdCard: '11000019800101XXXX',
+        legalPhone: '138 0000 6688',
+        legalIdValidFrom: '2020-01-01',
+        legalIdValidTo: '2040-01-01',
+      },
     },
     // 客户方-盖章人（独立演示账号）：拥有电子签章权限
     customer_seal: {
