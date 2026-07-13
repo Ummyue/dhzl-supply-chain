@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>额度管理 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.44 监管方【授信管理 → 额度管理】列表页 ============
+  // 数据视图：与资金方一致（以客户为主键）
+  // 监管方看全量 creditLimits（不按 guarantorId 过滤）
+
+  // 顶栏右上角额外按钮（监管方/担保方无「新增授信客户」权限，故为空）
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '额度管理',
+    currentPath: '/platform/limit-management',
+    breadcrumb: [
+      { label: '授信管理', path: '/platform/limit-management' },
+      { label: '额度管理', path: '/platform/limit-management' },
+    ],
+    extra: '',
+    content: render(),
+  });
+
+  function render() {
+    const list = MockData.creditLimits || [];
+    return `
+      <!-- 4 个统计卡（按客户为主键汇总） -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
+        <div class="bg-violet-50 rounded-xl p-4 border border-violet-200">
+          <div class="text-xs text-violet-700">授信客户数</div>
+          <div class="text-2xl font-bold text-violet-700 mt-1">${list.length}</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">授信总额度</div>
+          <div class="text-2xl font-bold text-slate-800 mt-1 num-focus">${(list.reduce((s, c) => s + c.totalLimit, 0) / 10000).toFixed(0)}万</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">已用敞口</div>
+          <div class="text-2xl font-bold text-blue-600 mt-1 num-focus">${(list.reduce((s, c) => s + c.usedLimit, 0) / 10000).toFixed(0)}万</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">可用额度</div>
+          <div class="text-2xl font-bold text-emerald-600 mt-1 num-focus">${(list.reduce((s, c) => s + c.availableLimit, 0) / 10000).toFixed(0)}万</div>
+        </div>
+      </div>
+
+      <!-- 监管方视角：客户额度清单（与资金方列表同结构，但顶部面包屑/路径不同） -->
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="px-5 py-3 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="font-semibold text-slate-800">授信额度清单</h3>
+          <span class="text-xs text-slate-500">监管方：全量 ${list.length} 条</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+              <tr>
+                <th class="text-left px-4 py-3">客户</th>
+                <th class="text-left px-4 py-3">统一社会信用代码</th>
+                <th class="text-right px-3 py-3">总额度</th>
+                <th class="text-right px-3 py-3">已用</th>
+                <th class="text-right px-3 py-3">可用</th>
+                <th class="text-center px-3 py-3">使用率</th>
+                <th class="text-center px-3 py-3">利率</th>
+                <th class="text-center px-3 py-3">有效期</th>
+                <th class="text-center px-3 py-3">业务数</th>
+                <th class="text-center px-3 py-3">状态</th>
+                <th class="text-center px-3 py-3">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${list.map(c => {
+                const usedRate = c.totalLimit > 0 ? (c.usedLimit / c.totalLimit * 100).toFixed(1) : '0.0';
+                return `
+                  <tr class="border-t border-slate-100 hover:bg-slate-50">
+                    <td class="px-4 py-3 font-medium">${c.customer}</td>
+                    <td class="px-4 py-3 font-mono text-xs">${c.creditCode}</td>
+                    <td class="px-3 py-3 text-right num-focus font-medium">${Utils.fmtMoney(c.totalLimit)}</td>
+                    <td class="px-3 py-3 text-right num-focus text-blue-600">${Utils.fmtMoney(c.usedLimit)}</td>
+                    <td class="px-3 py-3 text-right num-focus text-emerald-600">${Utils.fmtMoney(c.availableLimit)}</td>
+                    <td class="px-3 py-3 text-center">
+                      <div class="flex items-center gap-1 justify-center">
+                        <div class="w-16 h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div class="h-full bg-gradient-to-r ${usedRate > 80 ? 'from-rose-500 to-rose-600' : 'from-blue-500 to-blue-600'}" style="width: ${usedRate}%"></div>
+                        </div>
+                        <span class="text-xs ${usedRate > 80 ? 'text-rose-600' : 'text-slate-500'}">${usedRate}%</span>
+                      </div>
+                    </td>
+                    <td class="px-3 py-3 text-center num-focus">${c.interestRate}</td>
+                    <td class="px-3 py-3 text-center text-xs">${c.validFrom}<br>~ ${c.validTo}</td>
+                    <td class="px-3 py-3 text-center">${c.bizCount}</td>
+                    <td class="px-3 py-3 text-center"><span class="px-2 py-0.5 rounded text-xs bg-emerald-100 text-emerald-700">生效中</span></td>
+                    <td class="px-3 py-3 text-center">
+                      <button onclick="Utils.toast('查看客户 ${c.customer} 额度详情（占位）','info')" class="text-blue-600 hover:underline text-xs">详情</button>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 监管方说明 banner -->
+      <div class="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700 flex items-start gap-2">
+        <svg class="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <div>监管方视角：本模块用于监控平台内全部客户的授信额度分配与使用情况。如需调整客户额度，请联系资金方；如需查看担保关系详情，请跳转至「质押管理 → 风险监控」。</div>
+      </div>
+    `;
+  }
+</script>
+</body>
+</html>

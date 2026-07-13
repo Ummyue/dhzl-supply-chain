@@ -34,8 +34,8 @@
     title: '额度详情',
     currentPath: '/customer/limit-management',
     breadcrumb: [
-      { label: '贷后管理', path: '/customer/limit-management' },
-      { label: '额度管理', path: '/customer/limit-management' },
+      { label: '授信管理', path: '/customer/limit-management' },
+      { label: '额度详情', path: '/customer/limit-management' },
       { label: '额度详情', path: '/customer/limit-detail' },
     ],
     extra: '',
@@ -48,7 +48,7 @@
         <div class="bg-white border border-slate-200 rounded-xl p-12 text-center">
           <p class="text-slate-600 mb-2">📭 未找到该额度记录</p>
           <p class="text-xs text-slate-400 mb-4">URL 参数 id 缺失或已失效</p>
-          <a href="${Utils.nav('/customer/limit-management')}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">返回额度管理</a>
+          <a href="${Utils.nav('/customer/limit-management')}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">返回额度详情</a>
         </div>
       `;
     }
@@ -59,7 +59,7 @@
         <div class="flex items-center gap-3">
           <a href="${Utils.nav('/customer/limit-management')}" class="flex items-center gap-1 text-slate-600 hover:text-blue-600 text-sm">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-            返回额度管理
+            返回额度详情
           </a>
           <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">额</div>
           <div>

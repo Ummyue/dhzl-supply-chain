@@ -299,8 +299,9 @@ const MockData = {
           { icon: 'logistics', label: '解押出库申请', path: '/customer/outbound' },
           { icon: 'list', label: '放还款详情', path: '/customer/disburse-repayment' },
         ]},
-        { group: '贷后管理', items: [
-          { icon: 'chart', label: '额度管理', path: '/customer/limit-management' },
+        { group: '授信管理', items: [
+          // v1.7.44：货主方二级菜单「额度管理」→「额度详情」（被动查询视角）
+          { icon: 'chart', label: '额度详情', path: '/customer/limit-management' },
         ]},
         { group: '盯市管理', items: [
           { icon: 'chart', label: '价格看板', path: '/customer/market' },  // v1.7.27 新建占位
@@ -318,6 +319,10 @@ const MockData = {
         ]},
         { group: '出库审批', items: [
           { icon: 'logistics', label: '解押/出库审批', path: '/platform/approval-outbound' },
+        ]},
+        // v1.7.44：监管方新增「授信管理」（贷后管理改名为授信管理）
+        { group: '授信管理', items: [
+          { icon: 'chart', label: '额度管理', path: '/platform/limit-management' },
         ]},
         // ===== 「数据中心」归属 =====
         // 现状：5 项全放「供应链金融」下（风险/追保/还款/资产/统计 都是金融风控相关）
@@ -337,6 +342,10 @@ const MockData = {
         { group: '质押管理', items: [
           { icon: 'list', label: '质押货物台账', path: '/guarantor/pledge-ledger' },
           { icon: 'alert', label: '风险监控', path: '/guarantor/risk-monitoring' },
+        ]},
+        // v1.7.44：担保方新增「授信管理」（贷后管理改名为授信管理）
+        { group: '授信管理', items: [
+          { icon: 'chart', label: '额度管理', path: '/guarantor/limit-management' },
         ]},
       ],
       bank: [
@@ -2742,11 +2751,13 @@ const MockData = {
     { id: 'rp_004', bizNo: 'DHZL_JMY_2025120101', customer: '郑州某冷链', loanNo: 'LN30XXXXXXXXXXXX', repayDate: '2026-07-15', repayType: '到期还本付息', repayAmount: 1163900, remainingDebt: 1130000, status: 'pending', dueIn: 7 },
   ],
 
-  // ========== 额度管理（资金方） ==========
+  // ========== 额度管理（资金方 / 监管方 / 担保方） ==========
+  // v1.7.44: 新增 guarantorId 字段，担保方按此过滤；监管方看全量
+  // cl_001 + cl_002 由 u_guar_001（中原信用担保）担保，cl_003 由 u_guar_002（某省级农业担保）担保
   creditLimits: [
-    { id: 'cl_001', customer: '郑州某冷链贸易有限公司', creditCode: '91XXXXXXXXMAXXXXXXXX', totalLimit: 50000000, usedLimit: 42100000, availableLimit: 7900000, validFrom: '2025-11-16', validTo: '2026-11-15', interestRate: '4.35%', status: 'active', bizCount: 4 },
-    { id: 'cl_002', customer: '郑州某冷链物流有限公司', creditCode: '91XXXXXXXXMAXXXXXXXX', totalLimit: 30000000, usedLimit: 17600000, availableLimit: 12400000, validFrom: '2026-03-20', validTo: '2027-03-19', interestRate: '4.55%', status: 'active', bizCount: 2 },
-    { id: 'cl_003', customer: '河南某冷链股份有限公司', creditCode: '91XXXXXXXXMAXXXXXXXX', totalLimit: 20000000, usedLimit: 0, availableLimit: 20000000, validFrom: '2026-06-01', validTo: '2027-05-31', interestRate: '4.75%', status: 'active', bizCount: 0 },
+    { id: 'cl_001', customer: '郑州某冷链贸易有限公司', creditCode: '91XXXXXXXXMAXXXXXXXX', totalLimit: 50000000, usedLimit: 42100000, availableLimit: 7900000, validFrom: '2025-11-16', validTo: '2026-11-15', interestRate: '4.35%', status: 'active', bizCount: 4, guarantorId: 'u_guar_001' },
+    { id: 'cl_002', customer: '郑州某冷链物流有限公司', creditCode: '91XXXXXXXXMAXXXXXXXX', totalLimit: 30000000, usedLimit: 17600000, availableLimit: 12400000, validFrom: '2026-03-20', validTo: '2027-03-19', interestRate: '4.55%', status: 'active', bizCount: 2, guarantorId: 'u_guar_001' },
+    { id: 'cl_003', customer: '河南某冷链股份有限公司', creditCode: '91XXXXXXXXMAXXXXXXXX', totalLimit: 20000000, usedLimit: 0, availableLimit: 20000000, validFrom: '2026-06-01', validTo: '2027-05-31', interestRate: '4.75%', status: 'active', bizCount: 0, guarantorId: 'u_guar_002' },
   ],
 
   // ========== v1.7.19 额度管理（货主方）—— 按用户截图 ==========

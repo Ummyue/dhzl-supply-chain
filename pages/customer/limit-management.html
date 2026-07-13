@@ -11,7 +11,7 @@
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>额度管理 - 大河智链</title>
+  <title>额度详情 - 大河智链</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
   <link rel="stylesheet" href="/shared/css/style.css">
@@ -24,7 +24,8 @@
 <script>
   Components.bindGlobalClose();
 
-  // ============ v1.7.19 货主方【贷后管理 → 额度管理】列表页（按用户图1） ============
+  // ============ v1.7.19 货主方【授信管理 → 额度详情】列表页（按用户图1） ============
+  // v1.7.44: 一级菜单「贷后管理」→「授信管理」；二级菜单「额度管理」→「额度详情」
   // 11 列：授权批复编号 / 金融机构 / 金融产品名称 / 起始日期 / 到期日期 /
   // 总额度（元）（含「详情」链接）/ 冻结额度（元）/ 已用额度（元）/ 可用额度（元）/
   // 是否循环使用 / 状态
@@ -40,11 +41,11 @@
   let currentTab = 'all'; // all / 启用 / 停用
 
   document.getElementById('app').innerHTML = Components.pageShell({
-    title: '额度管理',
+    title: '额度详情',
     currentPath: '/customer/limit-management',
     breadcrumb: [
-      { label: '贷后管理', path: '/customer/limit-management' },
-      { label: '额度管理', path: '/customer/limit-management' },
+      { label: '授信管理', path: '/customer/limit-management' },
+      { label: '额度详情', path: '/customer/limit-management' },
     ],
     content: render(),
   });
@@ -218,11 +219,11 @@
 
   function refresh() {
     document.getElementById('app').innerHTML = Components.pageShell({
-      title: '额度管理',
+      title: '额度详情',
       currentPath: '/customer/limit-management',
       breadcrumb: [
-        { label: '贷后管理', path: '/customer/limit-management' },
-        { label: '额度管理', path: '/customer/limit-management' },
+        { label: '授信管理', path: '/customer/limit-management' },
+        { label: '额度详情', path: '/customer/limit-management' },
       ],
       content: render(),
     });
