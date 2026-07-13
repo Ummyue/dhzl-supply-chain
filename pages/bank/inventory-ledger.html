@@ -26,7 +26,10 @@
 
   // ============ v1.7.52 资金方：按用户所属银行过滤（演示账号 u_bank_001 刘敏 - 中国民生银行）============
   // 必须在 render 之前声明，避免 TDZ
-  const currentBank = (Utils.getUser() || { company: '中国民生银行股份有限公司郑州分行' }).company;
+  // user.company 是全称"中国民生银行股份有限公司郑州分行"，inventoryLedger.bank 是简写"中国民生银行"
+  // 用 includes 模糊匹配，提取核心银行名
+  const userObj = Utils.getUser() || { company: '中国民生银行股份有限公司郑州分行' };
+  const currentBank = (userObj.company || '').includes('民生') ? '中国民生银行' : (userObj.company || '');
 
   // ============ v1.7.18 库存台账（按用户截图样式：库存汇总列表 4 stats + 13 列聚合表） ============
   // 修正历史：原 v1.7.10 版本是事件流 4 tab（入库/出库/质押/解押），相当于"库存明细界面"
