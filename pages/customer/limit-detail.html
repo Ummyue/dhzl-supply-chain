@@ -134,6 +134,21 @@
           </table>
         </div>
       </section>
+
+      <!-- v1.7.48: 操作 section（v1.7.46 memory 原则：详情页不加业务变更按钮，只允许跳关联单据/复制/附件下载） -->
+      <section class="bg-white border border-slate-200 rounded-xl mt-4 overflow-hidden">
+        <div class="px-6 py-3 border-b border-slate-200 flex items-center gap-2">
+          <span class="w-1 h-4 bg-blue-500 rounded"></span>
+          <h3 class="font-bold text-slate-800">操作</h3>
+        </div>
+        <div class="px-6 py-4 flex items-center gap-6 text-sm">
+          <button onclick="viewRelatedFinancing('${urlId}')" class="text-blue-600 hover:underline flex items-center gap-1">
+            详情
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+          <span class="text-xs text-slate-400">查看基于本额度的关联融资申请详情</span>
+        </div>
+      </section>
     `;
   }
 
@@ -169,6 +184,16 @@
   window.viewFile = (name) => Utils.toast('查看附件：' + name + '（占位）', 'info');
   window.downloadFile = (name) => Utils.toast('下载附件：' + name + '（占位）', 'info');
   window.downloadAllAttachments = () => Utils.toast('一键下载全部附件（占位）', 'info');
+  // v1.7.48: 跳关联融资详情
+  window.viewRelatedFinancing = (limitId) => {
+    if (!limit) {
+      Utils.toast('未找到额度记录', 'warning');
+      return;
+    }
+    // 按客户名过滤融资申请列表
+    const customer = limit.coreCompany || '';
+    window.location.href = `${Utils.nav('/customer/financing')}?customer=${encodeURIComponent(customer)}&fromLimit=${encodeURIComponent(limitId)}`;
+  };
 </script>
 </body>
 </html>

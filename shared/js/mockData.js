@@ -2754,10 +2754,44 @@ const MockData = {
   // ========== 额度管理（资金方 / 监管方 / 担保方） ==========
   // v1.7.44: 新增 guarantorId 字段，担保方按此过滤；监管方看全量
   // cl_001 + cl_002 由 u_guar_001（中原信用担保）担保，cl_003 由 u_guar_002（某省级农业担保）担保
+  // v1.7.48: 扩展字段（bank/product/productName/creditType/frozenAmount/startDate/maturityDate/circular/state/coreCompany/supervisorCompany/warehouseCompany/attachments）
+  //           用于「修改」表单回填（v1.7.48 limit-edit.html）
   creditLimits: [
-    { id: 'cl_001', customer: '郑州某冷链贸易有限公司', creditCode: '91XXXXXXXXMAXXXXXXXX', totalLimit: 50000000, usedLimit: 42100000, availableLimit: 7900000, validFrom: '2025-11-16', validTo: '2026-11-15', interestRate: '4.35%', status: 'active', bizCount: 4, guarantorId: 'u_guar_001' },
-    { id: 'cl_002', customer: '郑州某冷链物流有限公司', creditCode: '91XXXXXXXXMAXXXXXXXX', totalLimit: 30000000, usedLimit: 17600000, availableLimit: 12400000, validFrom: '2026-03-20', validTo: '2027-03-19', interestRate: '4.55%', status: 'active', bizCount: 2, guarantorId: 'u_guar_001' },
-    { id: 'cl_003', customer: '河南某冷链股份有限公司', creditCode: '91XXXXXXXXMAXXXXXXXX', totalLimit: 20000000, usedLimit: 0, availableLimit: 20000000, validFrom: '2026-06-01', validTo: '2027-05-31', interestRate: '4.75%', status: 'active', bizCount: 0, guarantorId: 'u_guar_002' },
+    { id: 'cl_001', customer: '郑州某冷链贸易有限公司', creditCode: '91XXXXXXXXMAXXXXXXXX',
+      totalLimit: 50000000, usedLimit: 42100000, availableLimit: 7900000, validFrom: '2025-11-16', validTo: '2026-11-15', interestRate: '4.35%', status: 'active', bizCount: 4, guarantorId: 'u_guar_001',
+      // 来自 lim_002（货主方第一张主额度卡）
+      bank: '中原银行股份有限公司郑州支行', product: '证E融', productName: '证E融-冷链贸易专项',
+      creditType: '融资企业授信', frozenAmount: 3344455, startDate: '2025-01-01', maturityDate: '2030-01-01',
+      circular: true, state: '启用',
+      coreCompany: '郑州某冷链贸易有限公司', supervisorCompany: '大河智链',
+      warehouseCompany: '物流港二期大河智链监管库', guarantorCompany: '中原再担保股份有限公司',
+      attachments: [
+        { type: '授权批复材料', name: '中原银行批复材料.zip', uploadedAt: '2024-06-14 09:15:32' },
+        { type: '其他', name: '其他材料.zip', uploadedAt: '2024-06-15 09:15:32' },
+      ] },
+    { id: 'cl_002', customer: '郑州某冷链物流有限公司', creditCode: '91XXXXXXXXMAXXXXXXXX',
+      totalLimit: 30000000, usedLimit: 17600000, availableLimit: 12400000, validFrom: '2026-03-20', validTo: '2027-03-19', interestRate: '4.55%', status: 'active', bizCount: 2, guarantorId: 'u_guar_001',
+      // 来自 lim_003
+      bank: '工商银行郑州金水支行', product: '冷链贷', productName: '冷链贷-物流专项',
+      creditType: '核心企业授信', frozenAmount: 0, startDate: '2025-06-15', maturityDate: '2028-06-14',
+      circular: false, state: '启用',
+      coreCompany: '郑州某冷链物流有限公司', supervisorCompany: '郑州海关·保税货物监管处',
+      warehouseCompany: '郑州融万冷链库', guarantorCompany: '某省级农业担保股份有限公司',
+      attachments: [
+        { type: '授权批复材料', name: '工商银行批复材料.zip', uploadedAt: '2024-06-16 09:15:32' },
+      ] },
+    { id: 'cl_003', customer: '河南某冷链股份有限公司', creditCode: '91XXXXXXXXMAXXXXXXXX',
+      totalLimit: 20000000, usedLimit: 0, availableLimit: 20000000, validFrom: '2026-06-01', validTo: '2027-05-31', interestRate: '4.75%', status: 'active', bizCount: 0, guarantorId: 'u_guar_002',
+      // 来自 lim_004
+      bank: '中融信托·冷链金融部', product: '冷链现货质押融资', productName: '冷链现货质押融资-A类',
+      creditType: '融资企业授信', frozenAmount: 5000000, startDate: '2024-12-01', maturityDate: '2027-11-30',
+      circular: true, state: '启用',
+      coreCompany: '河南某冷链股份有限公司', supervisorCompany: '大河智链',
+      warehouseCompany: '天津港国际冷链基地', guarantorCompany: '中原再担保股份有限公司',
+      attachments: [
+        { type: '授权批复材料', name: '中融信托批复.zip', uploadedAt: '2024-06-17 09:15:32' },
+        { type: '其他', name: '补充材料.zip', uploadedAt: '2024-06-18 09:15:32' },
+      ] },
   ],
 
   // ========== v1.7.19 额度管理（货主方）—— 按用户截图 ==========
