@@ -24,6 +24,10 @@
 <script>
   Components.bindGlobalClose();
 
+  // ============ v1.7.52 资金方：按用户所属银行过滤（演示账号 u_bank_001 刘敏 - 中国民生银行）============
+  // 必须在 render 之前声明，避免 TDZ
+  const currentBank = (Utils.getUser() || { company: '中国民生银行股份有限公司郑州分行' }).company;
+
   // ============ v1.7.18 库存台账（按用户截图样式：库存汇总列表 4 stats + 13 列聚合表） ============
   // 修正历史：原 v1.7.10 版本是事件流 4 tab（入库/出库/质押/解押），相当于"库存明细界面"
   // 现按货品聚合重写为"库存汇总台账"——列表点击行跳到 /customer/inventory-detail?id=xxx
@@ -53,8 +57,6 @@
     content: render(),
   });
 
-  // v1.7.52 资金方：按用户所属银行过滤（演示账号 u_bank_001 刘敏 - 中国民生银行）
-  const currentBank = (Utils.getUser() || { company: '中国民生银行股份有限公司郑州分行' }).company;
   function applyFilters() {
     return (MockData.inventoryLedger || []).filter(r => {
       if (r.bank !== currentBank) return false;

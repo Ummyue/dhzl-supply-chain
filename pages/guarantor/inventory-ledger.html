@@ -24,6 +24,10 @@
 <script>
   Components.bindGlobalClose();
 
+  // ============ v1.7.52 担保方：按 guarantorId 过滤（演示账号 u_guar_001 王建国）============
+  // 必须在 render 之前声明，避免 TDZ
+  const currentGuarantor = (Utils.getUser() || { id: 'u_guar_001' }).id;
+
   // ============ v1.7.18 库存台账（按用户截图样式：库存汇总列表 4 stats + 13 列聚合表） ============
   // 修正历史：原 v1.7.10 版本是事件流 4 tab（入库/出库/质押/解押），相当于"库存明细界面"
   // 现按货品聚合重写为"库存汇总台账"——列表点击行跳到 /customer/inventory-detail?id=xxx
@@ -53,8 +57,6 @@
     content: render(),
   });
 
-  // v1.7.52 担保方：按 guarantorId 过滤（演示账号 u_guar_001 王建国）
-  const currentGuarantor = (Utils.getUser() || { id: 'u_guar_001' }).id;
   function applyFilters() {
     return (MockData.inventoryLedger || []).filter(r => {
       if (r.guarantorId !== currentGuarantor) return false;
