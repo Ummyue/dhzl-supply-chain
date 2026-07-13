@@ -33,7 +33,7 @@
   // 现按货品聚合重写为"库存汇总台账"——列表点击行跳到 /customer/inventory-detail?id=xxx
 
   const filters = {
-    bank: '中原银行',   // 默认按截图预设
+    bank: '',   // v1.7.52 资金方：bank 已被 currentBank 自动过滤，不需要手动选择
     warehouse: '',
     location: '',
     product: '',
