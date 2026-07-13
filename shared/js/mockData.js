@@ -213,7 +213,8 @@ const MockData = {
         ]},
         { group: '货物管理', items: [
           { icon: 'box', label: '入库申请', path: '/customer/inbound' },
-          { icon: 'package', label: '在库货物', path: '/customer/monitoring' },
+          // v1.7.34 暂时隐藏【在库货物】，后续看需不需要
+          // { icon: 'package', label: '在库货物', path: '/customer/monitoring' },
           { icon: 'list', label: '出/入库详情', path: '/customer/in-out-detail' },
         ]},
         { group: '视频监控', items: [
@@ -1226,7 +1227,7 @@ const MockData = {
     pl_001: {
       pledgeNo: 'MPCB_14910955281409',
       financingNo: 'RZ202202250014',
-      pledgor: '河南军牧原国际贸易有限公司',
+      pledgor: '郑州某冷链贸易有限公司',
       pledgee: '郑州农业融担保股份有限公司',
       product: '中原e货',
       bank: '中原银行股份有限公司',
@@ -1314,7 +1315,7 @@ const MockData = {
       ],
       financingInfo: {
         financingNo: 'RZ202411280002',
-        pledgor: '河南军牧原国际贸易有限公司',
+        pledgor: '郑州某冷链贸易有限公司',
         product: '中原e货',
         bank: '中原银行股份有限公司',
         interestRate: '2.3%',
@@ -1328,7 +1329,7 @@ const MockData = {
       },
       pledgeAssetInfo: {
         pledgeNo: 'MPCB_14910955281409',
-        pledgor: '河南军牧原国际贸易有限公司',
+        pledgor: '郑州某冷链贸易有限公司',
         pledgee: '郑州农业融担保股份有限公司',
         pledgeQty: 700,
         pledgeWeight: 10000,
@@ -1903,7 +1904,7 @@ const MockData = {
     { id: 'lim_006', authorizedNo: '54645485000001', bank: '中原银行股份有限公司郑州支行', productName: '粮食质押贷', creditType: '核心企业授信',
       startDate: '2024-08-01', maturityDate: '2027-07-31',
       totalAmount: 12000000000, frozenAmount: 8800000, usedAmount: 2100000000, availableAmount: 9891200000,
-      circular: true, state: '启用', coreCompany: '河南军牧原国际贸易有限公司', supervisorCompany: '大河智链',
+      circular: true, state: '启用', coreCompany: '郑州某冷链贸易有限公司', supervisorCompany: '大河智链',
       warehouseCompany: '物流港二期大河智链监管库', guarantorCompany: '河南农担股份有限公司',
       attachments: [
         { type: '授权批复材料', name: '粮批材料.zip', uploadedAt: '2024-06-20 09:15:32' },
@@ -1954,7 +1955,7 @@ const MockData = {
     { id: 'lim_012', authorizedNo: '54645485000007', bank: '农业银行郑州分行', productName: '粮食质押贷', creditType: '核心企业授信',
       startDate: '2025-11-10', maturityDate: '2026-11-09',
       totalAmount: 2000000000, frozenAmount: 0, usedAmount: 0, availableAmount: 2000000000,
-      circular: false, state: '停用', coreCompany: '河南军牧原国际贸易有限公司', supervisorCompany: '大河智链',
+      circular: false, state: '停用', coreCompany: '郑州某冷链贸易有限公司', supervisorCompany: '大河智链',
       warehouseCompany: '物流港二期大河智链监管库', guarantorCompany: '河南农担股份有限公司',
       attachments: [
         { type: '授权批复材料', name: '农行批复.zip', uploadedAt: '2024-06-29 09:15:32' },
@@ -2191,7 +2192,7 @@ const MockData = {
       const suppliers = ['中原银行股份有限公司', '工商银行郑州分行', '中融信托·冷链金融部', '招商银行郑州分行'];
       const supervisors = ['大河智链供应链管理有限公司', '郑州海关·保税货物监管处'];
       const guarantors = ['中原再担保股份有限公司', '某省级农业担保股份有限公司'];
-      const applicants = ['河南永恒有限公司', '河南某冷链股份有限公司', '郑州某冷链贸易有限公司', '河南军牧原国际贸易有限公司'];
+      const applicants = ['河南永恒有限公司', '河南某冷链股份有限公司', '郑州某冷链贸易有限公司', '郑州某冷链贸易有限公司'];
       const productTypeMap = { inbound: '中原e贷', outbound: '解押出库', pledge: '冷链现货质押', unpledge: '解押处理' };
       const sourceMap = {
         inbound: ['手动添加', '数据同步', 'API导入'],
@@ -2294,9 +2295,9 @@ const MockData = {
         location: wh.location,
         applyNo: i === 0 ? 'PREIN20231010000001' : applyNo,
         // 入库专属字段（匹配甲方截图）
-        applicant: '河南军牧原国际贸易有限公司',
+        applicant: '郑州某冷链贸易有限公司',
         contactPerson: '张三',
-        contactPhone: '133238288889',
+        contactPhone: '138 0000 XXXX',
         productType: '中原e贷',
         pledgee: '郑州农业融资担保股份有限公司',
         supervisor: '大河智链物流（郑州）有限公司',
@@ -2355,9 +2356,9 @@ const MockData = {
         applyNo: outApplyNo,
         contractNo: contractNo,
         // 出库专属字段
-        applicant: '河南军牧原国际贸易有限公司',
+        applicant: '郑州某冷链贸易有限公司',
         contactPerson: '张三',
-        contactPhone: '133238288889',
+        contactPhone: '138 0000 XXXX',
         productType: '中原e贷',
         pledgee: '郑州农业融资担保股份有限公司',
         supervisor: '大河智链物流（郑州）有限公司',

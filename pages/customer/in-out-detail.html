@@ -215,7 +215,10 @@
                   <th class="text-left px-3 py-3 whitespace-nowrap">货物名称</th>
                   <th class="text-left px-3 py-3 whitespace-nowrap">库点名称</th>
                   <th class="text-left px-3 py-3 whitespace-nowrap">仓房-货位</th>
-                  <th class="text-left px-3 py-3 whitespace-nowrap">${isIn ? '入库' : '出库'}申请编号</th>
+                  <th class="text-right px-3 py-3 whitespace-nowrap">入库数量</th>
+                  <th class="text-right px-3 py-3 whitespace-nowrap">入库重量</th>
+                  <th class="text-left px-3 py-3 whitespace-nowrap">数量单位</th>
+                  <th class="text-left px-3 py-3 whitespace-nowrap">出库申请编号</th>
                   <th class="text-left px-3 py-3 whitespace-nowrap">关联合同/订单编号</th>
                   <th class="text-left px-3 py-3 whitespace-nowrap">数据类型</th>
                   <th class="text-center px-3 py-3 whitespace-nowrap">操作</th>
@@ -266,7 +269,7 @@
   }
 
   function renderRows(items, isIn) {
-    if (!items.length) return `<tr><td colspan="9" class="py-12 text-center text-slate-400 text-sm">📭 当前筛选条件下无${isIn ? '入库' : '出库'}详情记录</td></tr>`;
+    if (!items.length) return `<tr><td colspan="${isIn ? 9 : 12}" class="py-12 text-center text-slate-400 text-sm">📭 当前筛选条件下无${isIn ? '入库' : '出库'}详情记录</td></tr>`;
     return items.map(r => `
       <tr class="border-t border-slate-100 hover:bg-blue-50/30">
         <td class="px-3 py-2.5 font-mono text-xs text-blue-700 whitespace-nowrap">${r.bizNo}</td>
@@ -279,7 +282,10 @@
           <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap">${Utils.fmtNum(r.stockWeight)}</td>
           <td class="px-3 py-2.5 text-slate-500 text-xs whitespace-nowrap">${r.piecesUnit}</td>
         ` : `
-          <td class="px-3 py-2.5 font-mono text-xs text-blue-600 whitespace-nowrap">${r.applyNo || '-'}</td>
+          <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap">${Utils.fmtNum(r.stockPieces)}</td>
+          <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap">${Utils.fmtNum(r.stockWeight)}</td>
+          <td class="px-3 py-2.5 text-slate-500 text-xs whitespace-nowrap">${r.piecesUnit}</td>
+          <td class="px-3 py-2.5 font-mono text-xs text-slate-700 whitespace-nowrap">${r.applyNo || '-'}</td>
           <td class="px-3 py-2.5 font-mono text-xs text-slate-600 whitespace-nowrap">${r.contractNo || '-'}</td>
           <td class="px-3 py-2.5 text-slate-700 text-xs whitespace-nowrap">
             <span class="px-2 py-0.5 ${sourceClass(r.source)} rounded text-xs">${r.source || '-'}</span>
@@ -383,7 +389,12 @@
     const isIn = type === 'inbound';
 
     // 弹窗内部状态（操作记录 tab 用）
-    const dialogState = { activeTab: 'info' };
+    const dialogState = {
+      activeTab: 'info',
+      opsTypeFilter: '',   // 操作类型筛选（v1.7.33 新增）
+      opsDateStart: '',    // 操作时间起
+      opsDateEnd: '',      // 操作时间止
+    };
     function renderModal() {
       const isOutTabInfo = dialogState.activeTab === 'info';
       return `
@@ -412,9 +423,9 @@
             <div>
               <div class="text-sm font-semibold text-slate-700 mb-3">${isIn ? '入库' : '出库'}申请信息</div>
               <div class="grid grid-cols-3 gap-4 bg-white border border-slate-200 rounded p-4 text-sm">
-                <div><span class="text-slate-500">${isIn ? '入库' : '出库'}申请编号：</span><a onclick="Utils.toast('跳转申请详情（待对接）','info')" href="javascript:void(0)" class="text-blue-600 hover:underline font-mono">${r.applyNo}</a></div>
+                <div><span class="text-slate-500">${isIn ? '入库' : '出库'}申请编号：</span><span class="text-slate-800 font-mono">${r.applyNo || '-'}</span></div>
                 <div><span class="text-slate-500">出质方：</span><span class="text-slate-800">${r.applicant || '-'}</span></div>
-                <div><span class="text-slate-500">联系人：</span><span class="text-slate-800">${r.contactPerson || '-'}</span><span class="text-slate-400 ml-1 text-xs">-${r.contactPhone || ''}</span></div>
+                <div><span class="text-slate-500">联系人：</span><span class="text-slate-800">${r.contactPerson || '-'}</span><span class="text-slate-400 ml-1 text-xs">-138 0000 XXXX</span></div>
                 <div><span class="text-slate-500">金融产品：</span><span class="text-slate-800">${r.productType || '-'}</span></div>
                 <div><span class="text-slate-500">质权方：</span><span class="text-slate-800">${r.pledgee || '-'}</span></div>
                 <div><span class="text-slate-500">监管方：</span><span class="text-slate-800">${r.supervisor || '-'}</span></div>
@@ -596,11 +607,35 @@
     }
 
     function renderOperationsTable(r) {
-      const ops = r.operations || [];
-      if (!ops.length) {
-        return `<div class="text-center py-12 text-slate-400 text-sm">📭 暂无操作记录</div>`;
-      }
+      const allOps = r.operations || [];
+      // v1.7.33 操作记录筛选：操作类型 + 时间范围
+      const types = [...new Set(allOps.map(o => o.type).filter(Boolean))];
+      const filtered = allOps.filter(op => {
+        if (dialogState.opsTypeFilter && op.type !== dialogState.opsTypeFilter) return false;
+        if (dialogState.opsDateStart && op.time < dialogState.opsDateStart) return false;
+        if (dialogState.opsDateEnd && op.time > dialogState.opsDateEnd + ' 23:59:59') return false;
+        return true;
+      });
       return `
+        <!-- 操作记录筛选（v1.7.33 新增 2 控件：操作类型 + 时间范围） -->
+        <div class="flex items-center gap-3 mb-3 p-2.5 bg-slate-50 rounded">
+          <label class="flex items-center gap-1 text-xs text-slate-600">
+            操作类型
+            <select onchange="opsFilterChange('type', this.value)" class="px-2 py-1 text-xs border border-slate-200 rounded bg-white">
+              <option value="">全部</option>
+              ${types.map(t => `<option value="${t}" ${dialogState.opsTypeFilter === t ? 'selected' : ''}>${t}</option>`).join('')}
+            </select>
+          </label>
+          <label class="flex items-center gap-1 text-xs text-slate-600">
+            时间
+            <input type="date" value="${dialogState.opsDateStart}" onchange="opsFilterChange('dateStart', this.value)" class="px-2 py-1 text-xs border border-slate-200 rounded">
+            <span>~</span>
+            <input type="date" value="${dialogState.opsDateEnd}" onchange="opsFilterChange('dateEnd', this.value)" class="px-2 py-1 text-xs border border-slate-200 rounded">
+          </label>
+          ${(dialogState.opsTypeFilter || dialogState.opsDateStart || dialogState.opsDateEnd) ? `<button onclick="opsFilterReset()" class="text-xs text-rose-500 hover:text-rose-700">清除</button>` : ''}
+          <span class="ml-auto text-xs text-slate-500">共 <b class="text-slate-800">${filtered.length}</b> / ${allOps.length} 条</span>
+        </div>
+        ${!filtered.length ? `<div class="text-center py-12 text-slate-400 text-sm">📭 当前筛选条件下无操作记录</div>` : `
         <table class="w-full text-sm">
           <thead class="bg-slate-50 text-slate-600 text-xs">
             <tr>
@@ -612,7 +647,7 @@
             </tr>
           </thead>
           <tbody>
-            ${ops.map(op => `
+            ${filtered.map(op => `
               <tr class="border-t border-slate-100">
                 <td class="px-3 py-2.5 text-slate-700 whitespace-nowrap">${op.type}</td>
                 <td class="px-3 py-2.5 text-slate-700 whitespace-nowrap">${op.operator}</td>
@@ -623,12 +658,15 @@
             `).join('')}
           </tbody>
         </table>
+        `}
       `;
     }
 
     const modal = document.createElement('div');
     modal.className = 'modal-backdrop';
     modal.id = 'inOutDetailModal';
+    modal.dataset.recordId = id;  // v1.7.33 操作记录筛选重渲染用
+    modal.dataset.recordType = type;
     modal.innerHTML = renderModal();
     // v1.7.8 表单类弹窗：屏蔽点击外面关闭
     modal.onclick = () => {};
@@ -659,6 +697,27 @@
         paneOps.classList.remove('hidden');
       }
     };
+
+    // v1.7.33 操作记录筛选：局部重渲染 ops-pane
+    window.opsFilterChange = function(key, val) {
+      dialogState[key] = val;
+      const paneOps = document.querySelector('#dialog-tab-ops-pane');
+      if (!paneOps) return;
+      // 找到当前弹窗的 r：从 modal.id 解析拿不到，但 viewDetail 闭包内有 r
+      // 简单办法：把 r 存在 modal 元素 dataset 上
+      const modal = document.getElementById('inOutDetailModal');
+      const rid = modal && modal.dataset.recordId;
+      if (!rid) return;
+      const list = MockData.inOutDetails.outboundList;
+      const r = list.find(x => x.id === rid) || list[0];
+      paneOps.innerHTML = renderOperationsTable(r);
+    };
+    window.opsFilterReset = function() {
+      dialogState.opsTypeFilter = '';
+      dialogState.opsDateStart = '';
+      dialogState.opsDateEnd = '';
+      window.opsFilterChange('_reset', '');
+    };
   };
 
   // 复制单号工具
@@ -685,8 +744,8 @@
       headers = ['入库单号','入库时间','货物名称','库点名称','仓房-货位','入库数量','入库重量','数量单位'];
       rows = filtered.map(r => [r.bizNo, `${r.bizDate} ${r.bizTime}`, r.productName, r.warehouseName, r.location, r.stockPieces, r.stockWeight, r.piecesUnit]);
     } else {
-      headers = ['出库单号','出库时间','货物名称','库点名称','仓房-货位','出库申请编号','关联合同/订单编号','数据类型'];
-      rows = filtered.map(r => [r.bizNo, `${r.bizDate} ${r.bizTime}`, r.productName, r.warehouseName, r.location, r.applyNo || '', r.contractNo || '', r.source || '']);
+      headers = ['出库单号','出库时间','货物名称','库点名称','仓房-货位','入库数量','入库重量','数量单位','出库申请编号','关联合同/订单编号','数据类型'];
+      rows = filtered.map(r => [r.bizNo, `${r.bizDate} ${r.bizTime}`, r.productName, r.warehouseName, r.location, r.stockPieces, r.stockWeight, r.piecesUnit, r.applyNo || '', r.contractNo || '', r.source || '']);
     }
     const csv = [headers, ...rows].map(row => row.map(c => {
       const v = String(c == null ? '' : c);
