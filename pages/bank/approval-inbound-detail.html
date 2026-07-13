@@ -71,6 +71,8 @@
   }
 
   const fromList = (urlId && MockData.inboundList.find(i => i.id === urlId)) || null;
+  // v1.7.51 资金方操作区状态（在 render 之前声明，避免 TDZ）
+  let actionForm = { witnessRemark: '' };
   const data = {
     id: 'demo',
     bizNo: DEMO.bizNo,
@@ -117,9 +119,6 @@
     extra: '',
     content: render(),
   });
-
-  // v1.7.51 监管方操作区状态
-  let actionForm = { evaluatePrice: '', rejectReason: '' };
 
   function render() {
     return `
