@@ -18,25 +18,27 @@
   <style>
     /* 必填红色 * */
     .req::before { content: '*'; color: #ef4444; margin-right: 2px; font-weight: 600; }
-    /* 文本域 */
     .form-textarea {
       width: 100%;
       padding: 8px 10px;
       border: 1px solid #cbd5e1;
       border-radius: 4px;
       font-size: 13px;
-      min-height: 100px;
+      min-height: 80px;
       resize: vertical;
       font-family: inherit;
       outline: none;
+      background: #fff;
     }
     .form-textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.1); }
-    /* 底部固定操作栏 */
+    .help-icon {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 14px; height: 14px; border: 1px solid #cbd5e1; border-radius: 2px;
+      color: #94a3b8; font-size: 10px; font-weight: 600; margin-left: 4px; cursor: help;
+    }
     .footer-actions {
       position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
+      bottom: 0; left: 0; right: 0;
       z-index: 50;
       background: #fff;
       border-top: 1px solid #e2e8f0;
@@ -54,14 +56,11 @@
 <script>
   Components.bindGlobalClose();
 
-  // ============ v1.7.46 监管方【准入审批详情】- 按甲方截图实现 ============
-  // 4 步状态机：基础信息收集 / 资质审核 / 现场考察 / 风险评估
-  // 当前 tab = 基础信息收集（监管方先审基础信息）
-  //   ├─ 5 section 表单（只读展示用户已提交）
-  //   └─ 6 section 准入情况（核心操作区）
-  //       ├─ 单选：通过 / 驳回
-  //       └─ 驳回说明 textarea（仅驳回时显示 + 必填）
-  // 底部 fixed：下一步（默认 disabled）+ 取消
+  // ============ v1.7.47 监管方【准入审批详情】- 4 tab 全部接入 ============
+  // tab 1 基础信息收集：5 section + 准入情况（通过/驳回 + 驳回说明）
+  // tab 2 资质审核：3 textarea（诉讼分析/资金结算/企业窘信情况）+ 资产负债表 + 收入利润表 + 备注 + 附件
+  // tab 3 现场考察：1 textarea + 附件
+  // tab 4 风险评估：4 textarea + 结论单选（通过/不通过）+ 备注
 
   if (Utils.getProductLine() !== 'finance') {
     Utils.setProductLine('finance');
@@ -70,10 +69,8 @@
   const urlId = new URLSearchParams(window.location.search).get('id') || 'adm_002';
   const urlTab = new URLSearchParams(window.location.search).get('tab') || 'basic';
 
-  // 数据
   const detail = (MockData.admissionDetail && MockData.admissionDetail[urlId]) || {};
   const summary = (MockData.admissionList || []).find(a => a.id === urlId) || {};
-  // 合并：summary 字段 + detail 字段
   const data = {
     companyName: detail.companyName || summary.customer,
     creditCode: detail.creditCode || summary.creditCode,
@@ -97,37 +94,62 @@
     shareholders: detail.shareholders || [],
     otherInfo: detail.otherInfo || {},
     attachments: detail.attachments || [],
+    qualification: detail.qualification || {},
+    siteInspection: detail.siteInspection || {},
+    riskAssessment: detail.riskAssessment || {},
   };
 
-  // 4 步 tab（监管方逐阶段审批）
+  // 4 步 tab
   const TABS = [
     { id: 'basic',          name: '基础信息收集', step: 1 },
     { id: 'qualification',  name: '资质审核',     step: 2 },
     { id: 'siteInspection', name: '现场考察',     step: 3 },
     { id: 'riskAssessment', name: '风险评估',     step: 4 },
   ];
-  let currentTab = urlTab === 'basic' ? 'basic' : 'basic';  // 监管方首屏固定在基础信息收集
+  let currentTab = TABS.find(t => t.id === urlTab) ? urlTab : 'basic';
 
-  // 准入情况状态
-  let admissionResult = '';     // '' | 'pass' | 'reject'
+  // ============ 各 tab 状态 ============
+  // tab 1
+  let admissionResult = '';
   let rejectReason = '';
+  // tab 2
+  let q2_lawsuit = '';      // 诉讼分析
+  let q2_settlement = '';   // 资金结算
+  let q2_distress = '';     // 企业窘信情况
+  let q2_other = '';        // 其他备注
+  // tab 3
+  let q3_situation = '';
+  // tab 4
+  let q4_compliance = '';
+  let q4_financial = '';
+  let q4_credit = '';
+  let q4_other = '';
+  let q4_conclusion = '';   // pass | reject
+  let q4_remark = '';
 
-  // 顶部步骤条
+  // ============ 步骤条（completed/active/pending 三态）============
   function renderStepBar() {
+    const currentStep = TABS.find(t => t.id === currentTab).step;
     return `
       <div class="bg-white border border-slate-200 rounded-xl px-8 py-6 mb-4">
         <div class="flex items-center justify-between max-w-4xl mx-auto">
           ${TABS.map((t, i) => {
-            const active = t.id === currentTab;
+            const isActive = t.id === currentTab;
+            const isCompleted = t.step < currentStep;
+            const stateClass = isActive
+              ? 'bg-blue-600 text-white border-blue-600'
+              : isCompleted
+                ? 'bg-blue-100 text-blue-700 border-blue-300'
+                : 'bg-slate-100 text-slate-400 border-slate-200';
             return `
               <div class="flex items-center ${i < TABS.length - 1 ? 'flex-1' : ''}">
-                <div class="flex flex-col items-center">
-                  <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${active ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-600'}">
-                    ${t.step}
+                <button onclick="switchTab('${t.id}')" class="flex flex-col items-center group">
+                  <div class="w-10 h-10 rounded-full border-2 flex items-center justify-center text-sm font-medium ${stateClass}">
+                    ${isCompleted ? '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>' : t.step}
                   </div>
-                  <div class="text-xs mt-2 ${active ? 'text-blue-600 font-medium' : 'text-slate-500'}">${t.name}</div>
-                </div>
-                ${i < TABS.length - 1 ? `<div class="flex-1 h-0.5 mx-2 mb-6 ${t.step < (TABS.find(x => x.id === currentTab)?.step || 0) ? 'bg-blue-300' : 'bg-slate-200'}"></div>` : ''}
+                  <div class="text-xs mt-2 ${isActive ? 'text-blue-600 font-medium' : (isCompleted ? 'text-blue-700' : 'text-slate-400')}">${t.name}</div>
+                </button>
+                ${i < TABS.length - 1 ? `<div class="flex-1 h-0.5 mx-2 mb-6 ${t.step < currentStep ? 'bg-blue-300' : 'bg-slate-200'}"></div>` : ''}
               </div>
             `;
           }).join('')}
@@ -136,196 +158,470 @@
     `;
   }
 
-  // ============ 5 section 表单（与 admission-detail 保持一致）============
-  function renderBasicForm() {
+  // ============ Tab 1 基础信息收集 ============
+  function renderBasicTab() {
     return `
       <div class="space-y-4">
-        <!-- 1. 企业基本信息 -->
-        <div class="bg-white border border-slate-200 rounded-xl p-5">
-          <div class="flex items-center gap-2 mb-3">
-            <span class="w-1 h-4 bg-blue-500 rounded"></span>
-            <h3 class="text-sm font-semibold text-slate-700">企业基本信息</h3>
-          </div>
-          <div class="grid grid-cols-3 gap-x-6 gap-y-3 text-sm">
-            <div><span class="text-slate-500">企业名称：</span><span class="text-slate-800">${data.companyName || '-'}</span></div>
-            <div><span class="text-slate-500">社会统一信用代码：</span><span class="text-slate-800 font-mono">${data.creditCode || '-'}</span></div>
-            <div><span class="text-slate-500">企业简称：</span><span class="text-slate-800">${data.shortName || '-'}</span></div>
-            <div><span class="text-slate-500">企业简称首字母：</span><span class="text-slate-800">${data.shortNamePinyin || '-'}</span></div>
-            <div><span class="text-slate-500">成立日期：</span><span class="text-slate-800">${data.established || '-'}</span></div>
-            <div><span class="text-slate-500">企业性质：</span><span class="text-slate-800">${data.nature || '-'}</span></div>
-            <div><span class="text-slate-500">营业期限：</span><span class="text-slate-800">${data.businessDeadline || '-'}</span></div>
-            <div class="col-span-2"><span class="text-slate-500">注册地址：</span><span class="text-slate-800">${data.registeredAddress || '-'}</span></div>
-            <div><span class="text-slate-500">所属行业：</span><span class="text-slate-800">${data.industry || '-'}</span></div>
-            <div><span class="text-slate-500">注册资本：</span><span class="text-slate-800">${data.registeredCapital || '-'}</span></div>
-            <div><span class="text-slate-500">是否在续期：</span><span class="text-slate-800">${data.inRenewal ? '是' : '否'}</div>
-            <div><span class="text-slate-500">联系电话：</span><span class="text-slate-800">${data.contactPhone || '-'}</span></div>
-            <div class="col-span-3"><span class="text-slate-500">联系地址：</span><span class="text-slate-800">${data.contactAddress || '-'}</span></div>
-            <div class="col-span-3"><span class="text-slate-500">经营范围：</span><span class="text-slate-800">${data.businessScope || '-'}</span></div>
-          </div>
-        </div>
+        ${renderBasicFormSections()}
+        ${renderAdmissionDecision()}
+      </div>
+    `;
+  }
 
-        <!-- 2. 法人信息 -->
-        <div class="bg-white border border-slate-200 rounded-xl p-5">
-          <div class="flex items-center gap-2 mb-3">
-            <span class="w-1 h-4 bg-blue-500 rounded"></span>
-            <h3 class="text-sm font-semibold text-slate-700">法人信息</h3>
-          </div>
-          <div class="grid grid-cols-3 gap-x-6 gap-y-3 text-sm">
-            <div><span class="text-slate-500">法人姓名：</span><span class="text-slate-800">${data.legalName || '-'}</span></div>
-            <div><span class="text-slate-500">法人身份证号码：</span><span class="text-slate-800 font-mono">${data.legalIdCard || '-'}</span></div>
-            <div><span class="text-slate-500">法人手机号码：</span><span class="text-slate-800">${data.legalPhone || '-'}</span></div>
-            <div><span class="text-slate-500">身份证有效期起：</span><span class="text-slate-800">${data.legalIdValidFrom || '-'}</span></div>
-            <div class="col-span-2"><span class="text-slate-500">身份证有效期止：</span><span class="text-slate-800">${data.legalIdValidTo || '-'}</span></div>
-          </div>
+  function renderBasicFormSections() {
+    return `
+      <!-- 1. 企业基本信息 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-5">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-1 h-4 bg-blue-500 rounded"></span>
+          <h3 class="text-sm font-semibold text-slate-700">企业基本信息</h3>
         </div>
-
-        <!-- 3. 股权结构说明 -->
-        <div class="bg-white border border-slate-200 rounded-xl p-5">
-          <div class="flex items-center gap-2 mb-3">
-            <span class="w-1 h-4 bg-blue-500 rounded"></span>
-            <h3 class="text-sm font-semibold text-slate-700">股权结构说明</h3>
-          </div>
-          <table class="w-full text-sm">
-            <thead class="bg-slate-50 text-slate-600 text-xs">
-              <tr>
-                <th class="text-left px-3 py-2 whitespace-nowrap">股东名称</th>
-                <th class="text-left px-3 py-2 whitespace-nowrap">出资方式</th>
-                <th class="text-right px-3 py-2 whitespace-nowrap">认缴出资额</th>
-                <th class="text-right px-3 py-2 whitespace-nowrap">持股比例</th>
-                <th class="text-left px-3 py-2 whitespace-nowrap">认缴出资时间</th>
+        <div class="grid grid-cols-3 gap-x-6 gap-y-3 text-sm">
+          <div><span class="text-slate-500">企业名称：</span><span class="text-slate-800">${data.companyName || '-'}</span></div>
+          <div><span class="text-slate-500">社会统一信用代码：</span><span class="text-slate-800 font-mono">${data.creditCode || '-'}</span></div>
+          <div><span class="text-slate-500">企业简称：</span><span class="text-slate-800">${data.shortName || '-'}</span></div>
+          <div><span class="text-slate-500">企业简称首字母：</span><span class="text-slate-800">${data.shortNamePinyin || '-'}</span></div>
+          <div><span class="text-slate-500">成立日期：</span><span class="text-slate-800">${data.established || '-'}</span></div>
+          <div><span class="text-slate-500">企业性质：</span><span class="text-slate-800">${data.nature || '-'}</span></div>
+          <div><span class="text-slate-500">营业期限：</span><span class="text-slate-800">${data.businessDeadline || '-'}</span></div>
+          <div class="col-span-2"><span class="text-slate-500">注册地址：</span><span class="text-slate-800">${data.registeredAddress || '-'}</span></div>
+          <div><span class="text-slate-500">所属行业：</span><span class="text-slate-800">${data.industry || '-'}</span></div>
+          <div><span class="text-slate-500">注册资本：</span><span class="text-slate-800">${data.registeredCapital || '-'}</span></div>
+          <div><span class="text-slate-500">是否在续期：</span><span class="text-slate-800">${data.inRenewal ? '是' : '否'}</div>
+          <div><span class="text-slate-500">联系电话：</span><span class="text-slate-800">${data.contactPhone || '-'}</span></div>
+          <div class="col-span-3"><span class="text-slate-500">联系地址：</span><span class="text-slate-800">${data.contactAddress || '-'}</span></div>
+          <div class="col-span-3"><span class="text-slate-500">经营范围：</span><span class="text-slate-800">${data.businessScope || '-'}</span></div>
+        </div>
+      </div>
+      <!-- 2. 法人信息 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-5">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-1 h-4 bg-blue-500 rounded"></span>
+          <h3 class="text-sm font-semibold text-slate-700">法人信息</h3>
+        </div>
+        <div class="grid grid-cols-3 gap-x-6 gap-y-3 text-sm">
+          <div><span class="text-slate-500">法人姓名：</span><span class="text-slate-800">${data.legalName || '-'}</span></div>
+          <div><span class="text-slate-500">法人身份证号码：</span><span class="text-slate-800 font-mono">${data.legalIdCard || '-'}</span></div>
+          <div><span class="text-slate-500">法人手机号码：</span><span class="text-slate-800">${data.legalPhone || '-'}</span></div>
+          <div><span class="text-slate-500">身份证有效期起：</span><span class="text-slate-800">${data.legalIdValidFrom || '-'}</span></div>
+          <div class="col-span-2"><span class="text-slate-500">身份证有效期止：</span><span class="text-slate-800">${data.legalIdValidTo || '-'}</span></div>
+        </div>
+      </div>
+      <!-- 3. 股权结构说明 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-5">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-1 h-4 bg-blue-500 rounded"></span>
+          <h3 class="text-sm font-semibold text-slate-700">股权结构说明</h3>
+        </div>
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 text-xs">
+            <tr>
+              <th class="text-left px-3 py-2 whitespace-nowrap">股东名称</th>
+              <th class="text-left px-3 py-2 whitespace-nowrap">出资方式</th>
+              <th class="text-right px-3 py-2 whitespace-nowrap">认缴出资额</th>
+              <th class="text-right px-3 py-2 whitespace-nowrap">持股比例</th>
+              <th class="text-left px-3 py-2 whitespace-nowrap">认缴出资时间</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.shareholders.length ? data.shareholders.map(sh => `
+              <tr class="border-t border-slate-100">
+                <td class="px-3 py-2.5 text-slate-800">${sh.name || '-'}</td>
+                <td class="px-3 py-2.5 text-slate-700">${sh.type || '-'}</td>
+                <td class="px-3 py-2.5 text-right num-focus">${sh.amount ? sh.amount.toLocaleString() + '万' : '-'}</td>
+                <td class="px-3 py-2.5 text-right num-focus">${sh.ratio ? sh.ratio + '%' : '-'}</td>
+                <td class="px-3 py-2.5 text-slate-600">${sh.date || '-'}</td>
               </tr>
-            </thead>
-            <tbody>
-              ${data.shareholders.length ? data.shareholders.map(sh => `
-                <tr class="border-t border-slate-100">
-                  <td class="px-3 py-2.5 text-slate-800">${sh.name || '-'}</td>
-                  <td class="px-3 py-2.5 text-slate-700">${sh.type || '-'}</td>
-                  <td class="px-3 py-2.5 text-right num-focus">${sh.amount ? sh.amount.toLocaleString() + '万' : '-'}</td>
-                  <td class="px-3 py-2.5 text-right num-focus">${sh.ratio ? sh.ratio + '%' : '-'}</td>
-                  <td class="px-3 py-2.5 text-slate-600">${sh.date || '-'}</td>
-                </tr>
-              `).join('') : `<tr><td colspan="5" class="py-8 text-center text-slate-400 text-xs">📭 暂无股东信息</td></tr>`}
-            </tbody>
-          </table>
+            `).join('') : `<tr><td colspan="5" class="py-8 text-center text-slate-400 text-xs">📭 暂无股东信息</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+      <!-- 4. 其他信息 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-5">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-1 h-4 bg-blue-500 rounded"></span>
+          <h3 class="text-sm font-semibold text-slate-700">其他信息</h3>
         </div>
+        <div class="space-y-3 text-sm">
+          <div>
+            <div class="text-slate-500 mb-1">客商的历史沿革和其他需要说明的重大事项：</div>
+            <div class="border border-slate-200 rounded p-3 min-h-[60px] text-slate-700 whitespace-pre-wrap">${data.otherInfo.history || '（暂无录入）'}</div>
+          </div>
+          <div>
+            <div class="text-slate-500 mb-1">关联企业情况：</div>
+            <div class="border border-slate-200 rounded p-3 min-h-[60px] text-slate-700 whitespace-pre-wrap">${data.otherInfo.relatedEnterprises || '（暂无录入）'}</div>
+          </div>
+        </div>
+      </div>
+      <!-- 5. 附件 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-5">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-1 h-4 bg-blue-500 rounded"></span>
+          <h3 class="text-sm font-semibold text-slate-700">附件清单</h3>
+        </div>
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 text-xs">
+            <tr>
+              <th class="text-left px-3 py-2 whitespace-nowrap w-1/4">附件名称</th>
+              <th class="text-left px-3 py-2 whitespace-nowrap w-1/2">文件名称</th>
+              <th class="text-right px-3 py-2 whitespace-nowrap w-1/4">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.attachments.length ? data.attachments.map(a => `
+              <tr class="border-t border-slate-100">
+                <td class="px-3 py-2.5 text-slate-700">${a.required ? '<span class="text-rose-500">*</span> ' : ''}${a.type}</td>
+                <td class="px-3 py-2.5">
+                  ${a.files && a.files.length ? a.files.map(f => `
+                    <div class="flex items-center gap-2 mb-1">
+                      <a href="javascript:void(0)" onclick="Utils.toast('文件预览（占位）','info')" class="text-blue-600 hover:underline text-xs">${f.name}</a>
+                    </div>
+                  `).join('') : '<span class="text-slate-400 text-xs">（未上传）</span>'}
+                </td>
+                <td class="px-3 py-2.5 text-right whitespace-nowrap">
+                  <button onclick="Utils.toast('查看附件（占位）','info')" class="text-blue-600 hover:underline text-xs mr-2">查看</button>
+                  <button onclick="Utils.toast('下载附件（占位）','info')" class="text-blue-600 hover:underline text-xs">下载</button>
+                </td>
+              </tr>
+            `).join('') : `<tr><td colspan="3" class="py-8 text-center text-slate-400 text-xs">📭 暂无附件</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
 
-        <!-- 4. 其他信息 -->
+  // 准入情况操作区
+  function renderAdmissionDecision() {
+    return `
+      <div class="bg-white border-2 border-blue-200 rounded-xl p-5">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-1 h-4 bg-blue-500 rounded"></span>
+          <h3 class="text-sm font-semibold text-slate-700">准入情况</h3>
+          <span class="ml-auto text-xs text-blue-600">请对基础信息收集阶段做出准入决策</span>
+        </div>
+        <div class="flex items-center gap-6 text-sm pt-1">
+          <span class="req text-slate-700 whitespace-nowrap">准入情况</span>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="radio" name="admissionResult" value="pass" onchange="onAdmissionResult('pass')" ${admissionResult === 'pass' ? 'checked' : ''}>
+            <span>通过，进入资质审核阶段</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="radio" name="admissionResult" value="reject" onchange="onAdmissionResult('reject')" ${admissionResult === 'reject' ? 'checked' : ''}>
+            <span>驳回</span>
+          </label>
+        </div>
+        ${admissionResult === 'reject' ? `
+        <div class="mt-3">
+          <div class="flex items-center gap-1 mb-1">
+            <span class="req text-rose-500 text-sm">驳回说明</span>
+            <span class="text-xs text-slate-400 ml-1">请明确告知客户驳回原因</span>
+          </div>
+          <textarea id="reject-reason" maxlength="100" oninput="onRejectReason(this.value)" class="form-textarea" placeholder="输入内容">${rejectReason}</textarea>
+          <div class="text-right text-xs text-slate-400 mt-1"><span id="reject-count">${rejectReason.length}</span>/100</div>
+        </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  // ============ Tab 2 资质审核 ============
+  function renderQualificationTab() {
+    return `
+      <div class="space-y-4">
+        <!-- 1. 企业窘信情况 -->
         <div class="bg-white border border-slate-200 rounded-xl p-5">
           <div class="flex items-center gap-2 mb-3">
             <span class="w-1 h-4 bg-blue-500 rounded"></span>
-            <h3 class="text-sm font-semibold text-slate-700">其他信息</h3>
+            <h3 class="text-sm font-semibold text-slate-700">企业窘信情况</h3>
           </div>
-          <div class="space-y-3 text-sm">
+          <div class="space-y-3">
             <div>
-              <div class="text-slate-500 mb-1">客商的历史沿革和其他需要说明的重大事项：</div>
-              <div class="border border-slate-200 rounded p-3 min-h-[60px] text-slate-700 whitespace-pre-wrap">${data.otherInfo.history || '（暂无录入）'}</div>
+              <div class="text-slate-500 text-sm mb-1">诉讼分析 <span class="text-rose-500">*</span></div>
+              <textarea id="q2-lawsuit" maxlength="100" oninput="onQ2('lawsuit', this.value)" class="form-textarea min-h-[60px]" placeholder="输入内容">${q2_lawsuit}</textarea>
+              <div class="text-right text-xs text-slate-400 mt-1">已输入 <span id="q2-lawsuit-count">${q2_lawsuit.length}</span>/100</div>
             </div>
             <div>
-              <div class="text-slate-500 mb-1">关联企业情况：</div>
-              <div class="border border-slate-200 rounded p-3 min-h-[60px] text-slate-700 whitespace-pre-wrap">${data.otherInfo.relatedEnterprises || '（暂无录入）'}</div>
+              <div class="text-slate-500 text-sm mb-1">资金结算方式 <span class="text-rose-500">*</span></div>
+              <textarea id="q2-settlement" maxlength="100" oninput="onQ2('settlement', this.value)" class="form-textarea min-h-[60px]" placeholder="输入内容">${q2_settlement}</textarea>
+              <div class="text-right text-xs text-slate-400 mt-1">已输入 <span id="q2-settlement-count">${q2_settlement.length}</span>/100</div>
+            </div>
+            <div>
+              <div class="text-slate-500 text-sm mb-1">企业窘信情况 <span class="text-rose-500">*</span></div>
+              <textarea id="q2-distress" maxlength="100" oninput="onQ2('distress', this.value)" class="form-textarea min-h-[60px]" placeholder="输入内容">${q2_distress}</textarea>
+              <div class="text-right text-xs text-slate-400 mt-1">已输入 <span id="q2-distress-count">${q2_distress.length}</span>/100</div>
             </div>
           </div>
+        </div>
+
+        <!-- 2. 企业资产负债表 -->
+        <div class="bg-white border border-slate-200 rounded-xl p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            <h3 class="text-sm font-semibold text-slate-700">企业资产负债表</h3>
+            <span class="ml-auto text-xs text-rose-500">*</span>
+            <span class="text-xs text-slate-500">企业最近一期当期资产负债表（单位：万元）</span>
+          </div>
+          ${renderBalanceSheet()}
+        </div>
+
+        <!-- 3. 企业收入及利润状况分析 -->
+        <div class="bg-white border border-slate-200 rounded-xl p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            <h3 class="text-sm font-semibold text-slate-700">企业收入及利润状况分析</h3>
+            <span class="ml-auto text-xs text-rose-500">*</span>
+            <span class="text-xs text-slate-500">单位：万元</span>
+          </div>
+          ${renderRevenueAnalysis()}
+        </div>
+
+        <!-- 4. 其他 -->
+        <div class="bg-white border border-slate-200 rounded-xl p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            <h3 class="text-sm font-semibold text-slate-700">其他</h3>
+          </div>
+          <textarea id="q2-other" maxlength="100" oninput="onQ2('other', this.value)" class="form-textarea" placeholder="输入内容">${q2_other}</textarea>
+          <div class="text-right text-xs text-slate-400 mt-1">已输入 <span id="q2-other-count">${q2_other.length}</span>/100</div>
         </div>
 
         <!-- 5. 附件 -->
         <div class="bg-white border border-slate-200 rounded-xl p-5">
           <div class="flex items-center gap-2 mb-3">
             <span class="w-1 h-4 bg-blue-500 rounded"></span>
-            <h3 class="text-sm font-semibold text-slate-700">附件清单</h3>
+            <h3 class="text-sm font-semibold text-slate-700">附件</h3>
           </div>
-          <table class="w-full text-sm">
-            <thead class="bg-slate-50 text-slate-600 text-xs">
-              <tr>
-                <th class="text-left px-3 py-2 whitespace-nowrap w-1/4">附件名称</th>
-                <th class="text-left px-3 py-2 whitespace-nowrap w-1/2">文件名称</th>
-                <th class="text-right px-3 py-2 whitespace-nowrap w-1/4">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${data.attachments.length ? data.attachments.map(a => `
-                <tr class="border-t border-slate-100">
-                  <td class="px-3 py-2.5 text-slate-700">${a.required ? '<span class="text-rose-500">*</span> ' : ''}${a.type}</td>
-                  <td class="px-3 py-2.5">
-                    ${a.files && a.files.length ? a.files.map(f => `
-                      <div class="flex items-center gap-2 mb-1">
-                        <a href="javascript:void(0)" onclick="Utils.toast('文件预览（占位）','info')" class="text-blue-600 hover:underline text-xs">${f.name}</a>
-                      </div>
-                    `).join('') : '<span class="text-slate-400 text-xs">（未上传）</span>'}
-                  </td>
-                  <td class="px-3 py-2.5 text-right whitespace-nowrap">
-                    <button onclick="Utils.toast('查看附件（占位）','info')" class="text-blue-600 hover:underline text-xs mr-2">查看</button>
-                    <button onclick="Utils.toast('下载附件（占位）','info')" class="text-blue-600 hover:underline text-xs">下载</button>
-                  </td>
-                </tr>
-              `).join('') : `<tr><td colspan="3" class="py-8 text-center text-slate-400 text-xs">📭 暂无附件</td></tr>`}
-            </tbody>
-          </table>
+          <div class="flex items-center gap-3">
+            <label class="cursor-pointer px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+              选择文件
+              <input type="file" class="hidden">
+            </label>
+          </div>
+          <div class="text-xs text-slate-400 mt-2">支持格式: .rar .zip .doc .docx .pdf , 单个文件不能超过20MB</div>
         </div>
+      </div>
+    `;
+  }
 
-        <!-- 6. 准入情况（核心操作区 v1.7.46）-->
-        <div class="bg-white border-2 border-blue-200 rounded-xl p-5">
+  // 资产负债表 24 行 × 3 期
+  function renderBalanceSheet() {
+    const bs = data.qualification.balanceSheet;
+    if (!bs || !bs.periods || !bs.rows) {
+      return `<div class="text-slate-400 text-sm py-4 text-center">📭 资产负债表数据待提供</div>`;
+    }
+    return `
+      <table class="w-full text-sm border-collapse">
+        <thead>
+          <tr class="border-b border-slate-200">
+            <th class="text-left px-3 py-2 text-slate-600 w-32">科目</th>
+            ${bs.periods.map((p, i) => `<th class="text-center px-3 py-2 text-slate-600 whitespace-nowrap" colspan="${bs.periods.length}">${p.start.slice(0,7)} 至 ${p.end.slice(0,7)}</th>`).join('')}
+          </tr>
+          <tr class="border-b border-slate-200">
+            <th></th>
+            ${bs.periods.map(p => `<th class="text-center px-3 py-2 text-slate-500 text-xs font-normal">${p.start.slice(0,4)} 年 ${p.end.slice(5,7)} 月</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${bs.rows.map(r => {
+            const isTotal = /合计|总计/.test(r.key);
+            return `
+              <tr class="border-b border-slate-100 ${isTotal ? 'bg-slate-50' : ''}">
+                <td class="px-3 py-2 text-slate-700 ${isTotal ? 'font-medium' : ''}">${r.key}</td>
+                ${r.items.map((v, i) => `<td class="px-3 py-2 text-right num-focus text-slate-700">${v != null ? v.toLocaleString() : '-'}</td>`).join('')}
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  // 收入利润表 12 行 × 3 期
+  function renderRevenueAnalysis() {
+    const ra = data.qualification.revenueAnalysis;
+    if (!ra || !ra.periods || !ra.rows) {
+      return `<div class="text-slate-400 text-sm py-4 text-center">📭 收入及利润数据待提供</div>`;
+    }
+    return `
+      <table class="w-full text-sm border-collapse">
+        <thead>
+          <tr class="border-b border-slate-200">
+            <th class="text-left px-3 py-2 text-slate-600 w-32">科目</th>
+            ${ra.periods.map(p => `<th class="text-center px-3 py-2 text-slate-500 text-xs font-normal">${p.start.slice(0,4)} 年 ${p.end.slice(5,7)} 月</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${ra.rows.map(r => {
+            return `
+              <tr class="border-b border-slate-100">
+                <td class="px-3 py-2 text-slate-700">${r.key}</td>
+                ${r.items.map(v => `<td class="px-3 py-2 text-right num-focus text-slate-700">${v != null ? v.toLocaleString() : '-'}</td>`).join('')}
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  // ============ Tab 3 现场考察 ============
+  function renderSiteInspectionTab() {
+    return `
+      <div class="space-y-4">
+        <div class="bg-white border border-slate-200 rounded-xl p-5">
           <div class="flex items-center gap-2 mb-3">
             <span class="w-1 h-4 bg-blue-500 rounded"></span>
-            <h3 class="text-sm font-semibold text-slate-700">准入情况</h3>
-            <span class="ml-auto text-xs text-blue-600">请对基础信息收集阶段做出准入决策</span>
+            <h3 class="text-sm font-semibold text-slate-700">现场考核情况</h3>
           </div>
-          <div class="space-y-3">
-            <div class="flex items-center gap-6 text-sm pt-1">
-              <span class="req text-slate-700 whitespace-nowrap">准入情况</span>
-              <label class="flex items-center gap-1.5 cursor-pointer">
-                <input type="radio" name="admissionResult" value="pass" onchange="onAdmissionResult('pass')" ${admissionResult === 'pass' ? 'checked' : ''}>
-                <span>通过，进入资质审核阶段</span>
-                <span class="inline-flex items-center justify-center w-4 h-4 border border-slate-300 rounded text-[10px] text-slate-400 ml-1 cursor-help" title="通过后，申请进入资质审核阶段">?</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer">
-                <input type="radio" name="admissionResult" value="reject" onchange="onAdmissionResult('reject')" ${admissionResult === 'reject' ? 'checked' : ''}>
-                <span>驳回</span>
+          <div>
+            <div class="text-slate-500 text-sm mb-1">现场考核情况说明 <span class="text-rose-500">*</span></div>
+            <textarea id="q3-situation" maxlength="100" oninput="onQ3(this.value)" class="form-textarea" placeholder="输入内容">${q3_situation}</textarea>
+            <div class="text-right text-xs text-slate-400 mt-1">已输入 <span id="q3-situation-count">${q3_situation.length}</span>/100</div>
+          </div>
+          <div class="mt-4">
+            <div class="text-slate-500 text-sm mb-2">附件</div>
+            <div class="flex items-center gap-3">
+              <label class="cursor-pointer px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+                选择文件
+                <input type="file" class="hidden">
               </label>
             </div>
-            ${admissionResult === 'reject' ? `
-            <div>
-              <div class="flex items-center gap-1 mb-1">
-                <span class="req text-rose-500 text-sm">驳回说明</span>
-                <span class="text-xs text-slate-400 ml-1">请明确告知客户驳回原因</span>
-              </div>
-              <textarea id="reject-reason" maxlength="100" oninput="onRejectReason(this.value)" class="form-textarea" placeholder="输入内容">${rejectReason}</textarea>
-              <div class="text-right text-xs text-slate-400 mt-1"><span id="reject-count">${rejectReason.length}</span>/100</div>
-            </div>
-            ` : ''}
+            <div class="text-xs text-slate-400 mt-2">支持格式: .rar .zip .doc .docx .pdf , 单个文件不能超过20MB</div>
           </div>
         </div>
       </div>
     `;
   }
 
-  // 渲染函数
-  function render() {
+  // ============ Tab 4 风险评估 ============
+  function renderRiskAssessmentTab() {
     return `
-      ${renderStepBar()}
-      ${renderBasicForm()}
+      <div class="space-y-4">
+        <!-- 1. 风险综合分析及揭示 -->
+        <div class="bg-white border border-slate-200 rounded-xl p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            <h3 class="text-sm font-semibold text-slate-700">风险综合分析及揭示</h3>
+          </div>
+          <div class="space-y-3">
+            <div>
+              <div class="text-rose-500 text-sm mb-1">* 合规风险分析</div>
+              <textarea id="q4-compliance" maxlength="100" oninput="onQ4('compliance', this.value)" class="form-textarea" placeholder="输入内容">${q4_compliance}</textarea>
+              <div class="text-right text-xs text-slate-400 mt-1">已输入 <span id="q4-compliance-count">${q4_compliance.length}</span>/100</div>
+            </div>
+            <div>
+              <div class="text-rose-500 text-sm mb-1">* 财务风险分析</div>
+              <textarea id="q4-financial" maxlength="100" oninput="onQ4('financial', this.value)" class="form-textarea" placeholder="输入内容">${q4_financial}</textarea>
+              <div class="text-right text-xs text-slate-400 mt-1">已输入 <span id="q4-financial-count">${q4_financial.length}</span>/100</div>
+            </div>
+          </div>
+        </div>
+        <!-- 2. 综合性评价和建议 -->
+        <div class="bg-white border border-slate-200 rounded-xl p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            <h3 class="text-sm font-semibold text-slate-700">综合性评价和建议</h3>
+          </div>
+          <div class="space-y-3">
+            <div>
+              <div class="text-rose-500 text-sm mb-1">* 客商信用的综合评价</div>
+              <textarea id="q4-credit" maxlength="100" oninput="onQ4('credit', this.value)" class="form-textarea" placeholder="输入内容">${q4_credit}</textarea>
+              <div class="text-right text-xs text-slate-400 mt-1">已输入 <span id="q4-credit-count">${q4_credit.length}</span>/100</div>
+            </div>
+            <div>
+              <div class="text-rose-500 text-sm mb-1">* 其他</div>
+              <textarea id="q4-other" maxlength="100" oninput="onQ4('other', this.value)" class="form-textarea" placeholder="输入内容">${q4_other}</textarea>
+              <div class="text-right text-xs text-slate-400 mt-1">已输入 <span id="q4-other-count">${q4_other.length}</span>/100</div>
+            </div>
+          </div>
+        </div>
+        <!-- 3. 结论 -->
+        <div class="bg-white border-2 border-blue-200 rounded-xl p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            <h3 class="text-sm font-semibold text-slate-700">结论</h3>
+          </div>
+          <div class="flex items-center gap-6 text-sm pt-1 mb-4">
+            <span class="req text-slate-700 whitespace-nowrap">是否通过</span>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="radio" name="q4-conclusion" value="pass" onchange="onQ4Conclusion('pass')" ${q4_conclusion === 'pass' ? 'checked' : ''}>
+              <span>通过</span>
+              <span class="help-icon">?</span>
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="radio" name="q4-conclusion" value="reject" onchange="onQ4Conclusion('reject')" ${q4_conclusion === 'reject' ? 'checked' : ''}>
+              <span>不通过</span>
+              <span class="help-icon">?</span>
+            </label>
+          </div>
+          <div>
+            <div class="text-slate-500 text-sm mb-1">备注</div>
+            <textarea id="q4-remark" maxlength="100" oninput="onQ4('remark', this.value)" class="form-textarea" placeholder="输入内容">${q4_remark}</textarea>
+            <div class="text-right text-xs text-slate-400 mt-1">已输入 <span id="q4-remark-count">${q4_remark.length}</span>/100</div>
+          </div>
+        </div>
+      </div>
     `;
   }
 
-  // ============ 行为 ============
-  window.onAdmissionResult = function(v) {
-    admissionResult = v;
-    refresh();
-  };
-  window.onRejectReason = function(v) {
-    rejectReason = v;
-    const counter = document.getElementById('reject-count');
-    if (counter) counter.textContent = v.length;
-    updateNextBtn();
-  };
-  function canNext() {
-    if (!admissionResult) return false;
-    if (admissionResult === 'reject' && !rejectReason.trim()) return false;
-    return true;
+  // ============ 渲染主函数 ============
+  function render() {
+    let tabContent = '';
+    if (currentTab === 'basic')           tabContent = renderBasicTab();
+    else if (currentTab === 'qualification')  tabContent = renderQualificationTab();
+    else if (currentTab === 'siteInspection') tabContent = renderSiteInspectionTab();
+    else if (currentTab === 'riskAssessment') tabContent = renderRiskAssessmentTab();
+
+    return `${tabContent}`;
+  }
+
+  // ============ 底部固定操作栏 ============
+  function renderFooter() {
+    const isBasic = currentTab === 'basic';
+    const isLast  = currentTab === 'riskAssessment';
+    const nextLabel = isLast ? '提交' : '下一步';
+    const onClickFn = isLast ? 'submitFinal()' : 'goNext()';
+    return `
+      <div class="footer-spacer"></div>
+      <div class="footer-actions">
+        <div class="max-w-[1280px] mx-auto px-6 flex items-center justify-center gap-4">
+          <button id="btn-next" onclick="${onClickFn}" disabled class="px-12 py-2.5 bg-blue-600 text-white rounded text-sm font-medium opacity-50 cursor-not-allowed flex items-center gap-1.5">
+            <span class="inline-flex w-4 h-4 bg-yellow-400 rounded items-center justify-center text-[10px]">⚡</span>
+            ${nextLabel}
+          </button>
+          <button onclick="cancelApproval()" class="px-12 py-2.5 border border-blue-500 text-blue-600 hover:bg-blue-50 rounded text-sm font-medium flex items-center gap-1.5">
+            <span class="inline-flex w-4 h-4 bg-yellow-400 rounded items-center justify-center text-[10px]">⚡</span>
+            取消
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  // ============ 各 tab 状态判断 ============
+  function canGoNext() {
+    if (currentTab === 'basic') {
+      if (!admissionResult) return false;
+      if (admissionResult === 'reject' && !rejectReason.trim()) return false;
+      return true;
+    }
+    if (currentTab === 'qualification') {
+      return !!(q2_lawsuit.trim() && q2_settlement.trim() && q2_distress.trim());
+    }
+    if (currentTab === 'siteInspection') {
+      return !!q3_situation.trim();
+    }
+    if (currentTab === 'riskAssessment') {
+      return !!(q4_compliance.trim() && q4_financial.trim() && q4_credit.trim() && q4_other.trim() && q4_conclusion);
+    }
+    return false;
   }
   function updateNextBtn() {
     const btn = document.getElementById('btn-next');
     if (!btn) return;
-    if (canNext()) {
+    if (canGoNext()) {
       btn.disabled = false;
       btn.classList.remove('opacity-50', 'cursor-not-allowed');
     } else {
@@ -333,25 +629,77 @@
       btn.classList.add('opacity-50', 'cursor-not-allowed');
     }
   }
-  window.submitAdmission = function() {
-    if (!admissionResult) {
-      Utils.toast('请先选择「准入情况」', 'warning');
+
+  // ============ 行为 ============
+  window.switchTab = function(tabId) {
+    if (!TABS.find(t => t.id === tabId)) return;
+    currentTab = tabId;
+    const u = new URL(window.location.href);
+    u.searchParams.set('tab', tabId);
+    window.history.replaceState({}, '', u.toString());
+    refresh();
+  };
+
+  window.onAdmissionResult = function(v) {
+    admissionResult = v;
+    refresh();
+  };
+  window.onRejectReason = function(v) {
+    rejectReason = v;
+    const c = document.getElementById('reject-count');
+    if (c) c.textContent = v.length;
+    updateNextBtn();
+  };
+  window.onQ2 = function(field, v) {
+    if (field === 'lawsuit')    { q2_lawsuit = v; const c = document.getElementById('q2-lawsuit-count'); if (c) c.textContent = v.length; }
+    if (field === 'settlement') { q2_settlement = v; const c = document.getElementById('q2-settlement-count'); if (c) c.textContent = v.length; }
+    if (field === 'distress')   { q2_distress = v; const c = document.getElementById('q2-distress-count'); if (c) c.textContent = v.length; }
+    if (field === 'other')      { q2_other = v; const c = document.getElementById('q2-other-count'); if (c) c.textContent = v.length; }
+    updateNextBtn();
+  };
+  window.onQ3 = function(v) {
+    q3_situation = v;
+    const c = document.getElementById('q3-situation-count');
+    if (c) c.textContent = v.length;
+    updateNextBtn();
+  };
+  window.onQ4 = function(field, v) {
+    if (field === 'compliance') { q4_compliance = v; const c = document.getElementById('q4-compliance-count'); if (c) c.textContent = v.length; }
+    if (field === 'financial')  { q4_financial = v; const c = document.getElementById('q4-financial-count'); if (c) c.textContent = v.length; }
+    if (field === 'credit')     { q4_credit = v; const c = document.getElementById('q4-credit-count'); if (c) c.textContent = v.length; }
+    if (field === 'other')      { q4_other = v; const c = document.getElementById('q4-other-count'); if (c) c.textContent = v.length; }
+    if (field === 'remark')     { q4_remark = v; const c = document.getElementById('q4-remark-count'); if (c) c.textContent = v.length; }
+    updateNextBtn();
+  };
+  window.onQ4Conclusion = function(v) {
+    q4_conclusion = v;
+    updateNextBtn();
+  };
+
+  window.goNext = function() {
+    if (!canGoNext()) return;
+    const idx = TABS.findIndex(t => t.id === currentTab);
+    if (idx >= 0 && idx < TABS.length - 1) {
+      switchTab(TABS[idx + 1].id);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+  window.submitFinal = function() {
+    if (!canGoNext()) {
+      Utils.toast('请完成所有必填项后提交', 'warning');
       return;
     }
-    if (admissionResult === 'reject' && !rejectReason.trim()) {
-      Utils.toast('请填写「驳回说明」', 'warning');
-      return;
-    }
-    const msg = admissionResult === 'pass'
-      ? `已通过：申请 ${urlId} 进入「资质审核」阶段（mock）`
-      : `已驳回：申请 ${urlId} 已通知货主方修改（mock）`;
+    const msg = q4_conclusion === 'pass'
+      ? `已通过：申请 ${urlId} 完成全部 4 步准入审批（mock）`
+      : `已不通过：申请 ${urlId} 已通知货主方（mock）`;
     Utils.toast(msg, 'success', 2000);
     setTimeout(() => {
       window.location.href = Utils.nav('/platform/approval-admission');
     }, 1200);
   };
+  window.submitAdmission = window.goNext;  // 兼容 v1.7.46 的事件名
   window.cancelApproval = function() {
-    if (confirm('确定取消审批？已选择的「准入情况」将不会保存。')) {
+    if (confirm('确定取消审批？已填写的内容将不会保存。')) {
       window.location.href = Utils.nav('/platform/approval-admission');
     }
   };
@@ -363,30 +711,12 @@
       breadcrumb: [
         { label: '供应链金融', path: '/platform/approval-admission' },
         { label: '准入审批', path: '/platform/approval-admission' },
-        { label: '基础信息收集', path: '/platform/admission-approval' },
+        { label: TABS.find(t => t.id === currentTab)?.name || '基础信息收集', path: '/platform/admission-approval' },
       ],
       extra: '',
-      content: render() + renderFooter(),
+      content: renderStepBar() + render() + renderFooter(),
     });
     updateNextBtn();
-  }
-
-  function renderFooter() {
-    return `
-      <div class="footer-spacer"></div>
-      <div class="footer-actions">
-        <div class="max-w-[1280px] mx-auto px-6 flex items-center justify-center gap-4">
-          <button id="btn-next" onclick="submitAdmission()" disabled class="px-12 py-2.5 bg-blue-600 text-white rounded text-sm font-medium opacity-50 cursor-not-allowed flex items-center gap-1.5">
-            <span class="inline-flex w-4 h-4 bg-yellow-400 rounded items-center justify-center text-[10px]">⚡</span>
-            下一步
-          </button>
-          <button onclick="cancelApproval()" class="px-12 py-2.5 border border-blue-500 text-blue-600 hover:bg-blue-50 rounded text-sm font-medium flex items-center gap-1.5">
-            <span class="inline-flex w-4 h-4 bg-yellow-400 rounded items-center justify-center text-[10px]">⚡</span>
-            取消
-          </button>
-        </div>
-      </div>
-    `;
   }
 
   refresh();
