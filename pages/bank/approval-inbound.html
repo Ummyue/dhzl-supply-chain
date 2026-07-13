@@ -25,9 +25,10 @@
 <script>
   Components.bindGlobalClose();
 
-  // ============ v1.7.51 担保方【入库审批】列表 - 按 guarantorId 过滤（参照 v1.7.44 creditLimits 模式）============
-  // 业务规则：担保方只看本公司担保的客户提交的入库申请；演示账号 u_guar_001（王建国-中原信用担保）→ 13 条
-  // 复用货主方 9 tab + 11 筛 + 11 列；无"新增"按钮（新增是货主方的事）；列表行/按钮跳详情页
+  // ============ v1.7.51 资金方【入库审批】列表 - 全量查看（inboundList 无 bank 字段）============
+  // 业务规则：资金方看全量入库申请（参照 v1.7.44 资金方额度管理全量模式）
+  // 入库是融资的前置条件：资金方在入库阶段做"入库见证"——确认货物真实入库，作为后续放款依据
+  // 复用货主方 9 tab + 11 筛 + 11 列；无"新增"按钮；列表行/按钮跳详情页
   const INBOUND_TABS = [
     { id: 'all', label: '全部' },
     { id: 'pending_submit', label: '待提交', statusMatch: ['draft'] },
@@ -47,12 +48,11 @@
     product: '', dateStart: '', dateEnd: '', supervisor: '', location: '',
   };
 
-  // ============ v1.7.51 担保方账号识别：演示账号默认 u_guar_001（王建国-中原信用担保）============
-  const currentUser = Utils.getUser() || { id: 'u_guar_001', name: '王建国', role: 'guarantor', company: '中原信用担保有限公司' };
-  const myGuarantorId = currentUser.id;
+  // 资金方演示账号：u_bank_001（刘敏-中国民生银行）
+  const currentUser = Utils.getUser() || { id: 'u_bank_001', name: '刘敏', role: 'bank', company: '中国民生银行股份有限公司郑州分行' };
 
   function _unique(field) {
-    return [...new Set((MockData.inboundList || []).filter(i => i.guarantorId === myGuarantorId).map(i => i[field]).filter(Boolean))];
+    return [...new Set((MockData.inboundList || []).map(i => i[field]).filter(Boolean))];
   }
 
   function deriveFields(r) {
@@ -75,10 +75,8 @@
     };
   }
 
-  // 担保方：按 guarantorId 过滤
-  function getMyList() {
-    return (MockData.inboundList || []).filter(i => i.guarantorId === myGuarantorId);
-  }
+  // 资金方：看全量（inboundList 无 bankId 字段；参照 v1.7.44 资金方额度管理全量模式）
+  function getMyList() { return MockData.inboundList || []; }
 
   function applyFilters() {
     const list = getMyList();
@@ -112,16 +110,13 @@
     return `
       <!-- 顶部角色化提示条 -->
       <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-xs text-blue-800">
-        <span class="font-medium">v1.7.51 担保方视图：</span>您（<strong>${currentUser.name}</strong> - ${currentUser.company}）正在查看本公司担保的入库申请（${myTotal} 条），按 <code class="px-1 bg-white rounded">guarantorId</code> 字段过滤。
+        <span class="font-medium">v1.7.51 资金方视图：</span>您（<strong>${currentUser.name}</strong> - ${currentUser.company}）正在查看<strong>全量</strong>入库申请（${myTotal} 条），不进行银行过滤。本节点为<strong>入库见证</strong>——确认货物真实入库，作为后续放款依据。
       </div>
 
-      <!-- 筛选区 -->
       <div class="bg-white rounded-xl border border-slate-200 p-4 mb-4">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-sm font-semibold text-slate-700">筛选条件</h3>
-          <div class="flex items-center gap-2">
-            <button onclick="resetAllFilters()" class="text-xs text-slate-500 hover:text-slate-700">重置</button>
-          </div>
+          <button onclick="resetAllFilters()" class="text-xs text-slate-500 hover:text-slate-700">重置</button>
         </div>
         <div class="grid grid-cols-5 gap-3">
           <div>
@@ -195,7 +190,6 @@
         </div>
       </div>
 
-      <!-- 9 个状态机 TAB 条 -->
       <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div class="border-b border-slate-200 px-4 bg-slate-50/50 overflow-x-auto">
           <div class="flex items-center gap-1">
@@ -251,7 +245,7 @@
 
   function renderRows(items) {
     if (!items.length) {
-      return `<tr><td colspan="12" class="py-12 text-center text-slate-400 text-sm">📭 当前筛选/状态下无入库申请（担保方 ${myGuarantorId} 范围内）</td></tr>`;
+      return `<tr><td colspan="12" class="py-12 text-center text-slate-400 text-sm">📭 当前筛选/状态下无入库申请</td></tr>`;
     }
     return items.map(r => {
       const d = deriveFields(r);
@@ -271,7 +265,7 @@
           <td class="px-3 py-2.5 text-slate-700 text-xs whitespace-nowrap">${d.supervisor}</td>
           <td class="px-3 py-2.5 text-slate-700 text-xs whitespace-nowrap">${d.location}</td>
           <td class="px-3 py-2.5 text-center whitespace-nowrap" onclick="event.stopPropagation()">
-            <a href="${Utils.nav('/guarantor/approval-inbound-detail')}?id=${r.id}" class="text-blue-600 hover:underline text-xs">查看</a>
+            <a href="${Utils.nav('/bank/approval-inbound-detail')}?id=${r.id}" class="text-blue-600 hover:underline text-xs">查看</a>
           </td>
         </tr>
       `;
@@ -293,14 +287,14 @@
   function refresh() {
     document.getElementById('app').innerHTML = Components.pageShell({
       title: '入库审批',
-      subtitle: '担保方视角 - 本公司担保的入库申请',
-      currentPath: '/guarantor/approval-inbound',
+      subtitle: '资金方视角 - 入库见证（全量）',
+      currentPath: '/bank/approval-inbound',
       breadcrumb: [
         { label: '智慧仓储', path: '/dashboard' },
-        { label: '货物管理', path: '/guarantor/approval-inbound' },
+        { label: '货物管理', path: '/bank/approval-inbound' },
         '入库审批',
       ],
-      extra: '',  // v1.7.51：担保方无"新增入库申请"按钮
+      extra: '',  // v1.7.51：资金方无"新增入库申请"按钮
       content: renderPage(),
     });
   }
@@ -313,7 +307,7 @@
     refresh();
   };
   window.viewInbound = function(id) {
-    window.location.href = Utils.nav('/guarantor/approval-inbound-detail') + '?id=' + id;
+    window.location.href = Utils.nav('/bank/approval-inbound-detail') + '?id=' + id;
   };
   window.exportInboundCSV = function() {
     const items = applyTab(applyFilters(), currentInboundTab);
@@ -332,7 +326,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `入库审批_担保方_${currentInboundTab}_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `入库审批_资金方_${currentInboundTab}_${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

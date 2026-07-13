@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  // GitHub Pages 子路径部署 vs Vercel 根路径部署
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>出/入库详情 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.11 状态 ============
+  // 检查 MockData.inOutDetails 是否存在且结构正确（防止上次空白页 bug 再发生）
+  if (!MockData.inOutDetails || !MockData.inOutDetails.inboundList || !MockData.inOutDetails.outboundList) {
+    document.getElementById('app').innerHTML = `
+      <div class="p-8 text-center text-red-600">
+        <div class="text-2xl mb-2">⚠ 数据加载失败</div>
+        <div class="text-sm">MockData.inOutDetails 未正确加载，请检查 mockData.js 中该字段是否在 MockData 对象内</div>
+      </div>
+    `;
+    throw new Error('MockData.inOutDetails missing — check mockData.js structure');
+  }
+
+  const state = {
+    activeTab: 'inbound',                  // inbound | outbound
+    bizNoSearch: '',                       // 单号模糊搜索
+    warehouseId: '',                       // 库点名称
+    location: '',                          // 仓房-货位
+    applyNoSearch: '',                      // 入库/出库申请编号
+    productName: '',                        // 货物名称
+    dateStart: '',                          // 入库/出库时间起
+    dateEnd: '',                            // 入库/出库时间止
+    contractNo: '',                         // 关联合同/订单编号（仅出库）
+    dataType: '',                           // 数据类型
+    page: 1,
+    pageSize: 10,
+  };
+
+  // ============ 数据获取 ============
+  function getActiveList() {
+    return state.activeTab === 'inbound'
+      ? MockData.inOutDetails.inboundList
+      : MockData.inOutDetails.outboundList;
+  }
+
+  function applyFilters() {
+    const list = getActiveList();
+    return list.filter(r => {
+      if (state.bizNoSearch && !(r.bizNo || '').toLowerCase().includes(state.bizNoSearch.toLowerCase().trim())) return false;
+      if (state.warehouseId && r.warehouseId !== state.warehouseId) return false;
+      if (state.location && r.location !== state.location) return false;
+      if (state.applyNoSearch && !(r.applyNo || '').toLowerCase().includes(state.applyNoSearch.toLowerCase().trim())) return false;
+      if (state.productName && r.productName !== state.productName) return false;
+      if (state.dateStart && r.bizDate < state.dateStart) return false;
+      if (state.dateEnd && r.bizDate > state.dateEnd) return false;
+      if (state.contractNo && !(r.contractNo || '').toLowerCase().includes(state.contractNo.toLowerCase().trim())) return false;
+      if (state.dataType && r.source !== state.dataType) return false;
+      return true;
+    });
+  }
+
+  // ============ 渲染 ============
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '出/入库详情',
+      subtitle: '资金方视角 - 出/入库详情（入库见证+出库参考）',
+    currentPath: '/bank/approval-in-out-detail',
+    breadcrumb: [
+      { label: '货物管理', path: '/bank/approval-inbound' },
+      '出/入库详情',
+    ],
+    content: renderPage(),
+  });
+
+  function renderPage() {
+    const isIn = state.activeTab === 'inbound';
+    const filtered = applyFilters();
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / state.pageSize));
+    state.page = Math.min(state.page, totalPages);
+    const start = (state.page - 1) * state.pageSize;
+    const pageItems = filtered.slice(start, start + state.pageSize);
+
+    return `
+      <!-- 入库/出库 TAB 切换 -->
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="border-b border-slate-200 px-4 bg-slate-50/50 overflow-x-auto">
+          <div class="flex items-center gap-1">
+            <button onclick="switchTab('inbound')" class="px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition ${state.activeTab === 'inbound' ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-200'}">入库详情</button>
+            <button onclick="switchTab('outbound')" class="px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition ${state.activeTab === 'outbound' ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-200'}">出库详情</button>
+          </div>
+        </div>
+
+        <!-- 当前搜索 + 清除 -->
+        <div class="border-b border-slate-200 px-4 py-3 bg-slate-50/50">
+          <div class="flex items-center justify-between mb-3 text-sm">
+            <div class="flex items-center flex-wrap gap-1.5 min-h-[24px]">
+              <span class="text-slate-500">当前搜索：</span>
+              ${renderActiveTags()}
+              ${hasAnyFilter() ? `<button onclick="resetAllFilters()" class="text-xs text-rose-500 hover:text-rose-700 ml-2">清除全部</button>` : ''}
+            </div>
+          </div>
+
+          <!-- 3 行 × 3 列的筛选控件 -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+            <!-- 行 1 -->
+            <div>
+              <label class="block text-xs text-slate-500 mb-1">${isIn ? '入库单号' : '出库单号'}</label>
+              <input type="text" placeholder="${isIn ? '请输入入库单号' : '请输入出库单号'}" value="${state.bizNoSearch}" oninput="updateFilter('bizNoSearch', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-500 mb-1">库点名称</label>
+              <select onchange="updateFilter('warehouseId', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+                <option value="">请选择</option>
+                ${MockData.warehouses.map(w => `<option value="${w.id}" ${state.warehouseId === w.id ? 'selected' : ''}>${w.name}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-500 mb-1">仓房-货位</label>
+              <select onchange="updateFilter('location', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+                <option value="">请选择</option>
+                ${uniqueLocations().map(l => `<option value="${l}" ${state.location === l ? 'selected' : ''}>${l}</option>`).join('')}
+              </select>
+            </div>
+
+            <!-- 行 2 -->
+            <div>
+              <label class="block text-xs text-slate-500 mb-1">${isIn ? '入库' : '出库'}申请编号</label>
+              <input type="text" placeholder="${isIn ? '请输入入库申请编号' : '请输入出库申请编号'}" value="${state.applyNoSearch}" oninput="updateFilter('applyNoSearch', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-500 mb-1">货物名称</label>
+              <select onchange="updateFilter('productName', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+                <option value="">请选择</option>
+                ${uniqueProducts().map(p => `<option value="${p}" ${state.productName === p ? 'selected' : ''}>${p}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-500 mb-1">${isIn ? '入库时间' : '出库时间'}</label>
+              <div class="flex items-center gap-1">
+                <input type="date" value="${state.dateStart}" onchange="updateFilter('dateStart', this.value)" class="w-full px-1.5 py-1.5 text-xs border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+                <span class="text-slate-400 text-xs">~</span>
+                <input type="date" value="${state.dateEnd}" onchange="updateFilter('dateEnd', this.value)" class="w-full px-1.5 py-1.5 text-xs border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              </div>
+            </div>
+
+            <!-- 行 3 -->
+            ${isIn ? `
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">数据类型</label>
+                <select onchange="updateFilter('dataType', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+                  <option value="">请选择</option>
+                  <option value="手动添加" ${state.dataType === '手动添加' ? 'selected' : ''}>手动添加</option>
+                  <option value="数据同步" ${state.dataType === '数据同步' ? 'selected' : ''}>数据同步</option>
+                  <option value="API导入" ${state.dataType === 'API导入' ? 'selected' : ''}>API导入</option>
+                </select>
+              </div>
+              <div></div>
+            ` : `
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">关联合同/订单编号</label>
+                <input type="text" placeholder="请输入关联合同/订单编号" value="${state.contractNo}" oninput="updateFilter('contractNo', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">数据类型</label>
+                <select onchange="updateFilter('dataType', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+                  <option value="">请选择</option>
+                  <option value="手动添加" ${state.dataType === '手动添加' ? 'selected' : ''}>手动添加</option>
+                  <option value="数据同步" ${state.dataType === '数据同步' ? 'selected' : ''}>数据同步</option>
+                </select>
+              </div>
+            `}
+            <div class="flex items-end justify-end">
+              <button onclick="exportInOutCSV()" class="px-3 py-1.5 text-sm text-blue-600 hover:underline">
+                数据导出
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 表格 -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm min-w-[1200px]">
+            <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+              ${isIn ? `
+                <tr>
+                  <th class="text-left px-3 py-3 whitespace-nowrap">入库单号</th>
+                  <th class="text-left px-3 py-3 whitespace-nowrap">入库时间</th>
+                  <th class="text-left px-3 py-3 whitespace-nowrap">货物名称</th>
+                  <th class="text-left px-3 py-3 whitespace-nowrap">库点名称</th>
+                  <th class="text-left px-3 py-3 whitespace-nowrap">仓房-货位</th>
+                  <th class="text-right px-3 py-3 whitespace-nowrap">入库数量</th>
+                  <th class="text-right px-3 py-3 whitespace-nowrap">入库重量</th>
+                  <th class="text-left px-3 py-3 whitespace-nowrap">数量单位</th>
+                  <th class="text-center px-3 py-3 whitespace-nowrap">操作</th>
+                </tr>
+              ` : `
+                <tr>
+                  <th class="text-left px-3 py-3 whitespace-nowrap">出库单号</th>
+                  <th class="text-left px-3 py-3 whitespace-nowrap">出库时间</th>
+                  <th class="text-left px-3 py-3 whitespace-nowrap">货物名称</th>
+                  <th class="text-left px-3 py-3 whitespace-nowrap">库点名称</th>
+                  <th class="text-left px-3 py-3 whitespace-nowrap">仓房-货位</th>
+                  <th class="text-right px-3 py-3 whitespace-nowrap">入库数量</th>
+                  <th class="text-right px-3 py-3 whitespace-nowrap">入库重量</th>
+                  <th class="text-left px-3 py-3 whitespace-nowrap">数量单位</th>
+                  <th class="text-left px-3 py-3 whitespace-nowrap">出库申请编号</th>
+                  <th class="text-left px-3 py-3 whitespace-nowrap">关联合同/订单编号</th>
+                  <th class="text-left px-3 py-3 whitespace-nowrap">数据类型</th>
+                  <th class="text-center px-3 py-3 whitespace-nowrap">操作</th>
+                </tr>
+              `}
+            </thead>
+            <tbody>${renderRows(pageItems, isIn)}</tbody>
+          </table>
+        </div>
+        ${renderPagination(total, totalPages, isIn)}
+      </div>
+    `;
+  }
+
+  function uniqueLocations() {
+    return [...new Set(getActiveList().map(r => r.location).filter(Boolean))];
+  }
+  function uniqueProducts() {
+    return [...new Set(getActiveList().map(r => r.productName).filter(Boolean))];
+  }
+
+  function hasAnyFilter() {
+    return ['bizNoSearch', 'warehouseId', 'location', 'applyNoSearch', 'productName',
+            'dateStart', 'dateEnd', 'contractNo', 'dataType'].some(k => state[k]);
+  }
+
+  function renderActiveTags() {
+    const tags = [];
+    const keyMap = { bizNoSearch: '单号', warehouseId: '库点', location: '货位',
+                      applyNoSearch: '申请编号', productName: '货物', contractNo: '合同/订单', dataType: '数据类型' };
+    Object.keys(keyMap).forEach(k => {
+      if (state[k]) {
+        let val = state[k];
+        if (k === 'warehouseId') val = (MockData.warehouses.find(w => w.id === val) || {}).name || val;
+        tags.push({ key: k, val: state[k], label: `${keyMap[k]}：${val}` });
+      }
+    });
+    if (state.dateStart || state.dateEnd) {
+      tags.push({ key: '_date', val: '_date', label: `日期：${state.dateStart || '不限'} ~ ${state.dateEnd || '不限'}` });
+    }
+    if (!tags.length) return '<span class="text-slate-400 text-xs">（无筛选条件）</span>';
+    return tags.map(t => `
+      <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-slate-100 text-slate-700 rounded">
+        ${t.label}
+        <button onclick="removeTag('${t.key}')" class="text-slate-400 hover:text-slate-700">×</button>
+      </span>
+    `).join('');
+  }
+
+  function renderRows(items, isIn) {
+    if (!items.length) return `<tr><td colspan="${isIn ? 9 : 12}" class="py-12 text-center text-slate-400 text-sm">📭 当前筛选条件下无${isIn ? '入库' : '出库'}详情记录</td></tr>`;
+    return items.map(r => `
+      <tr class="border-t border-slate-100 hover:bg-blue-50/30">
+        <td class="px-3 py-2.5 font-mono text-xs text-blue-700 whitespace-nowrap">${r.bizNo}</td>
+        <td class="px-3 py-2.5 text-slate-700 whitespace-nowrap text-xs">${r.bizDate} ${r.bizTime}</td>
+        <td class="px-3 py-2.5 text-slate-700 whitespace-nowrap text-xs">${r.productName}</td>
+        <td class="px-3 py-2.5 text-slate-700 whitespace-nowrap text-xs">${r.warehouseName}</td>
+        <td class="px-3 py-2.5 text-slate-700 whitespace-nowrap text-xs">${r.location}</td>
+        ${isIn ? `
+          <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap">${Utils.fmtNum(r.stockPieces)}</td>
+          <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap">${Utils.fmtNum(r.stockWeight)}</td>
+          <td class="px-3 py-2.5 text-slate-500 text-xs whitespace-nowrap">${r.piecesUnit}</td>
+        ` : `
+          <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap">${Utils.fmtNum(r.stockPieces)}</td>
+          <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap">${Utils.fmtNum(r.stockWeight)}</td>
+          <td class="px-3 py-2.5 text-slate-500 text-xs whitespace-nowrap">${r.piecesUnit}</td>
+          <td class="px-3 py-2.5 font-mono text-xs text-slate-700 whitespace-nowrap">${r.applyNo || '-'}</td>
+          <td class="px-3 py-2.5 font-mono text-xs text-slate-600 whitespace-nowrap">${r.contractNo || '-'}</td>
+          <td class="px-3 py-2.5 text-slate-700 text-xs whitespace-nowrap">
+            <span class="px-2 py-0.5 ${sourceClass(r.source)} rounded text-xs">${r.source || '-'}</span>
+          </td>
+        `}
+        <td class="px-3 py-2.5 text-center whitespace-nowrap">
+          <button onclick="viewDetail('${r.id}', '${r.type}')" class="text-blue-600 hover:underline text-xs font-medium mr-3">查看</button>
+          <button onclick="quickEdit('${r.id}', '${r.type}')" class="inline-flex items-center justify-center w-6 h-6 bg-yellow-100 hover:bg-yellow-200 rounded" title="刷新数据">
+            <svg class="w-3.5 h-3.5 text-yellow-700" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function sourceClass(src) {
+    if (!src) return 'bg-slate-100 text-slate-500';
+    if (src.includes('手动')) return 'bg-amber-100 text-amber-700';
+    if (src.includes('数据')) return 'bg-blue-100 text-blue-700';
+    if (src.includes('API')) return 'bg-emerald-100 text-emerald-700';
+    return 'bg-slate-100 text-slate-600';
+  }
+
+  function renderPagination(total, totalPages, isIn) {
+    if (total === 0) return '';
+    const start = (state.page - 1) * state.pageSize + 1;
+    const end = Math.min(state.page * state.pageSize, total);
+    const pages = [];
+    for (let i = 1; i <= totalPages && i <= 9; i++) pages.push(i);
+    return `
+      <div class="px-4 py-3 border-t border-slate-200 flex items-center justify-between">
+        <div class="text-sm text-slate-500">共 <span class="font-medium text-slate-800">${total}</span> 条记录 第 <span class="font-medium text-slate-800">${state.page}</span> / ${totalPages} 页</div>
+        <div class="flex items-center gap-2">
+          <button onclick="setPage(${state.page - 1})" ${state.page === 1 ? 'disabled' : ''} class="px-2 py-1 text-xs border border-slate-200 rounded ${state.page === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}">‹</button>
+          ${pages.map(p => `<button onclick="setPage(${p})" class="px-2.5 py-1 text-xs border rounded min-w-[28px] ${p === state.page ? 'bg-blue-600 text-white border-blue-600' : 'border-slate-200 hover:bg-slate-50'}">${p}</button>`).join('')}
+          ${totalPages > 9 ? `<span class="text-xs text-slate-400">...</span>` : ''}
+          <button onclick="setPage(${state.page + 1})" ${state.page === totalPages ? 'disabled' : ''} class="px-2 py-1 text-xs border border-slate-200 rounded ${state.page === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}">›</button>
+          <select onchange="setPageSize(parseInt(this.value))" class="px-2 py-1 text-xs border border-slate-200 rounded">
+            ${[10, 20, 50, 100].map(s => `<option value="${s}" ${state.pageSize === s ? 'selected' : ''}>${s}条/页</option>`).join('')}
+          </select>
+          <span class="text-xs text-slate-500">跳至</span>
+          <input type="number" min="1" max="${totalPages}" value="${state.page}" onchange="goToPage(parseInt(this.value))" class="w-12 px-2 py-1 text-xs border border-slate-200 rounded text-center">
+          <span class="text-xs text-slate-500">页</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // ============ Refresh =============
+  function refresh() {
+    document.getElementById('app').innerHTML = Components.pageShell({
+      title: '出/入库详情',
+      subtitle: '资金方视角 - 出/入库详情（入库见证+出库参考）',
+      currentPath: '/bank/approval-in-out-detail',
+      breadcrumb: [
+        { label: '货物管理', path: '/bank/approval-inbound' },
+        '出/入库详情',
+      ],
+      content: renderPage(),
+    });
+  }
+
+  // ============ 事件 ============
+  window.switchTab = function(id) {
+    state.activeTab = id;
+    state.page = 1;
+    // 切 tab 时清掉出库专属筛选
+    state.contractNo = '';
+    refresh();
+  };
+  window.updateFilter = function(key, val) {
+    state[key] = val;
+    state.page = 1;
+    refresh();
+  };
+  window.removeTag = function(key) {
+    if (key === '_date') { state.dateStart = ''; state.dateEnd = ''; }
+    else { state[key] = ''; }
+    state.page = 1;
+    refresh();
+  };
+  window.resetAllFilters = function() {
+    ['bizNoSearch','warehouseId','location','applyNoSearch','productName','dateStart','dateEnd','contractNo','dataType'].forEach(k => state[k] = '');
+    refresh();
+  };
+  window.setPage = function(p) { state.page = p; refresh(); };
+  window.setPageSize = function(s) { state.pageSize = s; state.page = 1; refresh(); };
+  window.goToPage = function(p) {
+    if (!Number.isFinite(p)) return;
+    const total = applyFilters().length;
+    const totalPages = Math.max(1, Math.ceil(total / state.pageSize));
+    state.page = Math.max(1, Math.min(p, totalPages));
+    refresh();
+  };
+
+  // ============ 查看弹窗（v1.7.11 重写：匹配甲方截图） ============
+  // 入库详情：1 个 section（入库信息）
+  // 出库详情：2 个 tab（出库信息 / 操作记录）
+  window.viewDetail = function(id, type) {
+    const list = type === 'inbound' ? MockData.inOutDetails.inboundList : MockData.inOutDetails.outboundList;
+    const r = list.find(x => x.id === id) || list[0];
+    const isIn = type === 'inbound';
+
+    // 弹窗内部状态（操作记录 tab 用）
+    const dialogState = {
+      activeTab: 'info',
+      opsTypeFilter: '',   // 操作类型筛选（v1.7.33 新增）
+      opsDateStart: '',    // 操作时间起
+      opsDateEnd: '',      // 操作时间止
+    };
+    function renderModal() {
+      const isOutTabInfo = dialogState.activeTab === 'info';
+      return `
+        <div class="bg-slate-50 rounded-xl w-[1100px] max-h-[92vh] overflow-y-auto shadow-2xl" onclick="event.stopPropagation()">
+          <!-- Header -->
+          <div class="px-6 py-4 border-b border-slate-200 sticky top-0 bg-white flex items-center justify-between z-10">
+            <div class="flex items-center gap-3">
+              <button onclick="this.closest('.modal-backdrop').remove()" class="w-9 h-9 rounded-full bg-blue-100 hover:bg-blue-200 flex items-center justify-center text-blue-600 transition" title="返回">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+              </button>
+              <button onclick="this.closest('.modal-backdrop').remove()" class="w-9 h-9 rounded-full bg-blue-100 hover:bg-blue-200 flex items-center justify-center text-blue-600 transition" title="库点图标">
+                <span class="font-bold text-base">${isIn ? '入' : '出'}</span>
+              </button>
+              <h3 class="font-bold text-slate-800 text-lg">${isIn ? '入库编号' : '出库编号'}：<span class="font-mono text-blue-700">${r.bizNo}</span></h3>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="copyText('${r.bizNo}')" class="p-1.5 hover:bg-slate-100 rounded" title="复制单号">
+                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V7m0 0V5"/></svg>
+              </button>
+              <button onclick="this.closest('.modal-backdrop').remove()" class="text-slate-400 hover:text-slate-700 text-xl ml-2">×</button>
+            </div>
+          </div>
+
+          <div class="p-6 space-y-5">
+            <!-- ${isIn ? '入库' : '出库'}申请信息（3 行 × 3 列）-->
+            <div>
+              <div class="text-sm font-semibold text-slate-700 mb-3">${isIn ? '入库' : '出库'}申请信息</div>
+              <div class="grid grid-cols-3 gap-4 bg-white border border-slate-200 rounded p-4 text-sm">
+                <div><span class="text-slate-500">${isIn ? '入库' : '出库'}申请编号：</span><span class="text-slate-800 font-mono">${r.applyNo || '-'}</span></div>
+                <div><span class="text-slate-500">出质方：</span><span class="text-slate-800">${r.applicant || '-'}</span></div>
+                <div><span class="text-slate-500">联系人：</span><span class="text-slate-800">${r.contactPerson || '-'}</span><span class="text-slate-400 ml-1 text-xs">-138 0000 XXXX</span></div>
+                <div><span class="text-slate-500">金融产品：</span><span class="text-slate-800">${r.productType || '-'}</span></div>
+                <div><span class="text-slate-500">质权方：</span><span class="text-slate-800">${r.pledgee || '-'}</span></div>
+                <div><span class="text-slate-500">监管方：</span><span class="text-slate-800">${r.supervisor || '-'}</span></div>
+                <div><span class="text-slate-500">申请日期：</span><span class="text-slate-800">${r.applyDate || '-'}</span></div>
+                <div><span class="text-slate-500">创建人：</span><span class="text-slate-800">${r.creator || '-'}</span></div>
+                <div><span class="text-slate-500">创建时间：</span><span class="text-slate-800 font-mono text-xs">${r.createTime || '-'}</span></div>
+              </div>
+            </div>
+
+            ${isIn ? `
+              <!-- 入库详情：单 section（入库信息）+ 货物明细 + 附件 -->
+              <div>
+                <div class="text-sm font-semibold text-slate-700 mb-3">入库信息</div>
+                ${renderInOutInfoSection(r, true)}
+              </div>
+              ${renderProductsTable(r, true)}
+              ${renderAttachmentsSection(r)}
+            ` : `
+              <!-- 出库详情：2 tab（出库信息 / 操作记录） -->
+              <div>
+                <div class="border-b border-slate-200 bg-white rounded-t-lg">
+                  <div class="flex items-center px-4">
+                    <button onclick="switchDialogTab('info','${r.id}')" id="dialog-tab-info" class="px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition ${dialogState.activeTab === 'info' ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'}">出库信息</button>
+                    <button onclick="switchDialogTab('ops','${r.id}')" id="dialog-tab-ops" class="px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition ${dialogState.activeTab === 'ops' ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'}">操作记录</button>
+                  </div>
+                </div>
+                <div id="dialog-tab-info-pane" class="${dialogState.activeTab === 'info' ? '' : 'hidden'} bg-white border border-t-0 border-slate-200 rounded-b-lg p-4 space-y-5">
+                  <div>
+                    <div class="text-sm font-semibold text-slate-700 mb-3">入库信息</div>
+                    ${renderInOutInfoSection(r, false)}
+                  </div>
+                  ${renderProductsTable(r, false)}
+                  ${renderAttachmentsSection(r)}
+                </div>
+                <div id="dialog-tab-ops-pane" class="${dialogState.activeTab === 'ops' ? '' : 'hidden'} bg-white border border-t-0 border-slate-200 rounded-b-lg p-4">
+                  ${renderOperationsTable(r)}
+                </div>
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderInOutInfoSection(r, isIn) {
+      const prefix = isIn ? '入库' : '出库';
+      return `
+        <div class="bg-white border border-slate-200 rounded text-sm">
+          <div class="grid grid-cols-2 border-b border-slate-200">
+            <div class="px-4 py-2.5 border-r border-slate-200"><span class="text-slate-500">${prefix}单号：</span><span class="font-mono text-slate-800">${r.bizNo}</span></div>
+            <div class="px-4 py-2.5"><span class="text-slate-500">${prefix}时间：</span><span class="text-slate-800">${r.bizDate || '-'} ${r.bizTime || ''}</span></div>
+          </div>
+          <div class="grid grid-cols-2 border-b border-slate-200">
+            <div class="px-4 py-2.5 border-r border-slate-200"><span class="text-slate-500">库点名称：</span><span class="text-slate-800">${r.warehouseName || '-'}</span></div>
+            <div class="px-4 py-2.5"><span class="text-slate-500">仓房&货位：</span><span class="text-slate-800">${r.location || '-'}</span></div>
+          </div>
+          <div class="grid grid-cols-2 border-b border-slate-200">
+            <div class="px-4 py-2.5 border-r border-slate-200"><span class="text-slate-500">货主名称：</span><span class="text-slate-800">${r.applicant || '-'}</span></div>
+            <div class="px-4 py-2.5"><span class="text-slate-500">毛重总量：</span><span class="text-slate-800 num-focus">${Utils.fmtNum(r.grossWeight || 0)}</span> 千克</div>
+          </div>
+          <div class="grid grid-cols-2 border-b border-slate-200">
+            <div class="px-4 py-2.5 border-r border-slate-200"><span class="text-slate-500">皮重总量：</span><span class="text-slate-800 num-focus">${Utils.fmtNum(r.tareWeight || 0)}</span> 千克</div>
+            <div class="px-4 py-2.5"><span class="text-slate-500">净重总量：</span><span class="text-slate-800 num-focus">${Utils.fmtNum(r.netWeight || 0)}</span> 千克</div>
+          </div>
+          <div class="px-4 py-2.5">
+            <span class="text-slate-500">备注：</span>
+            <span class="text-slate-800">${r.remark || ''}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderProductsTable(r, isIn) {
+      const prefix = isIn ? '入' : '出';
+      return `
+        <div>
+          <div class="text-sm font-semibold text-slate-700 mb-3">货物明细</div>
+          <div class="bg-white border border-slate-200 rounded overflow-hidden">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 text-slate-600 text-xs">
+                <tr>
+                  <th class="px-3 py-2 text-left whitespace-nowrap">序号</th>
+                  <th class="px-3 py-2 text-left whitespace-nowrap">货品名称</th>
+                  <th class="px-3 py-2 text-left whitespace-nowrap">国家</th>
+                  <th class="px-3 py-2 text-left whitespace-nowrap">厂号</th>
+                  <th class="px-3 py-2 text-right whitespace-nowrap">${prefix}库数量</th>
+                  <th class="px-3 py-2 text-left whitespace-nowrap">数量单位</th>
+                  <th class="px-3 py-2 text-right whitespace-nowrap">${prefix}库重量</th>
+                  <th class="px-3 py-2 text-left whitespace-nowrap">重量单位</th>
+                  <th class="px-3 py-2 text-left whitespace-nowrap">计划${prefix}库时间</th>
+                  <th class="px-3 py-2 text-left whitespace-nowrap">生产日期</th>
+                  <th class="px-3 py-2 text-left whitespace-nowrap">生产批号</th>
+                  <th class="px-3 py-2 text-right whitespace-nowrap">实收数量</th>
+                  <th class="px-3 py-2 text-right whitespace-nowrap">实收重量</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${(r.products || []).map((p, i) => `
+                  <tr class="border-t border-slate-100">
+                    <td class="px-3 py-2 text-slate-700">${i + 1}</td>
+                    <td class="px-3 py-2 text-slate-700">${p.name || '-'}</td>
+                    <td class="px-3 py-2 text-slate-700">${p.country || '-'}</td>
+                    <td class="px-3 py-2 text-slate-700">${p.factoryNo || '-'}</td>
+                    <td class="px-3 py-2 text-right num-focus text-slate-700">${Utils.fmtNum(p.planQty || 0)}</td>
+                    <td class="px-3 py-2 text-slate-500">${p.piecesUnit || '箱'}</td>
+                    <td class="px-3 py-2 text-right num-focus text-slate-700">${Utils.fmtNum(p.planWeight || 0)}</td>
+                    <td class="px-3 py-2 text-slate-500">${p.weightUnit || '千克'}</td>
+                    <td class="px-3 py-2 text-slate-600">${p.planDate || r.bizDate || '-'}</td>
+                    <td class="px-3 py-2 text-slate-600">${p.prodDate || '-'}</td>
+                    <td class="px-3 py-2 text-slate-600">${p.batchNo || '-'}</td>
+                    <td class="px-3 py-2 text-right num-focus text-blue-700 font-medium">${Utils.fmtNum(p.actualQty || 0)}</td>
+                    <td class="px-3 py-2 text-right num-focus text-blue-700 font-medium">${Utils.fmtNum(p.actualWeight || 0)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAttachmentsSection(r) {
+      // 上传时间直接显示在附件文件名后，用 label/tag 形式
+      const typeLabelClass = (type) => {
+        if (!type) return 'bg-slate-100 text-slate-700';
+        if (type.includes('入库单') || type.includes('出库单')) return 'bg-blue-100 text-blue-700';
+        if (type.includes('磅单')) return 'bg-amber-100 text-amber-700';
+        if (type.includes('留痕') || type.includes('作业')) return 'bg-emerald-100 text-emerald-700';
+        return 'bg-slate-100 text-slate-700';
+      };
+      return `
+        <div>
+          <div class="text-sm font-semibold text-slate-700 mb-3 flex items-center justify-between">
+            <span>附件</span>
+            <button onclick="Utils.toast('一键下载所有附件（待对接）', 'info')" class="text-xs text-blue-600 hover:underline">一键下载</button>
+          </div>
+          <div class="bg-white border border-slate-200 rounded overflow-hidden">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 text-slate-600 text-xs">
+                <tr>
+                  <th class="px-3 py-2 text-left whitespace-nowrap w-32">单据类型</th>
+                  <th class="px-3 py-2 text-left whitespace-nowrap">附件（文件名 + 上传时间标签）</th>
+                  <th class="px-3 py-2 text-center whitespace-nowrap w-20">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${(r.attachments || []).map(a => `
+                  <tr class="border-t border-slate-100">
+                    <td class="px-3 py-2.5 align-top">
+                      <span class="inline-block px-2 py-0.5 rounded text-xs ${typeLabelClass(a.type)}">${a.type}</span>
+                    </td>
+                    <td class="px-3 py-2.5">
+                      ${a.multiFile ? `
+                        <div class="flex flex-col gap-1">
+                          ${(a.files || []).map(f => `
+                            <div class="flex items-center gap-2">
+                              <span class="font-mono text-blue-600 text-xs">${f.filename}</span>
+                              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] bg-slate-100 text-slate-600">上传时间：${f.uploadedAt}</span>
+                            </div>
+                          `).join('')}
+                        </div>
+                      ` : `
+                        <div class="flex items-center gap-2">
+                          <span class="font-mono text-blue-600 text-xs">${a.filename}</span>
+                          <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] bg-slate-100 text-slate-600">上传时间：${a.uploadedAt}</span>
+                        </div>
+                      `}
+                    </td>
+                    <td class="px-3 py-2.5 text-center align-top">
+                      <button onclick="Utils.toast('下载 ${a.filename}（待对接）', 'info')" class="text-blue-600 hover:underline">下载</button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderOperationsTable(r) {
+      const allOps = r.operations || [];
+      // v1.7.33 操作记录筛选：操作类型 + 时间范围
+      const types = [...new Set(allOps.map(o => o.type).filter(Boolean))];
+      const filtered = allOps.filter(op => {
+        if (dialogState.opsTypeFilter && op.type !== dialogState.opsTypeFilter) return false;
+        if (dialogState.opsDateStart && op.time < dialogState.opsDateStart) return false;
+        if (dialogState.opsDateEnd && op.time > dialogState.opsDateEnd + ' 23:59:59') return false;
+        return true;
+      });
+      return `
+        <!-- 操作记录筛选（v1.7.33 新增 2 控件：操作类型 + 时间范围） -->
+        <div class="flex items-center gap-3 mb-3 p-2.5 bg-slate-50 rounded">
+          <label class="flex items-center gap-1 text-xs text-slate-600">
+            操作类型
+            <select onchange="opsFilterChange('type', this.value)" class="px-2 py-1 text-xs border border-slate-200 rounded bg-white">
+              <option value="">全部</option>
+              ${types.map(t => `<option value="${t}" ${dialogState.opsTypeFilter === t ? 'selected' : ''}>${t}</option>`).join('')}
+            </select>
+          </label>
+          <label class="flex items-center gap-1 text-xs text-slate-600">
+            时间
+            <input type="date" value="${dialogState.opsDateStart}" onchange="opsFilterChange('dateStart', this.value)" class="px-2 py-1 text-xs border border-slate-200 rounded">
+            <span>~</span>
+            <input type="date" value="${dialogState.opsDateEnd}" onchange="opsFilterChange('dateEnd', this.value)" class="px-2 py-1 text-xs border border-slate-200 rounded">
+          </label>
+          ${(dialogState.opsTypeFilter || dialogState.opsDateStart || dialogState.opsDateEnd) ? `<button onclick="opsFilterReset()" class="text-xs text-rose-500 hover:text-rose-700">清除</button>` : ''}
+          <span class="ml-auto text-xs text-slate-500">共 <b class="text-slate-800">${filtered.length}</b> / ${allOps.length} 条</span>
+        </div>
+        ${!filtered.length ? `<div class="text-center py-12 text-slate-400 text-sm">📭 当前筛选条件下无操作记录</div>` : `
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 text-xs">
+            <tr>
+              <th class="px-3 py-2 text-left whitespace-nowrap">操作类型</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">操作人</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">所属公司</th>
+              <th class="px-3 py-2 text-left">操作内容</th>
+              <th class="px-3 py-2 text-left whitespace-nowrap">操作时间</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filtered.map(op => `
+              <tr class="border-t border-slate-100">
+                <td class="px-3 py-2.5 text-slate-700 whitespace-nowrap">${op.type}</td>
+                <td class="px-3 py-2.5 text-slate-700 whitespace-nowrap">${op.operator}</td>
+                <td class="px-3 py-2.5 text-slate-700 whitespace-nowrap">${op.company}</td>
+                <td class="px-3 py-2.5 text-slate-700">${op.content}</td>
+                <td class="px-3 py-2.5 text-slate-700 font-mono text-xs whitespace-nowrap">${op.time}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        `}
+      `;
+    }
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-backdrop';
+    modal.id = 'inOutDetailModal';
+    modal.dataset.recordId = id;  // v1.7.33 操作记录筛选重渲染用
+    modal.dataset.recordType = type;
+    modal.innerHTML = renderModal();
+    // v1.7.8 表单类弹窗：屏蔽点击外面关闭
+    modal.onclick = () => {};
+    document.body.appendChild(modal);
+
+    // 弹窗内 tab 切换
+    window.switchDialogTab = function(tabName, id) {
+      const modalEl = document.getElementById('inOutDetailModal');
+      if (!modalEl) return;
+      dialogState.activeTab = tabName;
+      const tabInfo = modalEl.querySelector('#dialog-tab-info');
+      const tabOps = modalEl.querySelector('#dialog-tab-ops');
+      const paneInfo = modalEl.querySelector('#dialog-tab-info-pane');
+      const paneOps = modalEl.querySelector('#dialog-tab-ops-pane');
+      if (!tabInfo || !tabOps) return;
+      // 更新 tab 样式
+      const activeCls = 'border-blue-600 text-blue-700';
+      const inactiveCls = 'border-transparent text-slate-500 hover:text-slate-700';
+      if (tabName === 'info') {
+        tabInfo.className = 'px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition ' + activeCls;
+        tabOps.className = 'px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition ' + inactiveCls;
+        paneInfo.classList.remove('hidden');
+        paneOps.classList.add('hidden');
+      } else {
+        tabInfo.className = 'px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition ' + inactiveCls;
+        tabOps.className = 'px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition ' + activeCls;
+        paneInfo.classList.add('hidden');
+        paneOps.classList.remove('hidden');
+      }
+    };
+
+    // v1.7.33 操作记录筛选：局部重渲染 ops-pane
+    window.opsFilterChange = function(key, val) {
+      dialogState[key] = val;
+      const paneOps = document.querySelector('#dialog-tab-ops-pane');
+      if (!paneOps) return;
+      // 找到当前弹窗的 r：从 modal.id 解析拿不到，但 viewDetail 闭包内有 r
+      // 简单办法：把 r 存在 modal 元素 dataset 上
+      const modal = document.getElementById('inOutDetailModal');
+      const rid = modal && modal.dataset.recordId;
+      if (!rid) return;
+      const list = MockData.inOutDetails.outboundList;
+      const r = list.find(x => x.id === rid) || list[0];
+      paneOps.innerHTML = renderOperationsTable(r);
+    };
+    window.opsFilterReset = function() {
+      dialogState.opsTypeFilter = '';
+      dialogState.opsDateStart = '';
+      dialogState.opsDateEnd = '';
+      window.opsFilterChange('_reset', '');
+    };
+  };
+
+  // 复制单号工具
+  window.copyText = function(text) {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => Utils.toast('已复制：' + text, 'success'));
+    } else {
+      Utils.toast('请手动复制：' + text, 'info');
+    }
+  };
+
+  window.quickEdit = function(id, type) {
+    Utils.toast('刷新数据（甲方细化后对接）', 'info');
+  };
+
+  // ============ 导出 ============
+  window.exportInOutCSV = function() {
+    const isIn = state.activeTab === 'inbound';
+    const filtered = applyFilters();
+    if (!filtered.length) return Utils.toast('当前筛选条件下无数据可导出', 'warning');
+    const prefix = isIn ? '入库详情' : '出库详情';
+    let headers, rows;
+    if (isIn) {
+      headers = ['入库单号','入库时间','货物名称','库点名称','仓房-货位','入库数量','入库重量','数量单位'];
+      rows = filtered.map(r => [r.bizNo, `${r.bizDate} ${r.bizTime}`, r.productName, r.warehouseName, r.location, r.stockPieces, r.stockWeight, r.piecesUnit]);
+    } else {
+      headers = ['出库单号','出库时间','货物名称','库点名称','仓房-货位','入库数量','入库重量','数量单位','出库申请编号','关联合同/订单编号','数据类型'];
+      rows = filtered.map(r => [r.bizNo, `${r.bizDate} ${r.bizTime}`, r.productName, r.warehouseName, r.location, r.stockPieces, r.stockWeight, r.piecesUnit, r.applyNo || '', r.contractNo || '', r.source || '']);
+    }
+    const csv = [headers, ...rows].map(row => row.map(c => {
+      const v = String(c == null ? '' : c);
+      return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+    }).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${prefix}_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    Utils.toast(`已导出 ${filtered.length} 条${prefix}记录`, 'success');
+  };
+</script>
+</body>
+</html>

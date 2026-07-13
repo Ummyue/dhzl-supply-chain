@@ -244,6 +244,7 @@ const MockData = {
         ]},
         { group: '货物管理', items: [
           { icon: 'box', label: '入库审批', path: '/platform/approval-inbound' },
+          { icon: 'list', label: '出/入库详情', path: '/platform/approval-in-out-detail' },
           { icon: 'package', label: '在库监控', path: '/platform/monitoring-dashboard' },
         ]},
         { group: '视频监控', items: [
@@ -254,6 +255,11 @@ const MockData = {
         { group: '工作台', items: [
           { icon: 'home', label: '首页概览', path: '/dashboard' },
         ]},
+        // v1.7.51：担保方新增【货物管理】group - 入库审批 + 出/入库详情
+        { group: '货物管理', items: [
+          { icon: 'box', label: '入库审批', path: '/guarantor/approval-inbound' },
+          { icon: 'list', label: '出/入库详情', path: '/guarantor/approval-in-out-detail' },
+        ]},
         { group: '视频监控', items: [
           { icon: 'video', label: '监控概览', path: '/customer/video' },
         ]},
@@ -261,6 +267,11 @@ const MockData = {
       bank: [
         { group: '工作台', items: [
           { icon: 'home', label: '首页概览', path: '/dashboard' },
+        ]},
+        // v1.7.51：资金方新增【货物管理】group - 入库审批 + 出/入库详情
+        { group: '货物管理', items: [
+          { icon: 'box', label: '入库审批', path: '/bank/approval-inbound' },
+          { icon: 'list', label: '出/入库详情', path: '/bank/approval-in-out-detail' },
         ]},
         { group: '视频监控', items: [
           { icon: 'video', label: '监控概览', path: '/customer/video' },
@@ -1846,6 +1857,7 @@ const MockData = {
       bizNo: 'IN_20260705001',
       applicant: '郑州某冷链贸易有限公司',
       customerCode: 'JMY',
+      guarantorId: 'u_guar_001',
       warehouse: '物流港二期大河智链监管库',
       vehicleNo: '豫A·F8829',
       driver: '张大伟',
@@ -1870,6 +1882,7 @@ const MockData = {
       bizNo: 'IN_20260702001',
       applicant: '郑州某冷链物流有限公司',
       customerCode: 'GL',
+      guarantorId: 'u_guar_002',
       warehouse: '物流港二期大河智链监管库',
       vehicleNo: '豫A·H5521',
       driver: '李明',
@@ -1894,6 +1907,7 @@ const MockData = {
       bizNo: 'IN_20260709001',
       applicant: '郑州某冷链贸易有限公司',
       customerCode: 'JMY',
+      guarantorId: 'u_guar_001',
       warehouse: '天津港国际冷链基地',
       vehicleNo: '豫A·K3318',
       driver: '王建国',
@@ -1918,6 +1932,7 @@ const MockData = {
       bizNo: 'IN_20260708001',
       applicant: '郑州某冷链贸易有限公司',
       customerCode: 'JMY',
+      guarantorId: 'u_guar_001',
       warehouse: '物流港二期大河智链监管库',
       vehicleNo: '豫A·L9201',
       driver: '刘海涛',
@@ -1942,6 +1957,7 @@ const MockData = {
       bizNo: 'IN_20260706001',
       applicant: '郑州某冷链贸易有限公司',
       customerCode: 'JMY',
+      guarantorId: 'u_guar_001',
       warehouse: '物流港二期大河智链监管库',
       vehicleNo: '豫A·M7152',
       driver: '赵建斌',
@@ -1968,6 +1984,7 @@ const MockData = {
       bizNo: 'IN_20260705002',
       applicant: '郑州某冷链贸易有限公司',
       customerCode: 'JMY',
+      guarantorId: 'u_guar_001',
       warehouse: '郑州融万冷链库',
       vehicleNo: '豫A·N8846',
       driver: '陈大壮',
@@ -1992,6 +2009,7 @@ const MockData = {
     // ========== v1.7.5 新增：可质押货物（已入库待融资，inbound_completed） ==========
     {
       id: 'in_p_001', bizNo: 'IN_20231010001', applicant: '郑州某冷链贸易有限公司', customerCode: 'JMY',
+      guarantorId: 'u_guar_001',
       warehouse: '大河物流园二期', warehouseCode: 'wh_001', storageLocation: '冻品一区-A 仓-01 货位',
       vehicleNo: '豫A·H8821', driver: '张大伟', driverPhone: '138 0000 5678',
       products: [{ id: 'MNG_SZSYR_BWS_001', name: '保乐肩-巴西-4490', pieces: 140, weight: 3000, evaluatePrice: 75, evaluateValue: 225000 }],
@@ -2000,6 +2018,7 @@ const MockData = {
     },
     {
       id: 'in_p_002', bizNo: 'IN_20231010002', applicant: '郑州某冷链贸易有限公司', customerCode: 'JMY',
+      guarantorId: 'u_guar_001',
       warehouse: '大河物流园二期', warehouseCode: 'wh_001', storageLocation: '冻品一区-A 仓-02 货位',
       vehicleNo: '豫A·H8821', driver: '张大伟', driverPhone: '138 0000 5678',
       products: [{ id: 'MNG_SZSYR_BWS_002', name: '保乐肩-巴西-4490', pieces: 140, weight: 3000, evaluatePrice: 75, evaluateValue: 225000 }],
@@ -2008,6 +2027,7 @@ const MockData = {
     },
     {
       id: 'in_p_003', bizNo: 'IN_20231010003', applicant: '郑州某冷链贸易有限公司', customerCode: 'JMY',
+      guarantorId: 'u_guar_001',
       warehouse: '大河物流园二期', warehouseCode: 'wh_001', storageLocation: '冻品一区-A 仓-03 货位',
       vehicleNo: '豫A·H8821', driver: '张大伟', driverPhone: '138 0000 5678',
       products: [{ id: 'MNG_SZSYR_BWS_003', name: '保乐肩-巴西-4490', pieces: 140, weight: 3000, evaluatePrice: 75, evaluateValue: 225000 }],
@@ -2016,6 +2036,7 @@ const MockData = {
     },
     {
       id: 'in_p_004', bizNo: 'IN_20231215001', applicant: '郑州某冷链贸易有限公司', customerCode: 'JMY',
+      guarantorId: 'u_guar_001',
       warehouse: '大河物流园二期', warehouseCode: 'wh_001', storageLocation: '冻品二区-B 仓-05 货位',
       vehicleNo: '豫A·L3318', driver: '李明', driverPhone: '138 0000 4321',
       products: [{ id: 'MNG_QGNXG_001', name: '去骨牛心管', pieces: 280, weight: 6000, evaluatePrice: 74, evaluateValue: 444000 }],
@@ -2024,6 +2045,7 @@ const MockData = {
     },
     {
       id: 'in_p_005', bizNo: 'IN_20240110001', applicant: '郑州某冷链贸易有限公司', customerCode: 'JMY',
+      guarantorId: 'u_guar_001',
       warehouse: '天津港国际冷链基地', warehouseCode: 'wh_003', storageLocation: '冻品三区-C 仓-12 货位',
       vehicleNo: '豫A·K9201', driver: '王建国', driverPhone: '138 0000 7788',
       products: [{ id: 'MNG_NJG_001', name: '牛颈骨', pieces: 100, weight: 2000, evaluatePrice: 24.5, evaluateValue: 49000 }],
@@ -2032,6 +2054,7 @@ const MockData = {
     },
     {
       id: 'in_p_006', bizNo: 'IN_20240320001', applicant: '郑州某冷链贸易有限公司', customerCode: 'JMY',
+      guarantorId: 'u_guar_001',
       warehouse: '郑州融万冷链库', warehouseCode: 'wh_002', storageLocation: '冻品一区-A 仓-08 货位',
       vehicleNo: '豫A·M7152', driver: '赵建斌', driverPhone: '138 0000 1234',
       products: [{ id: 'MNG_GPYR_001', name: '羔羊肉', pieces: 200, weight: 4000, evaluatePrice: 56, evaluateValue: 224000 }],
@@ -2041,6 +2064,7 @@ const MockData = {
     // ========== v1.7.12 新增：补齐 9 状态机 tab 演示数据 ==========
     {
       id: 'in_007', bizNo: 'IN_20260712001', applicant: '郑州某冷链贸易有限公司', customerCode: 'JMY',
+      guarantorId: 'u_guar_001',
       warehouse: '物流港二期大河智链监管库',
       vehicleNo: '', driver: '', driverPhone: '',
       products: [{ id: 'MNG_NRP', name: '牛腩排', pieces: 480, weight: 4800, evaluatePrice: 48, evaluateValue: 230400 }],
@@ -2051,6 +2075,7 @@ const MockData = {
     },
     {
       id: 'in_008', bizNo: 'IN_20260711001', applicant: '郑州某冷链物流有限公司', customerCode: 'GL',
+      guarantorId: 'u_guar_002',
       warehouse: '天津港国际冷链基地',
       vehicleNo: '豫A·P8203', driver: '刘海涛', driverPhone: '138 0000 6677',
       products: [{ id: 'PROD_JD', name: '冷冻鸡大胸', pieces: 1820, weight: 36400, evaluatePrice: 18.5, evaluateValue: 673400 }],
@@ -2062,6 +2087,7 @@ const MockData = {
     },
     {
       id: 'in_009', bizNo: 'IN_20260710002', applicant: '郑州某冷链贸易有限公司', customerCode: 'JMY',
+      guarantorId: 'u_guar_001',
       warehouse: '郑州融万冷链库',
       vehicleNo: '豫A·Q5521', driver: '张大伟', driverPhone: '138 0000 5678',
       products: [{ id: 'MNG_BLE', name: '保乐肩-巴西-4490', pieces: 140, weight: 3000, evaluatePrice: 75, evaluateValue: 225000 }],
@@ -2074,6 +2100,7 @@ const MockData = {
     },
     {
       id: 'in_010', bizNo: 'IN_20260702002', applicant: '郑州某冷链物流有限公司', customerCode: 'GL',
+      guarantorId: 'u_guar_002',
       warehouse: '物流港二期大河智链监管库',
       vehicleNo: '', driver: '', driverPhone: '',
       products: [{ id: 'MNG_PNXL', name: '肥牛西冷', pieces: 240, weight: 1200, evaluatePrice: 92, evaluateValue: 110400 }],

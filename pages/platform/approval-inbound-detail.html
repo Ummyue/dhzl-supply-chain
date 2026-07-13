@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>入库审批详情 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.51 监管方【入库审批详情】============
+  // 复用货主方 inbound-detail.html 基础信息 + 5 步步骤条 + 货物明细 + 附件
+  // 监管方特有：底部【通过/驳回】操作栏 + 评估单价输入 + 驳回说明
+  const urlId = new URLSearchParams(window.location.search).get('id');
+
+  const DEMO = {
+    bizNo: 'PREIN2023101000001',
+    status: 'pending_supervisor',
+    pledgeRows: [
+      { no: 1, name: '保乐肩', country: '巴西', factoryNo: '巴西', qty: 140, qtyUnit: '箱', weight: 3000, weightUnit: '千克', plannedInbound: '2026-01-01', produceDate: '2026-01-01', batchNo: '2026-01-01', contractNo: '2026-01-01', waybill: 'ZXT20260303', cabinet: '002', location: '河南省郑州市' },
+      { no: 2, name: '保乐肩', country: '巴西', factoryNo: '巴西', qty: 140, qtyUnit: '箱', weight: 3000, weightUnit: '千克', plannedInbound: '2026-01-01', produceDate: '2026-01-01', batchNo: '2026-01-01', contractNo: '2026-01-01', waybill: 'ZXT20260303', cabinet: '002', location: '河南省郑州市' },
+      { no: 3, name: '保乐肩', country: '巴西', factoryNo: '巴西', qty: 140, qtyUnit: '箱', weight: 3000, weightUnit: '千克', plannedInbound: '2026-01-01', produceDate: '2026-01-01', batchNo: '2026-01-01', contractNo: '2026-01-01', waybill: 'ZXT20260303', cabinet: '002', location: '河南省郑州市' },
+      { no: 4, name: '保乐肩', country: '巴西', factoryNo: '巴西', qty: 140, qtyUnit: '箱', weight: 3000, weightUnit: '千克', plannedInbound: '2026-01-01', produceDate: '2026-01-01', batchNo: '2026-01-01', contractNo: '2026-01-01', waybill: 'ZXT20260303', cabinet: '002', location: '河南省郑州市' },
+    ],
+  };
+
+  const docRows = [
+    { no: 1, docName: '入库申请清单', status: '起草', uploadTime: '2026-06-11 14:23' },
+  ];
+
+  const attachments = [
+    { type: '合同及订单',     required: true,  files: [{ name: '采购合同.pdf', time: '2023-12-12 12:23:32' }, { name: '采购订单.pdf', time: '2023-12-12 12:25:18' }] },
+    { type: '报关单',         required: true,  files: [{ name: '明细1.pdf',    time: '2023-12-12 12:30:01' }] },
+    { type: '检验检疫证明',   required: true,  files: [{ name: '明细1.pdf',    time: '2023-12-12 12:35:22' }] },
+    { type: '其他附件',       required: false, files: [] },
+  ];
+
+  // 4 步步骤条
+  const STEP_DEFS = [
+    { key: 'submitted',         label: '提交' },
+    { key: 'pending_guarantor', label: '担保方确认' },
+    { key: 'pending_supervisor', label: '监管方确认' },
+    { key: 'inbound_completed', label: '入库完成' },
+  ];
+
+  function statusToStep(status) {
+    if (status === 'draft' || status === 'pending_submit') return 0;
+    if (status === 'pending_owner_seal' || status === 'pending_owner_seal_2' || status === 'pending_owner_seal_3') return 1;
+    if (status === 'pending_guarantor') return 1;
+    if (status === 'reviewing' || status === 'pending_supervisor') return 2;
+    if (status === 'pending_inbound' || status === 'inbound') return 2;
+    if (status === 'inbound_completed') return 3;
+    return 0;
+  }
+
+  const fromList = (urlId && MockData.inboundList.find(i => i.id === urlId)) || null;
+  const data = {
+    id: 'demo',
+    bizNo: DEMO.bizNo,
+    applicant: '郑州某冷链贸易有限公司',
+    contactPerson: '李雪 — 138 0000 1234',
+    financeProduct: '中原e贷',
+    supervisor: '大河智链物流（郑州）有限公司',
+    pledgee: '中原再担保股份有限公司',
+    applyDate: '2026-06-11',
+    creator: '陈志强',
+    createdAt: '2022-08-12 12:22:32',
+    warehouse: '物流港二期大河智链监管库',
+    status: 'pending_supervisor',
+    pledgeRows: DEMO.pledgeRows,
+    ...(fromList || {}),
+    pledgeRows: (fromList && fromList.pledgeRows) || DEMO.pledgeRows,
+  };
+
+  const currentStepIdx = statusToStep(data.status);
+  const isFinalized = ['rejected', 'voided', 'cancelled'].includes(data.status);
+  const isRejected = data.status === 'rejected';
+  const isVoided = data.status === 'voided' || data.status === 'cancelled';
+  // 监管方当前节点：reviewing / pending_supervisor
+  const isMyTurn = data.status === 'reviewing' || data.status === 'pending_supervisor';
+
+  const statusLabelMap = {
+    draft: '草稿', pending_submit: '待提交', pending_owner_seal: '待货主盖章',
+    pending_guarantor: '待担保确认', reviewing: '待监管确认', pending_supervisor: '待监管确认',
+    pending_inbound: '待入库', inbound: '待入库', inbound_completed: '已入库',
+    rejected: '已驳回', voided: '已作废', cancelled: '已作废',
+  };
+
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '入库审批详情',
+    subtitle: '监管方视角 - 货值评估与最终批准',
+    currentPath: '/platform/approval-inbound',
+    breadcrumb: [
+      { label: '智慧仓储', path: '/dashboard' },
+      { label: '货物管理', path: '/platform/approval-inbound' },
+      { label: '入库审批', path: '/platform/approval-inbound' },
+      '入库审批详情',
+    ],
+    extra: '',
+    content: render(),
+  });
+
+  // v1.7.51 监管方操作区状态
+  let actionForm = { evaluatePrice: '', rejectReason: '' };
+
+  function render() {
+    return `
+      <div class="flex items-center justify-between mb-4 bg-white border border-slate-200 rounded-xl px-5 py-3">
+        <div class="flex items-center gap-3">
+          <button onclick="goBack()" class="flex items-center gap-1 text-slate-600 hover:text-blue-600 text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            返回
+          </button>
+          <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">入</div>
+          <h2 class="text-lg font-bold text-slate-800">入库申请编号：<span class="font-mono">${data.bizNo}</span></h2>
+          <button onclick="copyBizNo()" title="复制编号" class="text-slate-400 hover:text-blue-600">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+          </button>
+          <span class="px-2 py-0.5 text-xs ${isRejected ? 'bg-rose-100 text-rose-700' : isMyTurn ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'} rounded">${statusLabelMap[data.status] || data.status}</span>
+          ${isRejected && data.rejectReason ? `<span class="px-2 py-0.5 text-xs bg-rose-50 text-rose-600 rounded">驳回原因：${data.rejectReason}</span>` : ''}
+          ${isVoided && data.voidReason ? `<span class="px-2 py-0.5 text-xs bg-rose-50 text-rose-600 rounded">作废原因：${data.voidReason}</span>` : ''}
+        </div>
+        <div class="flex items-center gap-2 text-xs text-slate-500">
+          <span>最后更新：${data.createdAt || '2026-06-11 14:23'}</span>
+        </div>
+      </div>
+
+      <!-- 1. 基础信息卡 -->
+      <section class="bg-white border border-slate-200 rounded-xl mb-4 overflow-hidden">
+        <div class="flex">
+          <div class="flex-1 p-6 border-r border-slate-200">
+            <div class="grid grid-cols-3 gap-x-6 gap-y-4">
+              <div><dt class="text-xs text-slate-500 mb-1">出质方</dt><dd class="text-sm font-medium text-slate-800">${data.applicant}</dd></div>
+              <div><dt class="text-xs text-slate-500 mb-1">联系人</dt><dd class="text-sm text-slate-800">${data.contactPerson}</dd></div>
+              <div><dt class="text-xs text-slate-500 mb-1">金融产品</dt><dd class="text-sm text-slate-800">${data.financeProduct}</dd></div>
+              <div><dt class="text-xs text-slate-500 mb-1">监管方</dt><dd class="text-sm text-slate-800">${data.supervisor}</dd></div>
+              <div><dt class="text-xs text-slate-500 mb-1">质权方</dt><dd class="text-sm text-slate-800">${data.pledgee}</dd></div>
+              <div><dt class="text-xs text-slate-500 mb-1">申请日期</dt><dd class="text-sm text-slate-800 font-mono">${data.applyDate}</dd></div>
+              <div><dt class="text-xs text-slate-500 mb-1">创建人</dt><dd class="text-sm text-slate-800">${data.creator}</dd></div>
+              <div><dt class="text-xs text-slate-500 mb-1">创建时间</dt><dd class="text-sm text-slate-800 font-mono">${data.createdAt}</dd></div>
+              <div><dt class="text-xs text-slate-500 mb-1">仓库地点</dt><dd class="text-sm text-slate-800">${data.warehouse}</dd></div>
+            </div>
+          </div>
+          <div class="w-72 p-6 bg-slate-50/30">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-medium text-slate-700 flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4z" clip-rule="evenodd"/></svg>
+                入库申请清单
+              </h3>
+              <span class="text-xs text-slate-400">${docRows.length} 份</span>
+            </div>
+            <div class="space-y-2">
+              ${docRows.map(d => `
+                <div class="bg-white border border-slate-200 rounded-lg p-3">
+                  <div class="flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-xs grid place-items-center">${d.no}</span>
+                    <span class="text-sm font-medium text-slate-800 flex-1">${d.docName}</span>
+                  </div>
+                  <div class="flex items-center justify-between mt-2 text-xs">
+                    <span class="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded">${d.status}</span>
+                    <div class="flex items-center gap-3">
+                      <button onclick="viewDoc('${d.no}')" class="text-blue-600 hover:underline">查看</button>
+                      <button onclick="downloadDoc('${d.no}')" class="text-blue-600 hover:underline">下载</button>
+                    </div>
+                  </div>
+                  <div class="text-xs text-slate-400 mt-1.5">📅 ${d.uploadTime}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. 4 步步骤条 -->
+      <section class="bg-white border border-slate-200 rounded-xl mb-4 p-6">
+        <h3 class="text-sm font-medium text-slate-700 mb-4">审批进度</h3>
+        <div class="flex items-center justify-between max-w-4xl mx-auto">
+          ${STEP_DEFS.map((s, i) => renderStep(s, i)).join('')}
+        </div>
+        ${isRejected ? `<div class="mt-4 text-center text-sm text-rose-600">⚠ 此申请已被驳回，相关流程已终止</div>` : ''}
+      </section>
+
+      <!-- 3. 入库货物明细 -->
+      <section class="bg-white border border-slate-200 rounded-xl mb-4 overflow-hidden">
+        <div class="px-6 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+          <h3 class="font-bold text-slate-800">入库货物明细</h3>
+          <div class="flex items-center gap-6 text-sm">
+            <div><span class="text-xs text-slate-500 mr-2">合计数量：</span><b class="text-slate-800 num-focus">${data.pledgeRows.reduce((a, r) => a + (Number(r.qty) || 0), 0).toFixed(0)}</b></div>
+            <div><span class="text-xs text-slate-500 mr-2">合计重量：</span><b class="text-slate-800 num-focus">${data.pledgeRows.reduce((a, r) => a + (Number(r.weight) || 0), 0).toFixed(4)}</b> <span class="text-xs text-slate-400">kg</span></div>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs min-w-[1600px]">
+            <thead class="bg-slate-50 text-slate-600">
+              <tr>
+                <th class="text-left px-2 py-3 whitespace-nowrap">序号</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">货品名称</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">国家</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">厂号</th>
+                <th class="text-right px-2 py-3 whitespace-nowrap">入库数量</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">数量单位</th>
+                <th class="text-right px-2 py-3 whitespace-nowrap">入库重量</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">重量单位</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">计划入库时间</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">生产日期</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">生产批号</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">合同号</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">提/运单号</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">柜号</th>
+                <th class="text-left px-2 py-3 whitespace-nowrap">货物所在地</th>
+              </tr>
+            </thead>
+            <tbody>${renderPledgeRows()}</tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 4. 附件 -->
+      <section class="bg-white border border-slate-200 rounded-xl mb-24 overflow-hidden">
+        <div class="px-6 py-3 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="font-bold text-slate-800">附件</h3>
+          <button onclick="downloadAllAttachments()" class="text-sm text-blue-600 hover:underline">一键下载</button>
+        </div>
+        <div class="p-6">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-slate-600 border-b border-slate-200">
+                <th class="text-left py-2 px-3 w-40">单据类型</th>
+                <th class="text-left py-2 px-3">文件名</th>
+                <th class="text-left py-2 px-3 w-32">操作</th>
+              </tr>
+            </thead>
+            <tbody>${renderAttachments()}</tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 5. 监管方操作区（v1.7.51 新增） -->
+      ${renderActionBar()}
+    `;
+  }
+
+  // 监管方操作区：仅在 isMyTurn 时显示通过/驳回；非当前节点显示"只读查看"提示
+  function renderActionBar() {
+    if (isFinalized) {
+      return `
+        <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 shadow-lg z-10">
+          <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="text-sm text-slate-500">
+              <span class="font-medium text-slate-700">流程已结束：</span>${statusLabelMap[data.status]} ${data.rejectReason ? '· ' + data.rejectReason : ''} ${data.voidReason ? '· ' + data.voidReason : ''}
+            </div>
+            <button onclick="goBack()" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">返回列表</button>
+          </div>
+        </div>
+      `;
+    }
+    if (!isMyTurn) {
+      return `
+        <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 shadow-lg z-10">
+          <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="text-sm text-slate-500">
+              <span class="font-medium text-slate-700">当前节点：</span>${statusLabelMap[data.status]}（非监管方审批节点）
+            </div>
+            <button onclick="goBack()" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">返回列表</button>
+          </div>
+        </div>
+      `;
+    }
+    // 监管方当前节点：通过/驳回 + 评估单价 + 驳回说明
+    return `
+      <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-4 shadow-lg z-10">
+        <div class="max-w-7xl mx-auto">
+          <div class="grid grid-cols-3 gap-4 mb-3">
+            <div>
+              <label class="block text-xs text-slate-500 mb-1">评估单价（元/kg）<span class="text-red-500">*</span></label>
+              <input type="number" id="evaluatePrice" value="${actionForm.evaluatePrice}" oninput="actionForm.evaluatePrice=this.value" placeholder="如 60.00" class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+              <div class="text-xs text-slate-400 mt-1">💡 建议下浮市场价 5%-10%</div>
+            </div>
+            <div class="col-span-2">
+              <label class="block text-xs text-slate-500 mb-1">驳回说明（驳回时必填）</label>
+              <textarea id="rejectReason" rows="1" oninput="actionForm.rejectReason=this.value" placeholder="驳回时填写原因，例如：货值评估下浮比例超出业务规则上限..." class="w-full px-3 py-2 border border-slate-300 rounded text-sm">${actionForm.rejectReason}</textarea>
+            </div>
+          </div>
+          <div class="flex items-center justify-end gap-2">
+            <button onclick="goBack()" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">返回列表</button>
+            <button onclick="rejectInbound()" class="px-4 py-2 border border-rose-300 text-rose-600 hover:bg-rose-50 rounded text-sm">驳回</button>
+            <button onclick="approveInbound()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">通过并生成质物清单</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderStep(step, idx) {
+    const isDone = idx < currentStepIdx;
+    const isCurrent = idx === currentStepIdx && !isRejected;
+    let circleCls, textCls;
+    if (isDone) {
+      circleCls = 'bg-blue-600 border-blue-600 text-white';
+      textCls = 'text-blue-700 font-medium';
+    } else if (isCurrent) {
+      circleCls = 'bg-blue-600 border-blue-600 text-white';
+      textCls = 'text-blue-700 font-medium';
+    } else {
+      circleCls = 'bg-slate-100 border-slate-300 text-slate-400';
+      textCls = 'text-slate-400';
+    }
+    const numIcon = isDone
+      ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>'
+      : `<span class="text-sm font-bold">${idx + 1}</span>`;
+    const connector = idx < STEP_DEFS.length - 1
+      ? `<div class="flex-1 h-0.5 ${idx < currentStepIdx ? 'bg-blue-600' : 'bg-slate-200'} mx-3 -mt-7"></div>`
+      : '';
+    return `
+      <div class="flex flex-col items-center min-w-0 relative" style="flex: 1">
+        <div class="relative flex items-center w-full">
+          <div class="w-14 h-14 rounded-full border-2 ${circleCls} grid place-items-center flex-shrink-0 transition-all">${numIcon}</div>
+          ${connector}
+        </div>
+        <div class="text-sm ${textCls} mt-2 whitespace-nowrap">${step.label}</div>
+      </div>
+    `;
+  }
+
+  function renderPledgeRows() {
+    return data.pledgeRows.map(r => `
+      <tr class="border-t border-slate-100 hover:bg-blue-50/30">
+        <td class="px-2 py-2">${r.no}</td>
+        <td class="px-2 py-2">${r.name}</td>
+        <td class="px-2 py-2">${r.country}</td>
+        <td class="px-2 py-2">${r.factoryNo}</td>
+        <td class="px-2 py-2 text-right num-focus">${r.qty}</td>
+        <td class="px-2 py-2">${r.qtyUnit}</td>
+        <td class="px-2 py-2 text-right num-focus">${r.weight}</td>
+        <td class="px-2 py-2">${r.weightUnit}</td>
+        <td class="px-2 py-2">${r.plannedInbound}</td>
+        <td class="px-2 py-2">${r.produceDate}</td>
+        <td class="px-2 py-2">${r.batchNo}</td>
+        <td class="px-2 py-2">${r.contractNo}</td>
+        <td class="px-2 py-2">${r.waybill}</td>
+        <td class="px-2 py-2">${r.cabinet}</td>
+        <td class="px-2 py-2"><span class="text-blue-700">${r.location}</span></td>
+      </tr>
+    `).join('');
+  }
+
+  function renderAttachments() {
+    return attachments.map(a => `
+      <tr class="border-t border-slate-100">
+        <td class="py-3 px-3 align-top">
+          <span class="${a.required ? 'text-rose-500' : 'text-slate-700'}">${a.required ? '* ' : ''}${a.type}</span>
+        </td>
+        <td class="py-3 px-3">
+          ${a.files.length === 0 ? '<span class="text-slate-300 text-xs">（暂无文件）</span>' : `
+            <div class="flex items-center gap-2 flex-wrap">
+              ${a.files.map(f => `
+                <div class="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-50 rounded text-xs">
+                  <svg class="w-3 h-3 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>
+                  <span class="text-blue-700">${f.name}</span>
+                  <span class="text-slate-400 text-[11px] whitespace-nowrap">📅 ${f.time}</span>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </td>
+        <td class="py-3 px-3 align-top">
+          ${a.files.length ? `<button onclick="downloadAttachment('${a.type}')" class="text-blue-600 hover:underline">下载</button>` : '<span class="text-slate-300">—</span>'}
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  // ============ Events ============
+  window.goBack = () => window.location.href = Utils.nav('/platform/approval-inbound');
+  window.copyBizNo = () => {
+    navigator.clipboard.writeText(data.bizNo).then(() => Utils.toast('编号已复制：' + data.bizNo, 'success'));
+  };
+  window.viewDoc = (no) => Utils.toast(`查看入库申请清单 #${no}（占位）`, 'info');
+  window.downloadDoc = (no) => Utils.toast(`下载入库申请清单 #${no}（占位）`, 'info');
+  window.downloadAttachment = (type) => Utils.toast(`下载 ${type}（占位）`, 'info');
+  window.downloadAllAttachments = () => Utils.toast('一键下载全部附件（占位）', 'info');
+
+  // v1.7.51 监管方操作
+  window.approveInbound = () => {
+    if (!actionForm.evaluatePrice) {
+      return Utils.toast('请先填写评估单价', 'warning');
+    }
+    Utils.toast('✓ 监管方审核通过，已生成质物清单（mock）', 'success', 2000);
+    setTimeout(() => goBack(), 1500);
+  };
+  window.rejectInbound = () => {
+    if (!actionForm.rejectReason.trim()) {
+      return Utils.toast('驳回时必须填写驳回说明', 'warning');
+    }
+    if (actionForm.rejectReason.length > 200) {
+      return Utils.toast('驳回说明不能超过 200 字', 'warning');
+    }
+    Utils.toast('已驳回，货主方收到驳回通知', 'success', 2000);
+    setTimeout(() => goBack(), 1500);
+  };
+</script>
+</body>
+</html>
