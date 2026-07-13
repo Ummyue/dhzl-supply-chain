@@ -293,7 +293,7 @@
           </div>
           <div class="mb-3">
             <label class="block text-xs text-slate-500 mb-1">见证备注（选填）</label>
-            <textarea id="witnessRemark" rows="2" oninput="actionForm.rejectReason=this.value" placeholder="可填写货物确认情况、视频抽查记录、放款建议等..." class="w-full px-3 py-2 border border-slate-300 rounded text-sm">${actionForm.rejectReason}</textarea>
+            <textarea id="witnessRemark" rows="2" oninput="actionForm.witnessRemark=this.value" placeholder="可填写货物确认情况、视频抽查记录、放款建议等..." class="w-full px-3 py-2 border border-slate-300 rounded text-sm">${actionForm.witnessRemark || ''}</textarea>
           </div>
           <div class="flex items-center justify-end gap-2">
             <button onclick="goBack()" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">返回列表</button>
