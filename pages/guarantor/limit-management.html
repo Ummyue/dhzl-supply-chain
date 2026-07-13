@@ -58,6 +58,15 @@
         <span class="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded">已过滤 ${allList.length - list.length} 条</span>
       </div>
 
+      <!-- v1.7.45: 表格上方左侧「新增额度」按钮 -->
+      <div class="flex items-center justify-between mb-3">
+        <a href="${Utils.nav('/guarantor/limit-create')}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          新增额度
+        </a>
+        <span class="text-xs text-slate-500">仅供担保方录入本公司担保的客户额度时使用</span>
+      </div>
+
       <!-- 4 个统计卡 -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
         <div class="bg-violet-50 rounded-xl p-4 border border-violet-200">

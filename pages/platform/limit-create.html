@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新增额度 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+  <style>
+    /* 必填红色 * */
+    .req::before { content: '*'; color: #ef4444; margin-right: 2px; font-weight: 600; }
+    /* 输入控件统一样式（按甲方截图 v1.7.45 风格：1px 浅灰边、6px 圆角、13px 字） */
+    .form-input {
+      width: 100%;
+      padding: 5px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-size: 13px;
+      background: #fff;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .form-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.1); }
+    .form-input[readonly] { background: #f1f5f9; color: #64748b; cursor: not-allowed; }
+    .form-label {
+      font-size: 13px;
+      color: #475569;
+      text-align: right;
+      padding-right: 12px;
+      line-height: 30px;
+      white-space: nowrap;
+    }
+    .form-label-row { display: flex; align-items: center; }
+    .form-grid { display: grid; grid-template-columns: 110px 1fr 110px 1fr; gap: 14px 18px; align-items: center; }
+    .help-icon {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 14px; height: 14px; border: 1px solid #cbd5e1; border-radius: 2px;
+      color: #94a3b8; font-size: 10px; font-weight: 600; margin-left: 4px; cursor: help;
+    }
+    /* 底部固定操作栏 */
+    .footer-actions {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      background: #fff;
+      border-top: 1px solid #e2e8f0;
+      padding: 16px 0;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+    }
+    .footer-spacer { height: 80px; }
+  </style>
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.45 监管方【新增额度】- 按甲方截图实现 ============
+  // 表单：基本信息（16 字段，2 列布局）+ 合同附件（2 类）+ 底部提交/取消
+  // 来源数据：admissionList (客户) / limitList (金融机构+产品) / users (监管/仓储/担保企业)
+  // 当前页面：/platform/limit-create
+
+  // 候选数据
+  const customerOptions = (MockData.admissionList || []).map(a => ({
+    label: a.customer,
+    creditCode: a.creditCode,
+    id: a.id,
+  }));
+  // 金融机构（从 limitList 提取去重）
+  const bankOptions = [...new Set((MockData.limitList || []).map(r => r.bank))];
+  // 金融产品（从 limitList 提取去重）
+  const productOptions = [...new Set((MockData.limitList || []).map(r => r.productName))];
+  // 授信类型（从 limitList 提取去重）
+  const creditTypeOptions = [...new Set((MockData.limitList || []).map(r => r.creditType))];
+  // 核心企业（从 limitList.coreCompany 提取）
+  const coreCompanyOptions = [...new Set((MockData.limitList || []).map(r => r.coreCompany))];
+  // 监管企业 / 仓储企业 / 担保企业（来自 users 配置）
+  const supervisorOptions = ['大河智链物流股份有限公司', '郑州海关·保税货物监管处', '某省级金融监管局'];
+  const warehouseOptions = ['物流港二期大河智链监管库', '郑州融万冷链库', '天津港国际冷链基地'];
+  const guarantorOptions = ['中原信用担保有限公司', '某省级农业担保股份有限公司', '中原再担保股份有限公司', '河南农担股份有限公司'];
+
+  // 提交状态
+  let formData = {
+    customerId: '', creditCode: '', bank: '', product: '', productName: '',
+    creditType: '', totalAmount: '', frozenAmount: '',
+    startDate: '', maturityDate: '',
+    circular: '否', state: '停用',
+    coreCompany: '', supervisorCompany: '', warehouseCompany: '', guarantorCompany: '',
+    attachments: {
+      approval: { name: '中原银行批复材料.zip', uploadedAt: '2024-06-12 09:15:32' },
+      other: { name: '其他材料.zip', uploadedAt: '2024-06-13 09:15:32' },
+    },
+  };
+
+  function render() {
+    return `
+      <!-- 返回链接 -->
+      <div class="flex items-center gap-2 mb-3 text-sm">
+        <a href="${Utils.nav('/platform/limit-management')}" class="flex items-center gap-1 text-slate-600 hover:text-blue-600">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          返回额度管理
+        </a>
+      </div>
+
+      <form id="limitForm" class="space-y-4" onsubmit="event.preventDefault(); submitLimit();">
+        <!-- ============ 基本信息 ============ -->
+        <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <div class="px-6 py-3 border-b border-slate-200 flex items-center gap-2">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            <h3 class="font-bold text-slate-800">基本信息</h3>
+          </div>
+          <div class="px-6 py-5">
+            <div class="form-grid">
+              <!-- Row 1 -->
+              <label class="form-label req">企业名称</label>
+              <div>
+                <select id="f-customer" onchange="onCustomerChange(this.value)" class="form-input">
+                  <option value="">选择选项</option>
+                  ${customerOptions.map(o => `<option value="${o.id}" data-credit="${o.creditCode}">${o.label}</option>`).join('')}
+                </select>
+                <span class="help-icon ml-1" style="margin-left:6px;float:right;margin-top:-22px;margin-right:6px;">?</span>
+              </div>
+              <label class="form-label">企业社会统一信用代码</label>
+              <div>
+                <input id="f-creditCode" class="form-input" readonly placeholder="自动带出">
+                <span class="help-icon" style="margin-left:6px;float:right;margin-top:-22px;margin-right:6px;">?</span>
+              </div>
+
+              <!-- Row 2 -->
+              <label class="form-label req">金融机构</label>
+              <div>
+                <select id="f-bank" class="form-input">
+                  <option value="">选择选项</option>
+                  ${bankOptions.map(b => `<option value="${b}">${b}</option>`).join('')}
+                </select>
+                <span class="help-icon" style="margin-left:6px;float:right;margin-top:-22px;margin-right:6px;">?</span>
+              </div>
+              <label class="form-label req">金融产品</label>
+              <div>
+                <select id="f-product" class="form-input">
+                  <option value="">选择选项</option>
+                  ${productOptions.map(p => `<option value="${p}">${p}</option>`).join('')}
+                </select>
+                <span class="help-icon" style="margin-left:6px;float:right;margin-top:-22px;margin-right:6px;">?</span>
+              </div>
+
+              <!-- Row 3 -->
+              <label class="form-label">授信产品名称</label>
+              <input id="f-productName" class="form-input" placeholder="输入内容">
+              <label class="form-label req">授信类型</label>
+              <div>
+                <select id="f-creditType" class="form-input">
+                  <option value="">选择选项</option>
+                  ${creditTypeOptions.map(t => `<option value="${t}">${t}</option>`).join('')}
+                </select>
+                <span class="help-icon" style="margin-left:6px;float:right;margin-top:-22px;margin-right:6px;">?</span>
+              </div>
+
+              <!-- Row 4 -->
+              <label class="form-label req">授信额度</label>
+              <input id="f-totalAmount" class="form-input" placeholder="输入内容">
+              <label class="form-label req">冻结额度</label>
+              <input id="f-frozenAmount" class="form-input" placeholder="输入内容">
+
+              <!-- Row 5 -->
+              <label class="form-label req">起始日期</label>
+              <div>
+                <input type="date" id="f-startDate" class="form-input" placeholder="选择日期">
+                <span class="help-icon" style="margin-left:6px;float:right;margin-top:-22px;margin-right:6px;">?</span>
+              </div>
+              <label class="form-label req">终止日期</label>
+              <div>
+                <input type="date" id="f-maturityDate" class="form-input" placeholder="选择日期">
+                <span class="help-icon" style="margin-left:6px;float:right;margin-top:-22px;margin-right:6px;">?</span>
+              </div>
+
+              <!-- Row 6 -->
+              <label class="form-label req">额度是否循环</label>
+              <div class="flex items-center gap-6 text-sm">
+                <label class="flex items-center gap-1.5"><input type="radio" name="circular" value="是"> 是</label>
+                <label class="flex items-center gap-1.5"><input type="radio" name="circular" value="否" checked> 否</label>
+              </div>
+              <label class="form-label req">额度状态</label>
+              <div class="flex items-center gap-6 text-sm">
+                <label class="flex items-center gap-1.5"><input type="radio" name="state" value="启用"> 启用</label>
+                <label class="flex items-center gap-1.5"><input type="radio" name="state" value="停用" checked> 停用</label>
+              </div>
+
+              <!-- Row 7 -->
+              <label class="form-label req">核心企业</label>
+              <div>
+                <select id="f-coreCompany" class="form-input">
+                  <option value="">选择选项</option>
+                  ${coreCompanyOptions.map(c => `<option value="${c}">${c}</option>`).join('')}
+                </select>
+                <span class="help-icon" style="margin-left:6px;float:right;margin-top:-22px;margin-right:6px;">?</span>
+              </div>
+              <label class="form-label req">监管企业</label>
+              <div>
+                <select id="f-supervisorCompany" class="form-input">
+                  <option value="">选择选项</option>
+                  ${supervisorOptions.map(s => `<option value="${s}">${s}</option>`).join('')}
+                </select>
+                <span class="help-icon" style="margin-left:6px;float:right;margin-top:-22px;margin-right:6px;">?</span>
+              </div>
+
+              <!-- Row 8 -->
+              <label class="form-label req">仓储企业</label>
+              <div>
+                <select id="f-warehouseCompany" class="form-input">
+                  <option value="">选择选项</option>
+                  ${warehouseOptions.map(w => `<option value="${w}">${w}</option>`).join('')}
+                </select>
+                <span class="help-icon" style="margin-left:6px;float:right;margin-top:-22px;margin-right:6px;">?</span>
+              </div>
+              <label class="form-label req">担保企业</label>
+              <div>
+                <select id="f-guarantorCompany" class="form-input">
+                  <option value="">选择选项</option>
+                  ${guarantorOptions.map(g => `<option value="${g}">${g}</option>`).join('')}
+                </select>
+                <span class="help-icon" style="margin-left:6px;float:right;margin-top:-22px;margin-right:6px;">?</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ 合同附件 ============ -->
+        <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <div class="px-6 py-3 border-b border-slate-200 flex items-center gap-2">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            <h3 class="font-bold text-slate-800">合同附件</h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 text-slate-600 text-xs">
+                <tr>
+                  <th class="text-left px-4 py-2.5 w-1/4">附件类型</th>
+                  <th class="text-left px-4 py-2.5 w-3/4">文件名称</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-t border-slate-100">
+                  <td class="px-4 py-4 text-slate-700">授权批复材料</td>
+                  <td class="px-4 py-4">
+                    <div class="flex items-center gap-3">
+                      <label class="cursor-pointer px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+                        选择文件
+                        <input type="file" class="hidden" onchange="onFileChange('approval', this)">
+                      </label>
+                      <div id="file-approval" class="flex items-center gap-1.5 text-blue-600 text-sm">
+                        <span class="inline-flex w-4 h-4 bg-yellow-400 rounded items-center justify-center text-[10px]">⚡</span>
+                        <span>${formData.attachments.approval.name}</span>
+                        <span class="text-slate-400 text-xs">📅 ${formData.attachments.approval.uploadedAt}</span>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="border-t border-slate-100">
+                  <td class="px-4 py-4 text-slate-700">其他</td>
+                  <td class="px-4 py-4">
+                    <div class="flex items-center gap-3">
+                      <label class="cursor-pointer px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+                        选择文件
+                        <input type="file" class="hidden" onchange="onFileChange('other', this)">
+                      </label>
+                      <div id="file-other" class="flex items-center gap-1.5 text-blue-600 text-sm">
+                        <span class="inline-flex w-4 h-4 bg-yellow-400 rounded items-center justify-center text-[10px]">⚡</span>
+                        <span>${formData.attachments.other.name}</span>
+                        <span class="text-slate-400 text-xs">📅 ${formData.attachments.other.uploadedAt}</span>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </form>
+
+      <!-- 底部固定操作栏 -->
+      <div class="footer-spacer"></div>
+      <div class="footer-actions">
+        <div class="max-w-[1280px] mx-auto px-6 flex items-center justify-center gap-4">
+          <button onclick="submitLimit()" class="px-12 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium flex items-center gap-1.5">
+            <span class="inline-flex w-4 h-4 bg-yellow-400 rounded items-center justify-center text-[10px]">⚡</span>
+            提交
+          </button>
+          <button onclick="cancelLimit()" class="px-12 py-2.5 border border-blue-500 text-blue-600 hover:bg-blue-50 rounded text-sm font-medium flex items-center gap-1.5">
+            <span class="inline-flex w-4 h-4 bg-yellow-400 rounded items-center justify-center text-[10px]">⚡</span>
+            取消
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  // ============ 业务事件 ============
+  window.onCustomerChange = function(id) {
+    const opt = document.querySelector(`#f-customer option[value="${id}"]`);
+    const credit = opt ? opt.getAttribute('data-credit') : '';
+    document.getElementById('f-creditCode').value = credit;
+    formData.customerId = id;
+    formData.creditCode = credit;
+  };
+
+  window.onFileChange = function(kind, input) {
+    if (input.files && input.files[0]) {
+      const name = input.files[0].name;
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const ts = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      formData.attachments[kind] = { name, uploadedAt: ts };
+      const el = document.getElementById('file-' + kind);
+      if (el) {
+        el.querySelector('span:nth-child(2)').textContent = name;
+        el.querySelector('span:nth-child(3)').textContent = '📅 ' + ts;
+      }
+    }
+  };
+
+  window.submitLimit = function() {
+    // 收集数据
+    const fd = new FormData();
+    const fields = {
+      'f-customer': 'customerId', 'f-bank': 'bank', 'f-product': 'product',
+      'f-productName': 'productName', 'f-creditType': 'creditType',
+      'f-totalAmount': 'totalAmount', 'f-frozenAmount': 'frozenAmount',
+      'f-startDate': 'startDate', 'f-maturityDate': 'maturityDate',
+      'f-coreCompany': 'coreCompany', 'f-supervisorCompany': 'supervisorCompany',
+      'f-warehouseCompany': 'warehouseCompany', 'f-guarantorCompany': 'guarantorCompany',
+    };
+    const errors = [];
+    Object.entries(fields).forEach(([el, key]) => {
+      const v = document.getElementById(el)?.value?.trim() || '';
+      if (!v && ['f-customer','f-bank','f-product','f-creditType','f-totalAmount','f-frozenAmount','f-startDate','f-maturityDate','f-coreCompany','f-supervisorCompany','f-warehouseCompany','f-guarantorCompany'].includes(el)) {
+        errors.push(key);
+      }
+    });
+    if (errors.length) {
+      Utils.toast('请填写必填项：' + errors.join(' / '), 'warning');
+      return;
+    }
+    Utils.toast('新增额度成功！已记录到额度清单（mock）', 'success', 2000);
+    setTimeout(() => {
+      window.location.href = Utils.nav('/platform/limit-management');
+    }, 1200);
+  };
+
+  window.cancelLimit = function() {
+    if (confirm('确定取消新增？已填内容将不会保存。')) {
+      window.location.href = Utils.nav('/platform/limit-management');
+    }
+  };
+
+  // ============ 初始化 ============
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '新增额度',
+    currentPath: '/platform/limit-management',
+    breadcrumb: [
+      { label: '授信管理', path: '/platform/limit-management' },
+      { label: '额度管理', path: '/platform/limit-management' },
+      { label: '新增额度', path: '/platform/limit-create' },
+    ],
+    extra: '',
+    content: render(),
+  });
+</script>
+</body>
+</html>
