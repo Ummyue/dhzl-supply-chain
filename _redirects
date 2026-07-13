@@ -1,3 +1,13 @@
-# Cloudflare Pages _redirects 配置
-# 所有页面跳转用相对路径，不需要 SPA fallback
-# 这里只是占位，避免某些场景下的 404
+# Cloudflare Pages _redirects
+# 让 /customer/* clean URL 自动补全到 /pages/customer/*.html
+# 同理 /platform /bank /guarantor /warehouse /enterprise
+
+/customer/:path       /pages/customer/:path       200
+/platform/:path       /pages/platform/:path       200
+/bank/:path           /pages/bank/:path           200
+/guarantor/:path      /pages/guarantor/:path      200
+/warehouse/:path      /pages/warehouse/:path      200
+/enterprise/:path     /pages/enterprise/:path     200
+
+# 根路径 fallback
+/                     /index.html                 200
