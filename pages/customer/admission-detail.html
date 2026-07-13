@@ -15,6 +15,21 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
   <link rel="stylesheet" href="/shared/css/style.css">
+  <style>
+    /* v1.7.42 驳回状态底部固定操作栏 */
+    .footer-actions {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      background: #fff;
+      border-top: 1px solid #e2e8f0;
+      padding: 16px 0;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+    }
+    .footer-spacer { height: 80px; }
+  </style>
 </head>
 <body class="bg-slate-50">
 <div id="app"></div>
@@ -24,7 +39,7 @@
 <script>
   Components.bindGlobalClose();
 
-  // ============ v1.7.35 准入详情 - 5 步审批 tab 模式 ============
+  // ============ v1.7.35 准入详情 - 4 步审批 tab 模式 ============
   // 5 个状态机（tab）：基础信息收集 / 资质审核 / 现场考察 / 风险评估 / 办结
   // URL 参数：?id=adm_001&tab=qualification  默认 tab=基础信息收集
 
@@ -496,12 +511,47 @@
             </div>
           </div>
         </div>
+
+        ${state === 'reject' ? `
+        <!-- 4. 补充说明（仅驳回状态可填 - 重新提交时附给监管方） -->
+        <div class="bg-rose-50 border border-rose-200 rounded-xl p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-1 h-4 bg-rose-500 rounded"></span>
+            <h3 class="text-sm font-semibold text-rose-700">补充说明（重新提交时必填）</h3>
+            <span class="ml-auto text-xs text-rose-500">说明您对驳回意见的回应、补充材料或调整措施</span>
+          </div>
+          <textarea id="resubmit-remark" class="w-full border border-rose-300 rounded p-3 text-sm text-slate-800 min-h-[120px] focus:border-rose-500 focus:ring-2 focus:ring-rose-100 outline-none" placeholder="例如：已增加注册资本至 1500 万元（附件为新营业执照扫描件）；诉讼案件已和解结案（附件为和解协议）；请重新评估。" maxlength="500" oninput="enableResubmit()"></textarea>
+          <div class="flex items-center justify-between text-xs mt-1">
+            <span class="text-rose-600">⚠ 修改本页内容后，底部「重新提交」按钮将自动启用</span>
+            <span class="text-slate-400"><span id="resubmit-remark-count">0</span>/500</span>
+          </div>
+        </div>
+        ` : ''}
       </div>
     `;
   }
 
   // v1.7.41: 办结 tab 已删除（合并到风险评估 tab 的顶部"结论"banner）
   // 原 renderCompletionTab 函数体删除
+  // ============ 底部固定操作栏（v1.7.42：仅驳回状态显示，含"重新提交"+"返回"） ============
+  const isRejected = data.status === 'rejected' || data.applyResult === '不通过';
+  function renderFooter() {
+    if (!isRejected) return '';
+    return `
+      <div class="footer-spacer"></div>
+      <div class="footer-actions">
+        <div class="max-w-[1280px] mx-auto px-6 flex items-center justify-center gap-4">
+          <button id="btn-resubmit" onclick="submitResubmit()" disabled class="px-12 py-2.5 bg-rose-600 text-white rounded text-sm font-medium opacity-50 cursor-not-allowed flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            重新提交
+          </button>
+          <button onclick="cancelResubmit()" class="px-12 py-2.5 border border-slate-300 text-slate-700 hover:bg-slate-50 rounded text-sm font-medium">返回列表</button>
+        </div>
+      </div>
+    `;
+  }
+  // 兼容 footer 样式（admission-create 已有 .footer-actions + .footer-spacer）
+
   // ============ 主渲染 ============
   function render() {
     let tabContent = '';
@@ -514,10 +564,10 @@
       ${renderStepBar()}
       ${renderTabs()}
       <div class="transition-all">${tabContent}</div>
+      ${renderFooter()}
     `;
   }
 
-  // ============ 顶部 header（始终显示当前 tab 名 + 状态） ============
   // v1.7.40: 不通过状态时顶部加红色"驳回原因"banner
   function renderHeader() {
     const isRejected = data.status === 'rejected' || data.applyResult === '不通过';
@@ -584,6 +634,47 @@
       extra: '',
       content: renderHeader() + render(),
     });
+  };
+
+  // ============ v1.7.42 重新提交相关全局事件 ============
+  // 监听 textarea 输入 → 启用「重新提交」按钮 + 字数计数
+  window.enableResubmit = function() {
+    const ta = document.getElementById('resubmit-remark');
+    const btn = document.getElementById('btn-resubmit');
+    const counter = document.getElementById('resubmit-remark-count');
+    if (counter && ta) counter.textContent = ta.value.length;
+    if (btn) {
+      const hasContent = ta && ta.value.trim().length > 0;
+      if (hasContent) {
+        btn.disabled = false;
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+      } else {
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+    }
+  };
+
+  // 提交重新申请
+  window.submitResubmit = function() {
+    const ta = document.getElementById('resubmit-remark');
+    const remark = ta ? ta.value.trim() : '';
+    if (!remark) {
+      Utils.toast('请先在「补充说明」中填写本次重新提交的理由 / 调整措施', 'warning');
+      if (ta) ta.focus();
+      return;
+    }
+    Utils.toast('重新提交成功！已附补充说明发送至监管方重新审核（mock）', 'success', 2500);
+    setTimeout(() => {
+      window.location.href = Utils.nav('/customer/admission');
+    }, 1500);
+  };
+
+  // 返回列表
+  window.cancelResubmit = function() {
+    if (confirm('确定要返回列表吗？已修改的内容将不会保存。')) {
+      window.location.href = Utils.nav('/customer/admission');
+    }
   };
 
   // ============ 初始化 ============
