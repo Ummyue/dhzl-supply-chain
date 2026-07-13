@@ -31,13 +31,12 @@
   const urlId = new URLSearchParams(window.location.search).get('id') || 'adm_001';
   const urlTab = new URLSearchParams(window.location.search).get('tab') || 'basic';
 
-  // 5 步 tab 配置
+  // v1.7.41: 4 步 tab 配置（去掉办结 tab，"办结"内容合并到风险评估 tab 的顶部结论 banner）
   const TABS = [
     { id: 'basic',          name: '基础信息收集', step: 1 },
     { id: 'qualification',  name: '资质审核',     step: 2 },
     { id: 'siteInspection', name: '现场考察',     step: 3 },
     { id: 'riskAssessment', name: '风险评估',     step: 4 },
-    { id: 'completion',     name: '办结',         step: 5 },
   ];
 
   // 数据回填
@@ -45,9 +44,8 @@
   const summary = (MockData.admissionList || []).find(a => a.id === urlId) || {};
   const data = { ...summary, ...(detail || {}) };
 
-  // 根据数据是否齐全判断 tab 是否可点（基础 tab 永远可点；办结 tab 需有 completion 数据）
+  // 根据数据是否齐全判断 tab 是否可点
   function isTabEnabled(tabId) {
-    if (tabId === 'completion') return !!data.completion;
     if (tabId === 'qualification') return !!(detail && detail.qualification);
     if (tabId === 'siteInspection') return !!(detail && detail.siteInspection);
     if (tabId === 'riskAssessment') return !!(detail && detail.riskAssessment);
@@ -399,14 +397,71 @@
     `;
   }
 
-  // Tab 4：风险评估（图4）
+  // Tab 4：风险评估（v1.7.41 重构：结论放顶部 + 准入决议合并）
+  // 结构：① 结论 banner（通过/不通过/评估中 + 备注 + 准入决议）→ ② 风险分析 4 块
   function renderRiskAssessmentTab() {
     const r = data.riskAssessment;
     if (!r) {
       return `<div class="bg-white border border-slate-200 rounded-xl p-12 text-center text-slate-500">📭 风险评估数据待录入</div>`;
     }
+    // 3 态：pass（绿）/ reject（红）/ pending（蓝，评估中）
+    const state = r.conclusion === 'pass' ? 'pass' : (r.conclusion === 'reject' ? 'reject' : 'pending');
+    const stateStyle = {
+      pass:    { bg: 'bg-gradient-to-r from-emerald-50 to-emerald-100 border-emerald-200', icon: 'bg-emerald-500', text: 'text-emerald-700', textSub: 'text-emerald-600', card: 'text-emerald-700' },
+      reject:  { bg: 'bg-gradient-to-r from-rose-50 to-rose-100 border-rose-200',           icon: 'bg-rose-500',    text: 'text-rose-700',    textSub: 'text-rose-600',    card: 'text-rose-700' },
+      pending: { bg: 'bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200',            icon: 'bg-blue-500',     text: 'text-blue-700',    textSub: 'text-blue-600',    card: 'text-blue-700' },
+    }[state];
+    const stateLabel = { pass: '准入通过', reject: '准入驳回', pending: '评估中' }[state];
+    const stateIcon  = { pass: '✓', reject: '✕', pending: '◐' }[state];
+    // 准入决议数据（从 data.completion 兜底，没有则显示「—」）
+    const c = data.completion || {};
     return `
       <div class="space-y-4">
+        <!-- 1. 结论 banner（顶部突出） -->
+        <div class="rounded-xl p-5 ${stateStyle.bg}">
+          <div class="flex items-start gap-4">
+            <!-- 大徽章 -->
+            <div class="flex-shrink-0 w-20 h-20 rounded-2xl flex flex-col items-center justify-center ${stateStyle.icon} text-white shadow-lg">
+              <div class="text-2xl">${stateIcon}</div>
+              <div class="text-xs font-semibold mt-0.5">${state === 'pass' ? '通过' : (state === 'reject' ? '不通过' : '评估中')}</div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-base font-bold ${stateStyle.text}">${stateLabel}</span>
+                <span class="text-xs text-slate-500">· 风险评估结论</span>
+              </div>
+              <!-- 备注 -->
+              <div class="text-sm ${stateStyle.text} leading-relaxed mb-3">${r.remark || (state === 'pending' ? '（监管方正在评估，预计 2 个工作日内出具结论）' : '（无备注）')}</div>
+              <!-- 准入决议 4 卡 -->
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+                <div class="bg-white/70 backdrop-blur rounded p-2.5">
+                  <div class="text-xs ${stateStyle.textSub} mb-0.5">建议信用评级</div>
+                  <div class="text-lg font-bold ${stateStyle.card}">${c.creditRating || '—'}</div>
+                </div>
+                <div class="bg-white/70 backdrop-blur rounded p-2.5">
+                  <div class="text-xs ${stateStyle.textSub} mb-0.5">建议授信额度</div>
+                  <div class="text-lg font-bold ${stateStyle.card}">${c.suggestedLimit || '—'}</div>
+                </div>
+                <div class="bg-white/70 backdrop-blur rounded p-2.5">
+                  <div class="text-xs ${stateStyle.textSub} mb-0.5">办结时间</div>
+                  <div class="text-sm font-mono ${stateStyle.card}">${c.completionTime || '—'}</div>
+                </div>
+                <div class="bg-white/70 backdrop-blur rounded p-2.5">
+                  <div class="text-xs ${stateStyle.textSub} mb-0.5">操作人</div>
+                  <div class="text-sm ${stateStyle.card} truncate">${c.operator || '—'}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          ${c.nextSteps ? `
+            <div class="mt-4 pt-3 border-t ${state === 'pass' ? 'border-emerald-200' : (state === 'reject' ? 'border-rose-200' : 'border-blue-200')}">
+              <div class="text-xs ${stateStyle.textSub} font-medium mb-1">后续动作</div>
+              <div class="text-sm ${stateStyle.text} leading-relaxed">${c.nextSteps}</div>
+            </div>
+          ` : ''}
+        </div>
+
+        <!-- 2. 风险综合分析及揭示 -->
         <div class="bg-white border border-slate-200 rounded-xl p-5">
           <div class="flex items-center gap-2 mb-3">
             <span class="w-1 h-4 bg-blue-500 rounded"></span>
@@ -415,16 +470,16 @@
           <div class="space-y-4 text-sm">
             <div>
               <div class="text-rose-500 mb-1">* 合规风险分析：</div>
-              <div class="border border-slate-200 rounded p-3 min-h-[100px] text-slate-700">${r.complianceAnalysis}</div>
-              <div class="text-right text-xs text-slate-400 mt-1">已输入 0/100</div>
+              <div class="border border-slate-200 rounded p-3 min-h-[100px] text-slate-700 whitespace-pre-wrap">${r.complianceAnalysis || '（待录入）'}</div>
             </div>
             <div>
               <div class="text-rose-500 mb-1">* 财务风险分析：</div>
-              <div class="border border-slate-200 rounded p-3 min-h-[100px] text-slate-700">${r.financialAnalysis}</div>
-              <div class="text-right text-xs text-slate-400 mt-1">已输入 0/100</div>
+              <div class="border border-slate-200 rounded p-3 min-h-[100px] text-slate-700 whitespace-pre-wrap">${r.financialAnalysis || '（待录入）'}</div>
             </div>
           </div>
         </div>
+
+        <!-- 3. 综合性评价和建议 -->
         <div class="bg-white border border-slate-200 rounded-xl p-5">
           <div class="flex items-center gap-2 mb-3">
             <span class="w-1 h-4 bg-blue-500 rounded"></span>
@@ -433,37 +488,11 @@
           <div class="space-y-4 text-sm">
             <div>
               <div class="text-rose-500 mb-1">* 客商信用的综合评价：</div>
-              <div class="border border-slate-200 rounded p-3 min-h-[100px] text-slate-700">${r.creditEvaluation}</div>
-              <div class="text-right text-xs text-slate-400 mt-1">已输入 0/100</div>
+              <div class="border border-slate-200 rounded p-3 min-h-[100px] text-slate-700 whitespace-pre-wrap">${r.creditEvaluation || '（待录入）'}</div>
             </div>
             <div>
               <div class="text-rose-500 mb-1">* 其他：</div>
-              <div class="border border-slate-200 rounded p-3 min-h-[100px] text-slate-700">${r.otherNotes}</div>
-              <div class="text-right text-xs text-slate-400 mt-1">已输入 0/100</div>
-            </div>
-          </div>
-        </div>
-        <div class="bg-white border border-slate-200 rounded-xl p-5">
-          <div class="flex items-center gap-2 mb-3">
-            <span class="w-1 h-4 bg-blue-500 rounded"></span>
-            <h3 class="text-sm font-semibold text-slate-700">结论</h3>
-          </div>
-          <div class="text-sm space-y-3">
-            <div class="flex items-center gap-6">
-              <span class="text-rose-500">* 是否通过：</span>
-              <label class="flex items-center gap-1">
-                <input type="radio" name="conclusion" ${r.conclusion === 'pass' ? 'checked' : ''} disabled class="text-blue-600">
-                <span class="${r.conclusion === 'pass' ? 'text-blue-700 font-medium' : 'text-slate-700'}">通过</span>
-              </label>
-              <label class="flex items-center gap-1">
-                <input type="radio" name="conclusion" ${r.conclusion === 'reject' ? 'checked' : ''} disabled class="text-blue-600">
-                <span class="${r.conclusion === 'reject' ? 'text-rose-700 font-medium' : 'text-slate-700'}">不通过</span>
-              </label>
-            </div>
-            <div>
-              <div class="text-slate-500 mb-1">备注：</div>
-              <div class="border border-slate-200 rounded p-3 min-h-[100px] text-slate-700">${r.remark}</div>
-              <div class="text-right text-xs text-slate-400 mt-1">已输入 0/100</div>
+              <div class="border border-slate-200 rounded p-3 min-h-[100px] text-slate-700 whitespace-pre-wrap">${r.otherNotes || '（待录入）'}</div>
             </div>
           </div>
         </div>
@@ -471,173 +500,8 @@
     `;
   }
 
-  // Tab 5：办结（v1.7.35 新增总结页，按用户要求自行设计）
-  // 结构：申请概览 → 4 步结果 → 审核时间线 → 准入决议 → 后续动作
-  function renderCompletionTab() {
-    const c = data.completion;
-    if (!c) {
-      return `<div class="bg-white border border-slate-200 rounded-xl p-12 text-center text-slate-500">📭 办结数据待录入</div>`;
-    }
-
-    // 4 步结果（按 data 是否齐全 + 风险评估的 conclusion 推算）
-    const stepResults = [
-      { step: 1, name: '基础信息收集', sub: '企业基本信息 + 法人 + 股东 + 6 类附件', pass: true,
-        operator: '陈志强（操作人）', time: '2025-01-04 10:23' },
-      { step: 2, name: '资质审核',     sub: '涉诉分析 + 资产负债 24 行 + 收入分析 8 行', pass: !!(data.qualification),
-        operator: '李雪（监管方审核）', time: '2025-01-08 14:15' },
-      { step: 3, name: '现场考察',     sub: '现场考核情况说明 + 1 份考察报告', pass: !!(data.siteInspection),
-        operator: '张文（监管方现场）', time: '2025-01-15 17:30' },
-      { step: 4, name: '风险评估',     sub: '合规/财务分析 + 综合评价 + 结论', pass: (data.riskAssessment && data.riskAssessment.conclusion === 'pass'),
-        operator: '王芳（监管方风控）', time: '2025-01-19 11:20' },
-    ];
-
-    return `
-      <div class="space-y-4">
-        <!-- 1. 申请概览 -->
-        <div class="bg-white border border-slate-200 rounded-xl p-5">
-          <div class="flex items-center gap-2 mb-4">
-            <span class="w-1 h-4 bg-blue-500 rounded"></span>
-            <h3 class="text-sm font-semibold text-slate-700">准入申请概览</h3>
-            <span class="ml-auto px-2 py-0.5 ${c.conclusion === '通过' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'} text-xs rounded">最终结论：${c.conclusion}</span>
-          </div>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div>
-              <div class="text-xs text-slate-500 mb-1">业务编号</div>
-              <div class="text-slate-800 font-mono">${urlId.toUpperCase()}</div>
-            </div>
-            <div>
-              <div class="text-xs text-slate-500 mb-1">申请企业</div>
-              <div class="text-slate-800">${data.companyName || data.customer || '-'}</div>
-            </div>
-            <div>
-              <div class="text-xs text-slate-500 mb-1">申请人 / 操作人</div>
-              <div class="text-slate-800">${data.drafter || '陈志强'}</div>
-            </div>
-            <div>
-              <div class="text-xs text-slate-500 mb-1">盖章人</div>
-              <div class="text-slate-800">${data.sealUser || '李雪'}</div>
-            </div>
-            <div>
-              <div class="text-xs text-slate-500 mb-1">申请日期</div>
-              <div class="text-slate-800 font-mono">${data.applyDate || '2025-01-04'}</div>
-            </div>
-            <div>
-              <div class="text-xs text-slate-500 mb-1">办结日期</div>
-              <div class="text-slate-800 font-mono">${(c.completionTime || '').slice(0, 10) || '2025-01-20'}</div>
-            </div>
-            <div>
-              <div class="text-xs text-slate-500 mb-1">办结操作人</div>
-              <div class="text-slate-800">${c.operator || '-'}</div>
-            </div>
-            <div>
-              <div class="text-xs text-slate-500 mb-1">流程时长</div>
-              <div class="text-slate-800">16 天</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 2. 4 步结果汇总 -->
-        <div class="bg-white border border-slate-200 rounded-xl p-5">
-          <div class="flex items-center gap-2 mb-4">
-            <span class="w-1 h-4 bg-blue-500 rounded"></span>
-            <h3 class="text-sm font-semibold text-slate-700">4 步审核结果</h3>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            ${stepResults.map(s => `
-              <div class="border ${s.pass ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-slate-50'} rounded p-3">
-                <div class="flex items-center gap-2 mb-1">
-                  <span class="w-6 h-6 rounded-full ${s.pass ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'} text-xs flex items-center justify-center font-medium">${s.step}</span>
-                  <span class="text-sm font-medium ${s.pass ? 'text-emerald-700' : 'text-slate-600'}">${s.name}</span>
-                  <span class="ml-auto text-xs ${s.pass ? 'text-emerald-600' : 'text-slate-500'} font-medium">${s.pass ? '✓ 已通过' : '⏳ 未通过'}</span>
-                </div>
-                <div class="text-xs text-slate-500 ml-8">${s.sub}</div>
-                <div class="flex items-center gap-3 text-xs text-slate-500 mt-2 ml-8">
-                  <span>审核人：${s.operator}</span>
-                  <span>·</span>
-                  <span class="font-mono">${s.time}</span>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-
-        <!-- 3. 审核时间线 -->
-        <div class="bg-white border border-slate-200 rounded-xl p-5">
-          <div class="flex items-center gap-2 mb-4">
-            <span class="w-1 h-4 bg-blue-500 rounded"></span>
-            <h3 class="text-sm font-semibold text-slate-700">审核时间线</h3>
-          </div>
-          <div class="relative pl-6">
-            <div class="absolute left-2 top-2 bottom-2 w-0.5 bg-slate-200"></div>
-            ${stepResults.map((s, i) => `
-              <div class="relative pb-5 ${i === stepResults.length - 1 ? '' : ''}">
-                <div class="absolute -left-[18px] top-1 w-4 h-4 rounded-full ${s.pass ? 'bg-emerald-500' : 'bg-slate-300'} border-2 border-white"></div>
-                <div class="text-sm">
-                  <span class="font-medium text-slate-800">第 ${s.step} 步：${s.name}</span>
-                  <span class="ml-2 text-xs ${s.pass ? 'text-emerald-600' : 'text-slate-500'}">${s.pass ? '通过' : '未通过'}</span>
-                </div>
-                <div class="text-xs text-slate-500 mt-0.5">
-                  <span class="font-mono">${s.time}</span>
-                  <span class="mx-1">·</span>
-                  <span>${s.operator}</span>
-                </div>
-                <div class="text-xs text-slate-600 mt-1">${s.sub}</div>
-              </div>
-            `).join('')}
-            <!-- 办结节点 -->
-            <div class="relative">
-              <div class="absolute -left-[18px] top-1 w-4 h-4 rounded-full ${c.conclusion === '通过' ? 'bg-blue-500' : 'bg-rose-500'} border-2 border-white"></div>
-              <div class="text-sm">
-                <span class="font-medium text-slate-800">办结：${c.conclusion === '通过' ? '准入通过' : '准入驳回'}</span>
-                <span class="ml-2 text-xs ${c.conclusion === '通过' ? 'text-blue-600' : 'text-rose-600'}">${c.conclusion}</span>
-              </div>
-              <div class="text-xs text-slate-500 mt-0.5">
-                <span class="font-mono">${c.completionTime || '2025-01-20 16:45:00'}</span>
-                <span class="mx-1">·</span>
-                <span>${c.operator || '王芳（监管方风控经理）'}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 4. 准入决议 -->
-        <div class="bg-white border border-slate-200 rounded-xl p-5">
-          <div class="flex items-center gap-2 mb-4">
-            <span class="w-1 h-4 bg-blue-500 rounded"></span>
-            <h3 class="text-sm font-semibold text-slate-700">准入决议</h3>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-            <div class="border border-slate-200 rounded p-3">
-              <div class="text-xs text-slate-500 mb-1">最终结论</div>
-              <div class="text-lg ${c.conclusion === '通过' ? 'text-emerald-600' : 'text-rose-600'} font-bold">${c.conclusion}</div>
-            </div>
-            <div class="border border-slate-200 rounded p-3">
-              <div class="text-xs text-slate-500 mb-1">建议信用评级</div>
-              <div class="text-lg text-slate-800 font-bold">${c.creditRating || '-'}</div>
-            </div>
-            <div class="border border-slate-200 rounded p-3">
-              <div class="text-xs text-slate-500 mb-1">建议授信额度</div>
-              <div class="text-lg text-slate-800 font-bold">${c.suggestedLimit || '-'}</div>
-            </div>
-            <div class="border border-slate-200 rounded p-3">
-              <div class="text-xs text-slate-500 mb-1">办结时间</div>
-              <div class="text-sm text-slate-800 font-mono">${c.completionTime || '-'}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 5. 后续动作（蓝底） -->
-        <div class="bg-blue-50 border border-blue-200 rounded-xl p-5">
-          <div class="flex items-center gap-2 mb-3">
-            <span class="w-1 h-4 bg-blue-500 rounded"></span>
-            <h3 class="text-sm font-semibold text-blue-700">后续动作</h3>
-          </div>
-          <div class="text-sm text-slate-700 leading-relaxed">${c.nextSteps || '-'}</div>
-        </div>
-      </div>
-    `;
-  }
-
+  // v1.7.41: 办结 tab 已删除（合并到风险评估 tab 的顶部"结论"banner）
+  // 原 renderCompletionTab 函数体删除
   // ============ 主渲染 ============
   function render() {
     let tabContent = '';
@@ -645,7 +509,6 @@
     else if (currentTab === 'qualification')  tabContent = renderQualificationTab();
     else if (currentTab === 'siteInspection') tabContent = renderSiteInspectionTab();
     else if (currentTab === 'riskAssessment') tabContent = renderRiskAssessmentTab();
-    else if (currentTab === 'completion')     tabContent = renderCompletionTab();
 
     return `
       ${renderStepBar()}

@@ -59,8 +59,9 @@
   // reviewing    → 资质审核（监管方审完了基础信息，进入第 2 步）
   // approved     → 办结（走完全部 5 步）
   // rejected     → 基础信息收集（驳回到第 1 步重做）
+  // v1.7.41: approved/办结默认跳风险评估（办结内容合并到风险评估 tab）
   function mapStatusToTab(a) {
-    if (a.applyResult === '通过' || a.status === 'approved' || a.progress === 5) return 'completion';
+    if (a.applyResult === '通过' || a.status === 'approved' || a.progress === 5) return 'riskAssessment';
     if (a.status === 'reviewing' || a.progress === 2) return 'qualification';
     if (a.status === 'rejected') return 'basic';
     // draft / pending / progress 1 都算基础信息
