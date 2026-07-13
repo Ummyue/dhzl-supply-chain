@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>准入审批 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } </script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+  <style>
+    /* 必填红色 * */
+    .req::before { content: '*'; color: #ef4444; margin-right: 2px; font-weight: 600; }
+    /* 文本域 */
+    .form-textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-size: 13px;
+      min-height: 100px;
+      resize: vertical;
+      font-family: inherit;
+      outline: none;
+    }
+    .form-textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.1); }
+    /* 底部固定操作栏 */
+    .footer-actions {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      background: #fff;
+      border-top: 1px solid #e2e8f0;
+      padding: 16px 0;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+    }
+    .footer-spacer { height: 80px; }
+  </style>
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.46 监管方【准入审批详情】- 按甲方截图实现 ============
+  // 4 步状态机：基础信息收集 / 资质审核 / 现场考察 / 风险评估
+  // 当前 tab = 基础信息收集（监管方先审基础信息）
+  //   ├─ 5 section 表单（只读展示用户已提交）
+  //   └─ 6 section 准入情况（核心操作区）
+  //       ├─ 单选：通过 / 驳回
+  //       └─ 驳回说明 textarea（仅驳回时显示 + 必填）
+  // 底部 fixed：下一步（默认 disabled）+ 取消
+
+  if (Utils.getProductLine() !== 'finance') {
+    Utils.setProductLine('finance');
+  }
+
+  const urlId = new URLSearchParams(window.location.search).get('id') || 'adm_002';
+  const urlTab = new URLSearchParams(window.location.search).get('tab') || 'basic';
+
+  // 数据
+  const detail = (MockData.admissionDetail && MockData.admissionDetail[urlId]) || {};
+  const summary = (MockData.admissionList || []).find(a => a.id === urlId) || {};
+  // 合并：summary 字段 + detail 字段
+  const data = {
+    companyName: detail.companyName || summary.customer,
+    creditCode: detail.creditCode || summary.creditCode,
+    shortName: detail.shortName || summary.shortName,
+    shortNamePinyin: detail.shortNamePinyin,
+    established: detail.established,
+    nature: detail.nature,
+    businessDeadline: detail.businessDeadline,
+    registeredAddress: detail.registeredAddress,
+    industry: detail.industry,
+    registeredCapital: detail.registeredCapital,
+    inRenewal: detail.inRenewal,
+    contactPhone: detail.contactPhone,
+    contactAddress: detail.contactAddress,
+    businessScope: detail.businessScope,
+    legalName: detail.legalName || summary.legalRep,
+    legalIdCard: detail.legalIdCard,
+    legalPhone: detail.legalPhone,
+    legalIdValidFrom: detail.legalIdValidFrom,
+    legalIdValidTo: detail.legalIdValidTo,
+    shareholders: detail.shareholders || [],
+    otherInfo: detail.otherInfo || {},
+    attachments: detail.attachments || [],
+  };
+
+  // 4 步 tab（监管方逐阶段审批）
+  const TABS = [
+    { id: 'basic',          name: '基础信息收集', step: 1 },
+    { id: 'qualification',  name: '资质审核',     step: 2 },
+    { id: 'siteInspection', name: '现场考察',     step: 3 },
+    { id: 'riskAssessment', name: '风险评估',     step: 4 },
+  ];
+  let currentTab = urlTab === 'basic' ? 'basic' : 'basic';  // 监管方首屏固定在基础信息收集
+
+  // 准入情况状态
+  let admissionResult = '';     // '' | 'pass' | 'reject'
+  let rejectReason = '';
+
+  // 顶部步骤条
+  function renderStepBar() {
+    return `
+      <div class="bg-white border border-slate-200 rounded-xl px-8 py-6 mb-4">
+        <div class="flex items-center justify-between max-w-4xl mx-auto">
+          ${TABS.map((t, i) => {
+            const active = t.id === currentTab;
+            return `
+              <div class="flex items-center ${i < TABS.length - 1 ? 'flex-1' : ''}">
+                <div class="flex flex-col items-center">
+                  <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${active ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-600'}">
+                    ${t.step}
+                  </div>
+                  <div class="text-xs mt-2 ${active ? 'text-blue-600 font-medium' : 'text-slate-500'}">${t.name}</div>
+                </div>
+                ${i < TABS.length - 1 ? `<div class="flex-1 h-0.5 mx-2 mb-6 ${t.step < (TABS.find(x => x.id === currentTab)?.step || 0) ? 'bg-blue-300' : 'bg-slate-200'}"></div>` : ''}
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  // ============ 5 section 表单（与 admission-detail 保持一致）============
+  function renderBasicForm() {
+    return `
+      <div class="space-y-4">
+        <!-- 1. 企业基本信息 -->
+        <div class="bg-white border border-slate-200 rounded-xl p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            <h3 class="text-sm font-semibold text-slate-700">企业基本信息</h3>
+          </div>
+          <div class="grid grid-cols-3 gap-x-6 gap-y-3 text-sm">
+            <div><span class="text-slate-500">企业名称：</span><span class="text-slate-800">${data.companyName || '-'}</span></div>
+            <div><span class="text-slate-500">社会统一信用代码：</span><span class="text-slate-800 font-mono">${data.creditCode || '-'}</span></div>
+            <div><span class="text-slate-500">企业简称：</span><span class="text-slate-800">${data.shortName || '-'}</span></div>
+            <div><span class="text-slate-500">企业简称首字母：</span><span class="text-slate-800">${data.shortNamePinyin || '-'}</span></div>
+            <div><span class="text-slate-500">成立日期：</span><span class="text-slate-800">${data.established || '-'}</span></div>
+            <div><span class="text-slate-500">企业性质：</span><span class="text-slate-800">${data.nature || '-'}</span></div>
+            <div><span class="text-slate-500">营业期限：</span><span class="text-slate-800">${data.businessDeadline || '-'}</span></div>
+            <div class="col-span-2"><span class="text-slate-500">注册地址：</span><span class="text-slate-800">${data.registeredAddress || '-'}</span></div>
+            <div><span class="text-slate-500">所属行业：</span><span class="text-slate-800">${data.industry || '-'}</span></div>
+            <div><span class="text-slate-500">注册资本：</span><span class="text-slate-800">${data.registeredCapital || '-'}</span></div>
+            <div><span class="text-slate-500">是否在续期：</span><span class="text-slate-800">${data.inRenewal ? '是' : '否'}</div>
+            <div><span class="text-slate-500">联系电话：</span><span class="text-slate-800">${data.contactPhone || '-'}</span></div>
+            <div class="col-span-3"><span class="text-slate-500">联系地址：</span><span class="text-slate-800">${data.contactAddress || '-'}</span></div>
+            <div class="col-span-3"><span class="text-slate-500">经营范围：</span><span class="text-slate-800">${data.businessScope || '-'}</span></div>
+          </div>
+        </div>
+
+        <!-- 2. 法人信息 -->
+        <div class="bg-white border border-slate-200 rounded-xl p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            <h3 class="text-sm font-semibold text-slate-700">法人信息</h3>
+          </div>
+          <div class="grid grid-cols-3 gap-x-6 gap-y-3 text-sm">
+            <div><span class="text-slate-500">法人姓名：</span><span class="text-slate-800">${data.legalName || '-'}</span></div>
+            <div><span class="text-slate-500">法人身份证号码：</span><span class="text-slate-800 font-mono">${data.legalIdCard || '-'}</span></div>
+            <div><span class="text-slate-500">法人手机号码：</span><span class="text-slate-800">${data.legalPhone || '-'}</span></div>
+            <div><span class="text-slate-500">身份证有效期起：</span><span class="text-slate-800">${data.legalIdValidFrom || '-'}</span></div>
+            <div class="col-span-2"><span class="text-slate-500">身份证有效期止：</span><span class="text-slate-800">${data.legalIdValidTo || '-'}</span></div>
+          </div>
+        </div>
+
+        <!-- 3. 股权结构说明 -->
+        <div class="bg-white border border-slate-200 rounded-xl p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            <h3 class="text-sm font-semibold text-slate-700">股权结构说明</h3>
+          </div>
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 text-slate-600 text-xs">
+              <tr>
+                <th class="text-left px-3 py-2 whitespace-nowrap">股东名称</th>
+                <th class="text-left px-3 py-2 whitespace-nowrap">出资方式</th>
+                <th class="text-right px-3 py-2 whitespace-nowrap">认缴出资额</th>
+                <th class="text-right px-3 py-2 whitespace-nowrap">持股比例</th>
+                <th class="text-left px-3 py-2 whitespace-nowrap">认缴出资时间</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.shareholders.length ? data.shareholders.map(sh => `
+                <tr class="border-t border-slate-100">
+                  <td class="px-3 py-2.5 text-slate-800">${sh.name || '-'}</td>
+                  <td class="px-3 py-2.5 text-slate-700">${sh.type || '-'}</td>
+                  <td class="px-3 py-2.5 text-right num-focus">${sh.amount ? sh.amount.toLocaleString() + '万' : '-'}</td>
+                  <td class="px-3 py-2.5 text-right num-focus">${sh.ratio ? sh.ratio + '%' : '-'}</td>
+                  <td class="px-3 py-2.5 text-slate-600">${sh.date || '-'}</td>
+                </tr>
+              `).join('') : `<tr><td colspan="5" class="py-8 text-center text-slate-400 text-xs">📭 暂无股东信息</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 4. 其他信息 -->
+        <div class="bg-white border border-slate-200 rounded-xl p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            <h3 class="text-sm font-semibold text-slate-700">其他信息</h3>
+          </div>
+          <div class="space-y-3 text-sm">
+            <div>
+              <div class="text-slate-500 mb-1">客商的历史沿革和其他需要说明的重大事项：</div>
+              <div class="border border-slate-200 rounded p-3 min-h-[60px] text-slate-700 whitespace-pre-wrap">${data.otherInfo.history || '（暂无录入）'}</div>
+            </div>
+            <div>
+              <div class="text-slate-500 mb-1">关联企业情况：</div>
+              <div class="border border-slate-200 rounded p-3 min-h-[60px] text-slate-700 whitespace-pre-wrap">${data.otherInfo.relatedEnterprises || '（暂无录入）'}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. 附件 -->
+        <div class="bg-white border border-slate-200 rounded-xl p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            <h3 class="text-sm font-semibold text-slate-700">附件清单</h3>
+          </div>
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 text-slate-600 text-xs">
+              <tr>
+                <th class="text-left px-3 py-2 whitespace-nowrap w-1/4">附件名称</th>
+                <th class="text-left px-3 py-2 whitespace-nowrap w-1/2">文件名称</th>
+                <th class="text-right px-3 py-2 whitespace-nowrap w-1/4">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.attachments.length ? data.attachments.map(a => `
+                <tr class="border-t border-slate-100">
+                  <td class="px-3 py-2.5 text-slate-700">${a.required ? '<span class="text-rose-500">*</span> ' : ''}${a.type}</td>
+                  <td class="px-3 py-2.5">
+                    ${a.files && a.files.length ? a.files.map(f => `
+                      <div class="flex items-center gap-2 mb-1">
+                        <a href="javascript:void(0)" onclick="Utils.toast('文件预览（占位）','info')" class="text-blue-600 hover:underline text-xs">${f.name}</a>
+                      </div>
+                    `).join('') : '<span class="text-slate-400 text-xs">（未上传）</span>'}
+                  </td>
+                  <td class="px-3 py-2.5 text-right whitespace-nowrap">
+                    <button onclick="Utils.toast('查看附件（占位）','info')" class="text-blue-600 hover:underline text-xs mr-2">查看</button>
+                    <button onclick="Utils.toast('下载附件（占位）','info')" class="text-blue-600 hover:underline text-xs">下载</button>
+                  </td>
+                </tr>
+              `).join('') : `<tr><td colspan="3" class="py-8 text-center text-slate-400 text-xs">📭 暂无附件</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 6. 准入情况（核心操作区 v1.7.46）-->
+        <div class="bg-white border-2 border-blue-200 rounded-xl p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            <h3 class="text-sm font-semibold text-slate-700">准入情况</h3>
+            <span class="ml-auto text-xs text-blue-600">请对基础信息收集阶段做出准入决策</span>
+          </div>
+          <div class="space-y-3">
+            <div class="flex items-center gap-6 text-sm pt-1">
+              <span class="req text-slate-700 whitespace-nowrap">准入情况</span>
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="radio" name="admissionResult" value="pass" onchange="onAdmissionResult('pass')" ${admissionResult === 'pass' ? 'checked' : ''}>
+                <span>通过，进入资质审核阶段</span>
+                <span class="inline-flex items-center justify-center w-4 h-4 border border-slate-300 rounded text-[10px] text-slate-400 ml-1 cursor-help" title="通过后，申请进入资质审核阶段">?</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="radio" name="admissionResult" value="reject" onchange="onAdmissionResult('reject')" ${admissionResult === 'reject' ? 'checked' : ''}>
+                <span>驳回</span>
+              </label>
+            </div>
+            ${admissionResult === 'reject' ? `
+            <div>
+              <div class="flex items-center gap-1 mb-1">
+                <span class="req text-rose-500 text-sm">驳回说明</span>
+                <span class="text-xs text-slate-400 ml-1">请明确告知客户驳回原因</span>
+              </div>
+              <textarea id="reject-reason" maxlength="100" oninput="onRejectReason(this.value)" class="form-textarea" placeholder="输入内容">${rejectReason}</textarea>
+              <div class="text-right text-xs text-slate-400 mt-1"><span id="reject-count">${rejectReason.length}</span>/100</div>
+            </div>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // 渲染函数
+  function render() {
+    return `
+      ${renderStepBar()}
+      ${renderBasicForm()}
+    `;
+  }
+
+  // ============ 行为 ============
+  window.onAdmissionResult = function(v) {
+    admissionResult = v;
+    refresh();
+  };
+  window.onRejectReason = function(v) {
+    rejectReason = v;
+    const counter = document.getElementById('reject-count');
+    if (counter) counter.textContent = v.length;
+    updateNextBtn();
+  };
+  function canNext() {
+    if (!admissionResult) return false;
+    if (admissionResult === 'reject' && !rejectReason.trim()) return false;
+    return true;
+  }
+  function updateNextBtn() {
+    const btn = document.getElementById('btn-next');
+    if (!btn) return;
+    if (canNext()) {
+      btn.disabled = false;
+      btn.classList.remove('opacity-50', 'cursor-not-allowed');
+    } else {
+      btn.disabled = true;
+      btn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+  }
+  window.submitAdmission = function() {
+    if (!admissionResult) {
+      Utils.toast('请先选择「准入情况」', 'warning');
+      return;
+    }
+    if (admissionResult === 'reject' && !rejectReason.trim()) {
+      Utils.toast('请填写「驳回说明」', 'warning');
+      return;
+    }
+    const msg = admissionResult === 'pass'
+      ? `已通过：申请 ${urlId} 进入「资质审核」阶段（mock）`
+      : `已驳回：申请 ${urlId} 已通知货主方修改（mock）`;
+    Utils.toast(msg, 'success', 2000);
+    setTimeout(() => {
+      window.location.href = Utils.nav('/platform/approval-admission');
+    }, 1200);
+  };
+  window.cancelApproval = function() {
+    if (confirm('确定取消审批？已选择的「准入情况」将不会保存。')) {
+      window.location.href = Utils.nav('/platform/approval-admission');
+    }
+  };
+
+  function refresh() {
+    document.getElementById('app').innerHTML = Components.pageShell({
+      title: '准入审批',
+      currentPath: '/platform/approval-admission',
+      breadcrumb: [
+        { label: '供应链金融', path: '/platform/approval-admission' },
+        { label: '准入审批', path: '/platform/approval-admission' },
+        { label: '基础信息收集', path: '/platform/admission-approval' },
+      ],
+      extra: '',
+      content: render() + renderFooter(),
+    });
+    updateNextBtn();
+  }
+
+  function renderFooter() {
+    return `
+      <div class="footer-spacer"></div>
+      <div class="footer-actions">
+        <div class="max-w-[1280px] mx-auto px-6 flex items-center justify-center gap-4">
+          <button id="btn-next" onclick="submitAdmission()" disabled class="px-12 py-2.5 bg-blue-600 text-white rounded text-sm font-medium opacity-50 cursor-not-allowed flex items-center gap-1.5">
+            <span class="inline-flex w-4 h-4 bg-yellow-400 rounded items-center justify-center text-[10px]">⚡</span>
+            下一步
+          </button>
+          <button onclick="cancelApproval()" class="px-12 py-2.5 border border-blue-500 text-blue-600 hover:bg-blue-50 rounded text-sm font-medium flex items-center gap-1.5">
+            <span class="inline-flex w-4 h-4 bg-yellow-400 rounded items-center justify-center text-[10px]">⚡</span>
+            取消
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  refresh();
+</script>
+</body>
+</html>
