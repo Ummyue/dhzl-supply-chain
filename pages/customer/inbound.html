@@ -372,7 +372,6 @@
     refresh();
   };
   // v1.7.32 移除 viewAllInboundStates 函数（State1 状态筛选与查看全部状态按钮一起去掉）
-  };
   window.exportInboundCSV = function() {
     const items = applyTab(applyFilters(), currentInboundTab);
     if (!items.length) return Utils.toast('当前无数据可导出', 'warning');
