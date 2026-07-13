@@ -229,7 +229,7 @@ const Components = {
         ${items.map((item, idx) => `
           ${idx > 0 ? '<svg class="w-4 h-4 mx-1 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>' : ''}
           ${idx === items.length - 1
-            ? `<span class="text-slate-800 font-medium">${item}</span>`
+            ? `<span class="text-slate-800 font-medium">${item.label || item}</span>`
             : `<a href="${item.path || '#'}" class="hover:text-blue-600">${item.label || item}</a>`}
         `).join('')}
       </nav>

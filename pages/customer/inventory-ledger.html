@@ -34,13 +34,13 @@
     location: '',
     product: '',
   };
-  let currentState = 'all'; // State1 状态机
-  const stateList = [
-    { id: 'all', label: '全部' },
-    { id: 'normal', label: '正常' },
-    { id: 'pledged', label: '质押中' },
-    { id: 'frozen', label: '已冻结' },
-  ];
+  let currentState = 'all'; // v1.7.29 状态机已移除（与列表中"库点名称"列的状态徽标同时去掉）
+
+  // ============ 分页状态 ============
+  const pagination = {
+    page: 1,
+    pageSize: 10,   // v1.7.29 默认 10，支持 10/20/50/100 切换
+  };
 
   document.getElementById('app').innerHTML = Components.pageShell({
     title: '库存台账',
@@ -58,7 +58,6 @@
       if (filters.warehouse && r.warehouseName !== filters.warehouse) return false;
       if (filters.location && r.location !== filters.location) return false;
       if (filters.product && !r.productFullName.includes(filters.product)) return false;
-      if (currentState !== 'all' && r.state !== currentState) return false;
       return true;
     });
   }
@@ -73,15 +72,14 @@
     }, { totalWeight: 0, totalValue: 0, pledgeWeight: 0, pledgeValue: 0 });
   }
 
-  function stateBadge(s) {
-    if (s === 'frozen') return '<span class="px-1.5 py-0.5 bg-slate-600 text-white text-xs rounded">冻结</span>';
-    if (s === 'pledged') return '<span class="px-1.5 py-0.5 bg-violet-100 text-violet-700 text-xs rounded">质押中</span>';
-    return '<span class="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded">正常</span>';
-  }
+  // ============ v1.7.29 移除：库点名称列的 正常/质押中/已冻结 徽标 ============
+  // 原因：状态机本身已删，列表中再显示状态徽标会造成视觉噪音
+  // 行点击跳转库存详情页，详情页中通过"库存数量/质押数量/冻结数量"区分状态
 
   function render() {
-    const list = applyFilters();
-    const s = statsOf(list);
+    const allList = applyFilters();
+    const list = getPagedList(allList);
+    const s = statsOf(allList);
     return `
       <!-- 4 张 stats 卡（库存汇总）-->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
@@ -134,15 +132,8 @@
         </div>
       </div>
 
-      <!-- 状态机筛选 + 数据导出（v1.7.18.1 去掉冗余的 State1 下拉 + 查看全部状态组） -->
-      <div class="bg-white border border-slate-200 rounded-xl p-3 mb-3 flex items-center justify-between">
-        <div class="flex items-center gap-1.5">
-          ${stateList.map(s => `
-            <button onclick="setState('${s.id}')" class="px-4 py-1.5 text-sm font-medium border-b-2 transition flex items-center gap-1 ${currentState === s.id ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'}">
-              ${s.label}
-            </button>
-          `).join('')}
-        </div>
+      <!-- 状态机筛选 + 数据导出（v1.7.29 移除 4 个状态机 tab，与库点名称列状态徽标一起去掉） -->
+      <div class="bg-white border border-slate-200 rounded-xl p-3 mb-3 flex items-center justify-end">
         <button onclick="exportCSV()" class="text-sm text-blue-600 hover:underline">数据导出</button>
       </div>
 
@@ -171,9 +162,10 @@
           </table>
         </div>
         <div class="px-4 py-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
-          <span>共 <b class="text-slate-800">${list.length}</b> 条记录（mock 50 条 · 筛选后 ${list.length} 条）</span>
+          <span>共 <b class="text-slate-800">${allList.length}</b> 条记录（mock 50 条 · 筛选后 ${allList.length} 条）</span>
           <span>点击任意数据行进入「库存明细详情」</span>
         </div>
+        ${renderPagination(allList.length)}
       </div>
     `;
   }
@@ -185,10 +177,7 @@
     return list.map(r => `
       <tr class="border-t border-slate-100 hover:bg-blue-50/30 cursor-pointer transition" onclick="goInventoryDetail('${r.id}')">
         <td class="px-3 py-2.5 text-blue-700 font-mono text-xs whitespace-nowrap">
-          <div class="flex items-center gap-1">
-            ${r.warehouseName}
-            ${stateBadge(r.state)}
-          </div>
+          ${r.warehouseName}
         </td>
         <td class="px-3 py-2.5 text-slate-700 text-xs whitespace-nowrap">${r.location}</td>
         <td class="px-3 py-2.5 text-slate-800 text-xs whitespace-nowrap font-medium">${r.productFullName}</td>
@@ -212,7 +201,6 @@
     if (filters.warehouse) tags.push({ key: 'warehouse', label: `仓库：${filters.warehouse}` });
     if (filters.location) tags.push({ key: 'location', label: `货位：${filters.location}` });
     if (filters.product) tags.push({ key: 'product', label: `货物：${filters.product}` });
-    if (currentState !== 'all') tags.push({ key: 'state', label: `状态：${stateList.find(s => s.id === currentState)?.label || currentState}` });
     if (!tags.length) return '<span class="text-slate-400 text-xs">（无筛选条件 / 默认显示全部）</span>';
     return tags.map(t => `
       <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-slate-100 text-slate-700 rounded">
@@ -222,21 +210,74 @@
   }
 
   function hasAnyFilter() {
-    return !!(filters.bank || filters.warehouse || filters.location || filters.product || currentState !== 'all');
+    return !!(filters.bank || filters.warehouse || filters.location || filters.product);
+  }
+
+  // ============ 分页辅助（v1.7.29 新增：单页 10/20/50/100 切换） ============
+  function getPagedList(allList) {
+    const start = (pagination.page - 1) * pagination.pageSize;
+    return allList.slice(start, start + pagination.pageSize);
+  }
+
+  function renderPagination(total) {
+    const totalPages = Math.max(1, Math.ceil(total / pagination.pageSize));
+    if (pagination.page > totalPages) pagination.page = totalPages;
+    const start = total === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1;
+    const end = Math.min(pagination.page * pagination.pageSize, total);
+    // 页码按钮：1 ... current-1 current current+1 ... last
+    const pageBtns = [];
+    const push = (n) => pageBtns.push(n);
+    push(1);
+    if (pagination.page > 4) pageBtns.push('...');
+    for (let i = Math.max(2, pagination.page - 1); i <= Math.min(totalPages - 1, pagination.page + 1); i++) push(i);
+    if (pagination.page < totalPages - 3) pageBtns.push('...');
+    if (totalPages > 1) push(totalPages);
+    return `
+      <div class="px-4 py-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+        <div class="flex items-center gap-3">
+          <span>共 <b class="text-slate-800">${total}</b> 条记录</span>
+          <span>第 <b class="text-slate-800">${start}-${end}</b> 条</span>
+          <label class="flex items-center gap-1">
+            <span>每页</span>
+            <select onchange="changePageSize(this.value)" class="px-1.5 py-0.5 text-xs border border-slate-200 rounded bg-white focus:border-blue-500 outline-none">
+              <option value="10"  ${pagination.pageSize === 10  ? 'selected' : ''}>10</option>
+              <option value="20"  ${pagination.pageSize === 20  ? 'selected' : ''}>20</option>
+              <option value="50"  ${pagination.pageSize === 50  ? 'selected' : ''}>50</option>
+              <option value="100" ${pagination.pageSize === 100 ? 'selected' : ''}>100</option>
+            </select>
+            <span>条</span>
+          </label>
+        </div>
+        <div class="flex items-center gap-1">
+          <button onclick="gotoPage(${pagination.page - 1})" ${pagination.page === 1 ? 'disabled' : ''} class="px-2 py-1 text-xs border border-slate-200 rounded hover:bg-slate-50 ${pagination.page === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600'}">上一页</button>
+          ${pageBtns.map(p => p === '...'
+            ? `<span class="px-2 py-1 text-xs text-slate-400">...</span>`
+            : `<button onclick="gotoPage(${p})" class="px-2.5 py-1 text-xs rounded ${p === pagination.page ? 'bg-blue-600 text-white' : 'border border-slate-200 text-slate-600 hover:bg-slate-50'}">${p}</button>`).join('')}
+          <button onclick="gotoPage(${pagination.page + 1})" ${pagination.page === totalPages ? 'disabled' : ''} class="px-2 py-1 text-xs border border-slate-200 rounded hover:bg-slate-50 ${pagination.page === totalPages ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600'}">下一页</button>
+        </div>
+      </div>
+    `;
   }
 
   // ============ Events ============
-  window.setFilter = (k, v) => { filters[k] = v; refresh(); };
-  window.setState = (id) => { currentState = id; refresh(); };
-  window.removeTag = (k) => {
-    if (k === 'state') currentState = 'all';
-    else filters[k] = '';
-    refresh();
-  };
+  window.setFilter = (k, v) => { filters[k] = v; pagination.page = 1; refresh(); };
+  window.removeTag = (k) => { filters[k] = ''; pagination.page = 1; refresh(); };
   window.resetAllFilters = () => {
     filters.bank = '';
     filters.warehouse = filters.location = filters.product = '';
-    currentState = 'all';
+    pagination.page = 1;
+    refresh();
+  };
+  window.changePageSize = (n) => {
+    pagination.pageSize = parseInt(n, 10);
+    pagination.page = 1;
+    refresh();
+  };
+  window.gotoPage = (n) => {
+    const total = applyFilters().length;
+    const totalPages = Math.max(1, Math.ceil(total / pagination.pageSize));
+    if (n < 1 || n > totalPages) return;
+    pagination.page = n;
     refresh();
   };
   window.goInventoryDetail = (id) => {
