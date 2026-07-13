@@ -655,7 +655,9 @@
   }
 
   // ============ 顶部 header（始终显示当前 tab 名 + 状态） ============
+  // v1.7.40: 不通过状态时顶部加红色"驳回原因"banner
   function renderHeader() {
+    const isRejected = data.status === 'rejected' || data.applyResult === '不通过';
     return `
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-3">
@@ -663,16 +665,37 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             返回准入申请
           </a>
-          <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">准</div>
+          <div class="w-8 h-8 rounded-full ${isRejected ? 'bg-rose-100 text-rose-600' : 'bg-blue-100 text-blue-600'} flex items-center justify-center font-medium">${isRejected ? '驳' : '准'}</div>
           <div>
             <h2 class="text-base font-bold text-slate-800">${data.companyName || data.customer || urlId.toUpperCase()}</h2>
             <p class="text-xs text-slate-500 font-mono">业务编号 ${urlId.toUpperCase()} · 当前节点：${TABS.find(t => t.id === currentTab)?.name || '基础信息收集'}</p>
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <span class="px-2 py-0.5 ${data.status === 'approved' || data.completion ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'} text-xs rounded">${data.completion ? '已完成' : (data.applyResult || '审核中')}</span>
+          <span class="px-2 py-0.5 ${
+            isRejected ? 'bg-rose-100 text-rose-700' :
+            (data.status === 'approved' || data.completion ? 'bg-emerald-100 text-emerald-700' :
+            'bg-amber-100 text-amber-700')
+          } text-xs rounded">${
+            isRejected ? '不通过' :
+            (data.completion ? '已完成' : (data.applyResult || '审核中'))
+          }</span>
         </div>
       </div>
+      ${isRejected && data.rejectReason ? `
+        <div class="bg-rose-50 border border-rose-200 rounded-xl p-4 mb-4 flex items-start gap-3">
+          <svg class="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          <div class="flex-1">
+            <div class="text-sm font-semibold text-rose-700 mb-1">驳回原因（监管方）</div>
+            <div class="text-sm text-rose-700">${data.rejectReason}</div>
+            ${data.riskAssessment && data.riskAssessment.remark ? `
+              <div class="text-xs text-rose-600 mt-2 pt-2 border-t border-rose-200">
+                <span class="font-medium">风险评估备注：</span>${data.riskAssessment.remark}
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      ` : ''}
     `;
   }
 
