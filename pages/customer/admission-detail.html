@@ -39,19 +39,22 @@
 <script>
   Components.bindGlobalClose();
 
-  // ============ v1.7.35 准入详情 - 4 步审批 tab 模式 ============
+  // ============ v1.7.35 准入详情 - 5 步审批 tab 模式 ============
   // 5 个状态机（tab）：基础信息收集 / 资质审核 / 现场考察 / 风险评估 / 办结
   // URL 参数：?id=adm_001&tab=qualification  默认 tab=基础信息收集
 
   const urlId = new URLSearchParams(window.location.search).get('id') || 'adm_001';
   const urlTab = new URLSearchParams(window.location.search).get('tab') || 'basic';
 
-  // v1.7.41: 4 步 tab 配置（去掉办结 tab，"办结"内容合并到风险评估 tab 的顶部结论 banner）
+  // v1.7.43: 恢复 5 步 tab 配置（办结 tab 独立）
+  // - 办结 tab 仅显示「办结时间」+「操作人」
+  // - 风险评估 tab 4 卡 → 2 卡（去建议信用评级/建议授信额度）+ 去掉「后续动作」区块
   const TABS = [
     { id: 'basic',          name: '基础信息收集', step: 1 },
     { id: 'qualification',  name: '资质审核',     step: 2 },
     { id: 'siteInspection', name: '现场考察',     step: 3 },
     { id: 'riskAssessment', name: '风险评估',     step: 4 },
+    { id: 'completion',     name: '办结',         step: 5 },
   ];
 
   // 数据回填
@@ -64,6 +67,7 @@
     if (tabId === 'qualification') return !!(detail && detail.qualification);
     if (tabId === 'siteInspection') return !!(detail && detail.siteInspection);
     if (tabId === 'riskAssessment') return !!(detail && detail.riskAssessment);
+    if (tabId === 'completion') return !!(detail && detail.completion);
     return true;  // basic 永远可点
   }
 
@@ -447,16 +451,8 @@
               </div>
               <!-- 备注 -->
               <div class="text-sm ${stateStyle.text} leading-relaxed mb-3">${r.remark || (state === 'pending' ? '（监管方正在评估，预计 2 个工作日内出具结论）' : '（无备注）')}</div>
-              <!-- 准入决议 4 卡 -->
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
-                <div class="bg-white/70 backdrop-blur rounded p-2.5">
-                  <div class="text-xs ${stateStyle.textSub} mb-0.5">建议信用评级</div>
-                  <div class="text-lg font-bold ${stateStyle.card}">${c.creditRating || '—'}</div>
-                </div>
-                <div class="bg-white/70 backdrop-blur rounded p-2.5">
-                  <div class="text-xs ${stateStyle.textSub} mb-0.5">建议授信额度</div>
-                  <div class="text-lg font-bold ${stateStyle.card}">${c.suggestedLimit || '—'}</div>
-                </div>
+              <!-- 准入决议 2 卡（v1.7.43 简化：去建议信用评级/建议授信额度） -->
+              <div class="grid grid-cols-2 gap-3 mt-3 max-w-md">
                 <div class="bg-white/70 backdrop-blur rounded p-2.5">
                   <div class="text-xs ${stateStyle.textSub} mb-0.5">办结时间</div>
                   <div class="text-sm font-mono ${stateStyle.card}">${c.completionTime || '—'}</div>
@@ -468,12 +464,6 @@
               </div>
             </div>
           </div>
-          ${c.nextSteps ? `
-            <div class="mt-4 pt-3 border-t ${state === 'pass' ? 'border-emerald-200' : (state === 'reject' ? 'border-rose-200' : 'border-blue-200')}">
-              <div class="text-xs ${stateStyle.textSub} font-medium mb-1">后续动作</div>
-              <div class="text-sm ${stateStyle.text} leading-relaxed">${c.nextSteps}</div>
-            </div>
-          ` : ''}
         </div>
 
         <!-- 2. 风险综合分析及揭示 -->
@@ -531,8 +521,80 @@
     `;
   }
 
-  // v1.7.41: 办结 tab 已删除（合并到风险评估 tab 的顶部"结论"banner）
-  // 原 renderCompletionTab 函数体删除
+  // v1.7.43: 办结 tab 恢复（独立展示），简化字段：办结时间 + 操作人
+  // 顶部突出"办结完成"绿色 banner（与风险评估 tab 的结论 banner 风格一致）
+  function renderCompletionTab() {
+    if (!detail || !detail.completion) {
+      return `<div class="bg-white border border-slate-200 rounded-xl p-12 text-center text-slate-500">📭 办结数据待录入</div>`;
+    }
+    const c = detail.completion || {};
+    return `
+      <div class="space-y-4">
+        <!-- 顶部突出 banner（绿色：办结完成） -->
+        <div class="rounded-xl p-6 bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200">
+          <div class="flex items-start gap-4">
+            <div class="flex-shrink-0 w-20 h-20 rounded-2xl flex flex-col items-center justify-center bg-emerald-500 text-white shadow-lg">
+              <div class="text-2xl">✓</div>
+              <div class="text-xs font-semibold mt-0.5">已完成</div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-base font-bold text-emerald-700">办结完成</span>
+                <span class="text-xs text-slate-500">· 准入流程已全部走完</span>
+              </div>
+              <div class="text-sm text-emerald-700 leading-relaxed mb-4">该客户已完成全部 5 步准入审批流程，准入结论为「通过」。</div>
+              <div class="grid grid-cols-2 gap-3 max-w-md">
+                <div class="bg-white/70 backdrop-blur rounded p-3">
+                  <div class="text-xs text-emerald-600 mb-1">办结时间</div>
+                  <div class="text-sm font-mono text-emerald-700">${c.completionTime || '—'}</div>
+                </div>
+                <div class="bg-white/70 backdrop-blur rounded p-3">
+                  <div class="text-xs text-emerald-600 mb-1">操作人</div>
+                  <div class="text-sm text-emerald-700 truncate">${c.operator || '—'}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 流程时间线回顾（5 步全走完） -->
+        <div class="bg-white border border-slate-200 rounded-xl p-5">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            <h3 class="text-sm font-semibold text-slate-700">准入流程回顾</h3>
+          </div>
+          <div class="space-y-3">
+            ${[
+              { step: 1, name: '基础信息收集', time: data.applyDate, operator: data.drafter || '客户操作人' },
+              { step: 2, name: '资质审核',     time: detail.qualification?.auditTime, operator: detail.qualification?.auditor },
+              { step: 3, name: '现场考察',     time: detail.siteInspection?.visitTime, operator: detail.siteInspection?.inspector },
+              { step: 4, name: '风险评估',     time: detail.riskAssessment?.assessTime, operator: detail.riskAssessment?.assessor },
+              { step: 5, name: '办结',         time: c.completionTime, operator: c.operator },
+            ].map(s => `
+              <div class="flex items-center gap-3">
+                <div class="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-medium">${s.step}</div>
+                <div class="flex-1 grid grid-cols-3 gap-4 items-center text-sm">
+                  <div class="text-slate-800 font-medium">${s.name}</div>
+                  <div class="text-slate-500 font-mono text-xs">${s.time || '—'}</div>
+                  <div class="text-slate-600 text-xs truncate">${s.operator || '—'}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- 准入决议回看（指向风险评估 tab 的链接） -->
+        <div class="bg-white border border-slate-200 rounded-xl p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            <h3 class="text-sm font-semibold text-slate-700">准入决议</h3>
+          </div>
+          <div class="text-sm text-slate-700 leading-relaxed mb-3">${detail.riskAssessment?.remark || '（无备注）'}</div>
+          <button onclick="switchTab('riskAssessment')" class="text-sm text-blue-600 hover:underline">查看风险评估详情 →</button>
+        </div>
+      </div>
+    `;
+  }
   // ============ 底部固定操作栏（v1.7.42：仅驳回状态显示，含"重新提交"+"返回"） ============
   const isRejected = data.status === 'rejected' || data.applyResult === '不通过';
   function renderFooter() {
@@ -559,6 +621,7 @@
     else if (currentTab === 'qualification')  tabContent = renderQualificationTab();
     else if (currentTab === 'siteInspection') tabContent = renderSiteInspectionTab();
     else if (currentTab === 'riskAssessment') tabContent = renderRiskAssessmentTab();
+    else if (currentTab === 'completion')     tabContent = renderCompletionTab();
 
     return `
       ${renderStepBar()}
