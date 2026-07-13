@@ -247,6 +247,10 @@ const MockData = {
           { icon: 'list', label: '出/入库详情', path: '/platform/approval-in-out-detail' },
           { icon: 'package', label: '在库监控', path: '/platform/monitoring-dashboard' },
         ]},
+        // v1.7.52：监管方新增【库存管理】group - 库存台账（复用货主方）
+        { group: '库存管理', items: [
+          { icon: 'list', label: '库存台账', path: '/platform/inventory-ledger' },
+        ]},
         { group: '视频监控', items: [
           { icon: 'video', label: '监控概览', path: '/customer/video' },
         ]},
@@ -260,6 +264,10 @@ const MockData = {
           { icon: 'box', label: '入库审批', path: '/guarantor/approval-inbound' },
           { icon: 'list', label: '出/入库详情', path: '/guarantor/approval-in-out-detail' },
         ]},
+        // v1.7.52：担保方新增【库存管理】group - 库存台账（按 guarantorId 过滤）
+        { group: '库存管理', items: [
+          { icon: 'list', label: '库存台账', path: '/guarantor/inventory-ledger' },
+        ]},
         { group: '视频监控', items: [
           { icon: 'video', label: '监控概览', path: '/customer/video' },
         ]},
@@ -272,6 +280,10 @@ const MockData = {
         { group: '货物管理', items: [
           { icon: 'box', label: '入库审批', path: '/bank/approval-inbound' },
           { icon: 'list', label: '出/入库详情', path: '/bank/approval-in-out-detail' },
+        ]},
+        // v1.7.52：资金方新增【库存管理】group - 库存台账（按 bank 过滤）
+        { group: '库存管理', items: [
+          { icon: 'list', label: '库存台账', path: '/bank/inventory-ledger' },
         ]},
         { group: '视频监控', items: [
           { icon: 'video', label: '监控概览', path: '/customer/video' },
@@ -3100,7 +3112,7 @@ const MockData = {
       { id: 'wh_002', name: '郑州融万冷链库', locations: ['冻品一区-A 仓-08 货位', '冻品一区-A 仓-09 货位', '冻品一区-A 仓-10 货位', '冻品二区-B 仓-12 货位'] },
       { id: 'wh_003', name: '天津港国际冷链基地', locations: ['冻品三区-C 仓-12 货位', '冻品三区-C 仓-15 货位', '冻品三区-C 仓-18 货位'] },
     ];
-    const banks = ['中原银行', '工商银行', '中融信托·冷链金融部', '招商银行'];
+    const banks = ['中原银行', '工商银行', '中融信托·冷链金融部', '招商银行', '中国民生银行'];  // v1.7.52: 加"中国民生银行"供资金方 u_bank_001（刘敏）按 bank 过滤
     const records = [];
     let id = 1;
     // 生成 50 条覆盖多库点 / 多货品 / 多金融机构
@@ -3136,6 +3148,10 @@ const MockData = {
         piecesUnit: '箱',
         weightUnit: '千克',
         bank: banks[i % banks.length],
+        // v1.7.52：担保方按 guarantorId 过滤（参照 v1.7.51 inboundList 模式）
+        // u_guar_001（王建国-中原信用担保）：i%2===0 的记录（约 25 条）
+        // u_guar_002：i%2===1 的记录
+        guarantorId: i % 2 === 0 ? 'u_guar_001' : 'u_guar_002',
         state: i % 5 === 0 ? 'frozen' : (i % 4 === 0 ? 'pledged' : 'normal'),
       });
     }

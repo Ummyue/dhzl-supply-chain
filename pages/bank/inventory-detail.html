@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>库存明细 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.18 库存明细详情（库存台账列表的跳转目标） ============
+  // 从 url ?id= 拿到 inv_xxx 库存记录（按货品聚合）→ 反查关联的入库/出库/质押/解押事件流
+
+  const urlId = new URLSearchParams(window.location.search).get('id');
+  const stock = (MockData.inventoryLedger || []).find(r => r.id === urlId);
+
+  let activeTab = 'inbound';
+
+  // 从 inventoryRecords 找当前货品/库点相关的记录，关联出事件流
+  function relatedRecords() {
+    if (!stock) return { inbound: [], outbound: [], pledge: [], unpledge: [], freeze: [] };
+    const all = MockData.inventoryRecords || [];
+    // 简化关联：根据货品 / 库点关键词查找
+    const matchingByProduct = all.filter(r => {
+      const matchesProduct = stock.productFullName && r.productName && stock.productFullName.includes(r.productName.split('-')[1] || r.productName.split('-')[0]);
+      const matchesWh = r.warehouseName === stock.warehouseName;
+      return matchesProduct || matchesWh;
+    });
+    return {
+      inbound: matchingByProduct.filter(r => r.type === 'inbound'),
+      outbound: matchingByProduct.filter(r => r.type === 'outbound'),
+      pledge: matchingByProduct.filter(r => r.type === 'pledge'),
+      unpledge: matchingByProduct.filter(r => r.type === 'unpledge'),
+      freeze: matchingByProduct.filter(r => r.frozenWeight > 0),
+    };
+  }
+
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '库存明细',
+    subtitle: '资金方视角 - 本行放款对应的库存明细',
+    currentPath: '/bank/inventory-ledger',
+    breadcrumb: [
+      { label: '库存管理', path: '/bank/inventory-ledger' },
+      { label: '库存台账', path: '/bank/inventory-ledger' },
+      { label: '库存明细', path: '/bank/inventory-detail' },
+    ],
+    extra: '',
+    content: render(),
+  });
+
+  function stateBadge(s) {
+    if (s === 'frozen') return '<span class="px-2 py-0.5 bg-slate-600 text-white text-xs rounded">已冻结</span>';
+    if (s === 'pledged') return '<span class="px-2 py-0.5 bg-violet-100 text-violet-700 text-xs rounded">质押中</span>';
+    return '<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded">正常</span>';
+  }
+
+  function render() {
+    if (!stock) {
+      return `
+        <div class="bg-white border border-slate-200 rounded-xl p-12 text-center">
+          <p class="text-slate-600 mb-2">📭 未找到该库存记录</p>
+          <p class="text-xs text-slate-400 mb-4">URL 参数 id 缺失或已失效</p>
+          <a href="${Utils.nav('/bank/inventory-ledger')}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">返回库存台账</a>
+        </div>
+      `;
+    }
+
+    const recs = relatedRecords();
+    const tabCounts = { inbound: recs.inbound.length, outbound: recs.outbound.length, pledge: recs.pledge.length, unpledge: recs.unpledge.length, freeze: recs.freeze.length };
+
+    return `
+      <!-- 顶部 header -->
+      <div class="flex items-center justify-between mb-4 bg-white border border-slate-200 rounded-xl px-5 py-3">
+        <div class="flex items-center gap-3">
+          <a href="${Utils.nav('/bank/inventory-ledger')}" class="flex items-center gap-1 text-slate-600 hover:text-blue-600 text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            返回库存台账
+          </a>
+          <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">库</div>
+          <div>
+            <h2 class="text-base font-bold text-slate-800">${stock.productFullName}</h2>
+            <p class="text-xs text-slate-500 font-mono">${stock.id} · ${stock.warehouseName} · ${stock.location}</p>
+          </div>
+          ${stateBadge(stock.state)}
+        </div>
+      </div>
+
+      <!-- 1. 库存基础信息（8 字段 4×2） -->
+      <section class="bg-white border border-slate-200 rounded-xl mb-4 overflow-hidden">
+        <div class="px-6 py-3 border-b border-slate-200">
+          <h3 class="font-bold text-slate-800">基础信息</h3>
+        </div>
+        <div class="px-6 py-5">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-x-8 gap-y-4">
+            <div><dt class="text-xs text-slate-500 mb-1">库点名称（仓库）</dt><dd class="text-sm text-slate-800">${stock.warehouseName}</dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1">仓房-货位</dt><dd class="text-sm text-slate-800">${stock.location}</dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1">货物名称</dt><dd class="text-sm text-slate-800 font-medium">${stock.productFullName}</dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1">国家/类别</dt><dd class="text-sm text-slate-800">${stock.country} · ${stock.category}</dd></div>
+
+            <div><dt class="text-xs text-slate-500 mb-1">金融机构</dt><dd class="text-sm text-slate-800">${stock.bank}</dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1">状态</dt><dd>${stateBadge(stock.state)}</dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1">数量单位</dt><dd class="text-sm text-slate-500">${stock.piecesUnit}</dd></div>
+            <div><dt class="text-xs text-slate-500 mb-1">重量单位</dt><dd class="text-sm text-slate-500">${stock.weightUnit}</dd></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. 库存汇总 9 卡（3×3） -->
+      <section class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div class="bg-white border border-blue-200 rounded-xl p-5">
+          <div class="text-xs text-blue-600 mb-1.5">📦 库存数量</div>
+          <div class="text-2xl font-bold text-blue-700 num-focus">${Utils.fmtNum(stock.stockPieces)} <span class="text-sm font-normal text-slate-400">${stock.piecesUnit}</span></div>
+        </div>
+        <div class="bg-white border border-blue-200 rounded-xl p-5">
+          <div class="text-xs text-blue-600 mb-1.5">⚖️ 库存重量</div>
+          <div class="text-2xl font-bold text-blue-700 num-focus">${stock.stockWeight.toFixed(4)} <span class="text-sm font-normal text-slate-400">${stock.weightUnit}</span></div>
+        </div>
+        <div class="bg-white border border-blue-200 rounded-xl p-5">
+          <div class="text-xs text-blue-600 mb-1.5">💰 库存货值</div>
+          <div class="text-2xl font-bold text-blue-700 num-focus">${Utils.fmtMoney(stock.stockValue)}</div>
+        </div>
+
+        <div class="bg-white border border-violet-200 rounded-xl p-5">
+          <div class="text-xs text-violet-600 mb-1.5">🔒 质押数量</div>
+          <div class="text-2xl font-bold text-violet-700 num-focus">${stock.pledgePieces ? Utils.fmtNum(stock.pledgePieces) : '—'} <span class="text-sm font-normal text-slate-400">${stock.piecesUnit}</span></div>
+          <div class="text-xs text-violet-500 mt-1">占库存比例 ${stock.stockPieces ? ((stock.pledgePieces / stock.stockPieces * 100).toFixed(0)) : 0}%</div>
+        </div>
+        <div class="bg-white border border-violet-200 rounded-xl p-5">
+          <div class="text-xs text-violet-600 mb-1.5">🔒 质押重量</div>
+          <div class="text-2xl font-bold text-violet-700 num-focus">${stock.pledgeWeight ? stock.pledgeWeight.toFixed(4) : '—'} <span class="text-sm font-normal text-slate-400">${stock.weightUnit}</span></div>
+        </div>
+        <div class="bg-white border border-violet-200 rounded-xl p-5">
+          <div class="text-xs text-violet-600 mb-1.5">🔒 质押货值</div>
+          <div class="text-2xl font-bold text-violet-700 num-focus">${stock.pledgeValue ? Utils.fmtMoney(stock.pledgeValue) : '—'}</div>
+        </div>
+
+        <div class="bg-white border border-slate-300 rounded-xl p-5">
+          <div class="text-xs text-slate-700 mb-1.5">❄️ 冻结数量</div>
+          <div class="text-2xl font-bold text-slate-700 num-focus">${stock.frozenPieces ? Utils.fmtNum(stock.frozenPieces) : '—'} <span class="text-sm font-normal text-slate-400">${stock.piecesUnit}</span></div>
+          <div class="text-xs text-slate-500 mt-1">如司法冻结 / 争议冻结</div>
+        </div>
+        <div class="bg-white border border-slate-300 rounded-xl p-5">
+          <div class="text-xs text-slate-700 mb-1.5">❄️ 冻结重量</div>
+          <div class="text-2xl font-bold text-slate-700 num-focus">${stock.frozenWeight ? stock.frozenWeight.toFixed(4) : '—'} <span class="text-sm font-normal text-slate-400">${stock.weightUnit}</span></div>
+        </div>
+        <div class="bg-white border border-emerald-200 rounded-xl p-5 bg-gradient-to-br from-emerald-50 to-emerald-100">
+          <div class="text-xs text-emerald-600 mb-1.5">✅ 可用库存</div>
+          <div class="text-2xl font-bold text-emerald-700 num-focus">${Utils.fmtNum(stock.stockPieces - (stock.pledgePieces || 0) - (stock.frozenPieces || 0))} <span class="text-sm font-normal text-slate-400">${stock.piecesUnit}</span></div>
+          <div class="text-xs text-emerald-600 mt-1">= 库存 - 质押 - 冻结</div>
+        </div>
+      </section>
+
+      <!-- 3. 关联记录（5 个子 tab：入库/出库/质押/解押/冻结） -->
+      <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <!-- tab bar -->
+        <div class="border-b border-slate-200 px-4 bg-slate-50">
+          <div class="flex items-center gap-1">
+            ${[
+              { id: 'inbound',  label: '入库记录', icon: '⬇' },
+              { id: 'outbound', label: '出库记录', icon: '⬆' },
+              { id: 'pledge',   label: '质押记录', icon: '🔒' },
+              { id: 'unpledge', label: '解押记录', icon: '🔓' },
+              { id: 'freeze',   label: '冻结记录', icon: '❄️' },
+            ].map(t => `
+              <button onclick="switchTab('${t.id}')" class="px-4 py-3 text-sm font-medium border-b-2 transition flex items-center gap-1.5 ${activeTab === t.id ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'}">
+                <span>${t.icon}</span> ${t.label}
+                <span class="px-1.5 py-0.5 text-xs rounded ${activeTab === t.id ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-500'}">${tabCounts[t.id] || 0}</span>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- tab content -->
+        <div class="overflow-x-auto">
+          ${renderTabContent(recs)}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderTabContent(recs) {
+    const list = recs[activeTab] || [];
+    const cols = [
+      { key: 'bizNo',           label: '单据编号',  mono: true },
+      { key: 'bizDate',         label: '业务日期' },
+      { key: 'productName',     label: '货物名称' },
+      { key: 'warehouseName',   label: '仓库' },
+      { key: 'stockWeight',     label: '毛重(kg)', num: true },
+      { key: 'stockValue',      label: '货值(元)', money: true },
+      { key: 'applicant',       label: '申请人' },
+      { key: 'creator',         label: '操作人' },
+      { key: 'remark',          label: '备注' },
+    ];
+
+    if (activeTab === 'freeze' && !list.length) {
+      // 专门给冻结 tab：可能没有冻结记录，但当前 stock 有 frozenWeight
+      return `
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-600 text-xs">
+            <tr>
+              <th class="text-left px-3 py-3">冻结编号</th>
+              <th class="text-left px-3 py-3">冻结日期</th>
+              <th class="text-left px-3 py-3">冻结原因</th>
+              <th class="text-right px-3 py-3">冻结重量(kg)</th>
+              <th class="text-right px-3 py-3">冻结货值(元)</th>
+              <th class="text-left px-3 py-3">解冻日期</th>
+              <th class="text-left px-3 py-3">操作人</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-slate-100">
+              <td class="px-3 py-3 font-mono text-xs text-slate-700">FRZ${stock.id.replace('inv_', '')}${String(stock.frozenWeight || 0).padStart(4, '0')}</td>
+              <td class="px-3 py-3 text-slate-700 font-mono text-xs">${new Date(Date.now() - 86400000 * 7).toISOString().slice(0,10)}</td>
+              <td class="px-3 py-3 text-slate-700 text-xs">${stock.frozenPieces ? '司法冻结（对方起诉，财产保全）' : '—（当前未冻结）'}</td>
+              <td class="px-3 py-3 text-right num-focus">${stock.frozenWeight ? stock.frozenWeight.toFixed(4) : '—'}</td>
+              <td class="px-3 py-3 text-right num-focus">${stock.frozenWeight ? Utils.fmtMoney(stock.frozenWeight * 63) : '—'}</td>
+              <td class="px-3 py-3 text-slate-500 text-xs">${stock.frozenPieces ? '— （未解冻）' : '—'}</td>
+              <td class="px-3 py-3 text-slate-700 text-xs">${stock.frozenPieces ? '系统自动' : '—'}</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+    }
+
+    if (!list.length) {
+      return '<div class="py-12 text-center text-slate-400 text-sm">📭 当前分类下无关联记录</div>';
+    }
+
+    return `
+      <table class="w-full text-sm min-w-[1200px]">
+        <thead class="bg-slate-50 text-slate-600 text-xs">
+          <tr>
+            ${cols.map(c => `<th class="text-${c.num || c.money ? 'right' : 'left'} px-3 py-3 whitespace-nowrap">${c.label}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${list.slice(0, 20).map(r => `
+            <tr class="border-t border-slate-100 hover:bg-slate-50/50 cursor-pointer" onclick="viewRecord('${r.id}')">
+              ${cols.map(c => {
+                const val = r[c.key] ?? '-';
+                let cls = `${c.mono ? 'font-mono text-xs text-slate-700' : c.num ? 'num-focus' : c.money ? 'num-focus' : 'text-slate-700 text-xs'}`;
+                if (c.money) cls += ' text-rose-700';
+                if (c.num) cls += ' whitespace-nowrap';
+                if (c.mono) cls += ' whitespace-nowrap';
+                return `<td class="px-3 py-2.5 whitespace-nowrap ${cls}">${val || '-'}</td>`;
+              }).join('')}
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div class="px-4 py-2 text-xs text-slate-400 text-center border-t border-slate-100">显示前 20 条</div>
+    `;
+  }
+
+  // ============ Events ============
+  window.switchTab = (id) => { activeTab = id; refresh(); };
+  window.viewRecord = (id) => Utils.toast(`查看单据 ${id}（占位）`, 'info');
+
+  function refresh() {
+    document.getElementById('app').innerHTML = Components.pageShell({
+      title: '库存明细',
+    subtitle: '资金方视角 - 本行放款对应的库存明细',
+      currentPath: '/bank/inventory-ledger',
+      breadcrumb: [
+        { label: '库存管理', path: '/bank/inventory-ledger' },
+        { label: '库存台账', path: '/bank/inventory-ledger' },
+        { label: '库存明细', path: '/bank/inventory-detail' },
+      ],
+      extra: '',
+      content: render(),
+    });
+  }
+</script>
+</body>
+</html>

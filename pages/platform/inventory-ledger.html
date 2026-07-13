@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>库存台账 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.18 库存台账（按用户截图样式：库存汇总列表 4 stats + 13 列聚合表） ============
+  // 修正历史：原 v1.7.10 版本是事件流 4 tab（入库/出库/质押/解押），相当于"库存明细界面"
+  // 现按货品聚合重写为"库存汇总台账"——列表点击行跳到 /customer/inventory-detail?id=xxx
+
+  const filters = {
+    bank: '中原银行',   // 默认按截图预设
+    warehouse: '',
+    location: '',
+    product: '',
+  };
+  let currentState = 'all'; // v1.7.29 状态机已移除（与列表中"库点名称"列的状态徽标同时去掉）
+
+  // ============ 分页状态 ============
+  const pagination = {
+    page: 1,
+    pageSize: 10,   // v1.7.29 默认 10，支持 10/20/50/100 切换
+  };
+
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '库存台账',
+    subtitle: '监管方视角 - 全量库存台账',
+    currentPath: '/platform/inventory-ledger',
+    breadcrumb: [
+      { label: '库存管理', path: '/platform/inventory-ledger' },
+      { label: '库存台账', path: '/platform/inventory-ledger' },
+    ],
+    content: render(),
+  });
+
+  function applyFilters() {
+    return (MockData.inventoryLedger || []).filter(r => {
+      if (filters.bank && r.bank !== filters.bank) return false;
+      if (filters.warehouse && r.warehouseName !== filters.warehouse) return false;
+      if (filters.location && r.location !== filters.location) return false;
+      if (filters.product && !r.productFullName.includes(filters.product)) return false;
+      return true;
+    });
+  }
+
+  function statsOf(list) {
+    return list.reduce((a, r) => {
+      a.totalWeight += r.stockWeight;
+      a.totalValue += r.stockValue;
+      a.pledgeWeight += r.pledgeWeight;
+      a.pledgeValue += r.pledgeValue;
+      return a;
+    }, { totalWeight: 0, totalValue: 0, pledgeWeight: 0, pledgeValue: 0 });
+  }
+
+  // ============ v1.7.29 移除：库点名称列的 正常/质押中/已冻结 徽标 ============
+  // 原因：状态机本身已删，列表中再显示状态徽标会造成视觉噪音
+  // 行点击跳转库存详情页，详情页中通过"库存数量/质押数量/冻结数量"区分状态
+
+  function render() {
+    const allList = applyFilters();
+    const list = getPagedList(allList);
+    const s = statsOf(allList);
+    return `
+      
+      <!-- 顶部角色化提示条 -->
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-xs text-blue-800">
+        <span class="font-medium">监管方视图：</span>监管方视角 - 全量库存台账
+      </div>
+
+      <!-- 4 张 stats 卡（库存汇总）-->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        ${Components.statCard({ label: '总库存',            value: `${s.totalWeight.toFixed(4)} 吨`, hint: '总库存 = 所有未解押货物的毛重合计（吨）',                                  color: 'text-red-700', gradient: true })}
+        ${Components.statCard({ label: '预估总货值',         value: `${s.totalValue.toFixed(4)} 元`,  hint: '预估总货值 = 所有未解押货物的评估货值合计',                                  color: 'text-amber-700' })}
+        ${Components.statCard({ label: '质押总量',           value: `${s.pledgeWeight.toFixed(4)} 吨`, hint: '质押总量 = 当前在押状态下货物重量合计（吨）',                                color: 'text-blue-700' })}
+        ${Components.statCard({ label: '质押预估总货值',     value: `${s.pledgeValue.toFixed(4)} 元`,  hint: '质押预估总货值 = 当前在押状态下评估货值合计',                                color: 'text-violet-700' })}
+      </div>
+
+      <!-- 筛选区：金融机构 / 仓库 / 仓房-货位 / 货物名称 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-4 mb-3">
+        <!-- 当前搜索 tag + 清除全部 -->
+        <div class="flex items-center justify-between mb-3 text-sm">
+          <div class="flex items-center flex-wrap gap-1.5 min-h-[24px]">
+            <span class="text-slate-500">当前搜索：</span>
+            ${renderActiveTags()}
+            ${hasAnyFilter() ? `<button onclick="resetAllFilters()" class="text-xs text-rose-500 hover:text-rose-700 ml-2">清除全部</button>` : ''}
+          </div>
+        </div>
+        <!-- 1 行 4 列下拉：金融机构 / 仓库名称 / 仓房-货位 / 货物名称 -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">金融机构</label>
+            <select onchange="setFilter('bank', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+              <option value="">全部</option>
+              ${['中原银行', '工商银行', '中融信托·冷链金融部', '招商银行'].map(b => `<option value="${b}" ${filters.bank === b ? 'selected' : ''}>${b}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">仓库名称</label>
+            <select onchange="setFilter('warehouse', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+              <option value="">请选择</option>
+              ${[...new Set((MockData.inventoryLedger || []).map(r => r.warehouseName).filter(Boolean))].map(w => `<option value="${w}" ${filters.warehouse === w ? 'selected' : ''}>${w}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">仓房-货位</label>
+            <select onchange="setFilter('location', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+              <option value="">请选择</option>
+              ${[...new Set((MockData.inventoryLedger || []).map(r => r.location).filter(Boolean))].map(l => `<option value="${l}" ${filters.location === l ? 'selected' : ''}>${l}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">货物名称</label>
+            <select onchange="setFilter('product', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+              <option value="">请选择</option>
+              ${[...new Set((MockData.inventoryLedger || []).map(r => r.productFullName).filter(Boolean))].map(p => `<option value="${p}" ${filters.product === p ? 'selected' : ''}>${p}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 状态机筛选 + 数据导出（v1.7.29 移除 4 个状态机 tab，与库点名称列状态徽标一起去掉） -->
+      <div class="bg-white border border-slate-200 rounded-xl p-3 mb-3 flex items-center justify-end">
+        <button onclick="exportCSV()" class="text-sm text-blue-600 hover:underline">数据导出</button>
+      </div>
+
+      <!-- 13 列库存汇总表（按用户截图） -->
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm min-w-[1600px]">
+            <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+              <tr>
+                <th class="text-left px-3 py-3 whitespace-nowrap">库点名称</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">仓房-货位</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">货物名称</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">库存数量</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">库存重量</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">库存货值（元）</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">质押数量</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">质押重量</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">质押货值（元）</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">冻结数量</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">冻结重量</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">数量单位</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">重量单位</th>
+              </tr>
+            </thead>
+            <tbody>${renderRows(list)}</tbody>
+          </table>
+        </div>
+        <div class="px-4 py-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+          <span>共 <b class="text-slate-800">${allList.length}</b> 条记录（mock 50 条 · 筛选后 ${allList.length} 条）</span>
+          <span>点击任意数据行进入「库存明细详情」</span>
+        </div>
+        ${renderPagination(allList.length)}
+      </div>
+    `;
+  }
+
+  function renderRows(list) {
+    if (!list.length) {
+      return `<tr><td colspan="13" class="py-12 text-center text-slate-400 text-sm">📭 当前筛选条件下无库存数据</td></tr>`;
+    }
+    return list.map(r => `
+      <tr class="border-t border-slate-100 hover:bg-blue-50/30 cursor-pointer transition" onclick="goInventoryDetail('${r.id}')">
+        <td class="px-3 py-2.5 text-blue-700 font-mono text-xs whitespace-nowrap">
+          ${r.warehouseName}
+        </td>
+        <td class="px-3 py-2.5 text-slate-700 text-xs whitespace-nowrap">${r.location}</td>
+        <td class="px-3 py-2.5 text-slate-800 text-xs whitespace-nowrap font-medium">${r.productFullName}</td>
+        <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap">${Utils.fmtNum(r.stockPieces)}</td>
+        <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap">${r.stockWeight.toFixed(4)}</td>
+        <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap">${Utils.fmtMoney(r.stockValue)}</td>
+        <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap ${r.pledgePieces ? 'text-violet-700' : 'text-slate-300'}">${r.pledgePieces ? Utils.fmtNum(r.pledgePieces) : '—'}</td>
+        <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap ${r.pledgeWeight ? 'text-violet-700' : 'text-slate-300'}">${r.pledgeWeight ? r.pledgeWeight.toFixed(4) : '—'}</td>
+        <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap ${r.pledgeValue ? 'text-violet-700' : 'text-slate-300'}">${r.pledgeValue ? Utils.fmtMoney(r.pledgeValue) : '—'}</td>
+        <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap ${r.frozenPieces ? 'text-slate-700 font-medium' : 'text-slate-300'}">${r.frozenPieces ? Utils.fmtNum(r.frozenPieces) : '—'}</td>
+        <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap ${r.frozenWeight ? 'text-slate-700 font-medium' : 'text-slate-300'}">${r.frozenWeight ? r.frozenWeight.toFixed(4) : '—'}</td>
+        <td class="px-3 py-2.5 text-slate-500 text-xs whitespace-nowrap">${r.piecesUnit}</td>
+        <td class="px-3 py-2.5 text-slate-500 text-xs whitespace-nowrap">${r.weightUnit}</td>
+      </tr>
+    `).join('');
+  }
+
+  function renderActiveTags() {
+    const tags = [];
+    if (filters.bank) tags.push({ key: 'bank', label: `金融机构：${filters.bank}` });
+    if (filters.warehouse) tags.push({ key: 'warehouse', label: `仓库：${filters.warehouse}` });
+    if (filters.location) tags.push({ key: 'location', label: `货位：${filters.location}` });
+    if (filters.product) tags.push({ key: 'product', label: `货物：${filters.product}` });
+    if (!tags.length) return '<span class="text-slate-400 text-xs">（无筛选条件 / 默认显示全部）</span>';
+    return tags.map(t => `
+      <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-slate-100 text-slate-700 rounded">
+        ${t.label}<button onclick="removeTag('${t.key}')" class="text-slate-400 hover:text-slate-700">×</button>
+      </span>
+    `).join('');
+  }
+
+  function hasAnyFilter() {
+    return !!(filters.bank || filters.warehouse || filters.location || filters.product);
+  }
+
+  // ============ 分页辅助（v1.7.29 新增：单页 10/20/50/100 切换） ============
+  function getPagedList(allList) {
+    const start = (pagination.page - 1) * pagination.pageSize;
+    return allList.slice(start, start + pagination.pageSize);
+  }
+
+  function renderPagination(total) {
+    const totalPages = Math.max(1, Math.ceil(total / pagination.pageSize));
+    if (pagination.page > totalPages) pagination.page = totalPages;
+    const start = total === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1;
+    const end = Math.min(pagination.page * pagination.pageSize, total);
+    // 页码按钮：1 ... current-1 current current+1 ... last
+    const pageBtns = [];
+    const push = (n) => pageBtns.push(n);
+    push(1);
+    if (pagination.page > 4) pageBtns.push('...');
+    for (let i = Math.max(2, pagination.page - 1); i <= Math.min(totalPages - 1, pagination.page + 1); i++) push(i);
+    if (pagination.page < totalPages - 3) pageBtns.push('...');
+    if (totalPages > 1) push(totalPages);
+    return `
+      <div class="px-4 py-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+        <div class="flex items-center gap-3">
+          <span>共 <b class="text-slate-800">${total}</b> 条记录</span>
+          <span>第 <b class="text-slate-800">${start}-${end}</b> 条</span>
+          <label class="flex items-center gap-1">
+            <span>每页</span>
+            <select onchange="changePageSize(this.value)" class="px-1.5 py-0.5 text-xs border border-slate-200 rounded bg-white focus:border-blue-500 outline-none">
+              <option value="10"  ${pagination.pageSize === 10  ? 'selected' : ''}>10</option>
+              <option value="20"  ${pagination.pageSize === 20  ? 'selected' : ''}>20</option>
+              <option value="50"  ${pagination.pageSize === 50  ? 'selected' : ''}>50</option>
+              <option value="100" ${pagination.pageSize === 100 ? 'selected' : ''}>100</option>
+            </select>
+            <span>条</span>
+          </label>
+        </div>
+        <div class="flex items-center gap-1">
+          <button onclick="gotoPage(${pagination.page - 1})" ${pagination.page === 1 ? 'disabled' : ''} class="px-2 py-1 text-xs border border-slate-200 rounded hover:bg-slate-50 ${pagination.page === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600'}">上一页</button>
+          ${pageBtns.map(p => p === '...'
+            ? `<span class="px-2 py-1 text-xs text-slate-400">...</span>`
+            : `<button onclick="gotoPage(${p})" class="px-2.5 py-1 text-xs rounded ${p === pagination.page ? 'bg-blue-600 text-white' : 'border border-slate-200 text-slate-600 hover:bg-slate-50'}">${p}</button>`).join('')}
+          <button onclick="gotoPage(${pagination.page + 1})" ${pagination.page === totalPages ? 'disabled' : ''} class="px-2 py-1 text-xs border border-slate-200 rounded hover:bg-slate-50 ${pagination.page === totalPages ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600'}">下一页</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // ============ Events ============
+  window.setFilter = (k, v) => { filters[k] = v; pagination.page = 1; refresh(); };
+  window.removeTag = (k) => { filters[k] = ''; pagination.page = 1; refresh(); };
+  window.resetAllFilters = () => {
+    filters.bank = '';
+    filters.warehouse = filters.location = filters.product = '';
+    pagination.page = 1;
+    refresh();
+  };
+  window.changePageSize = (n) => {
+    pagination.pageSize = parseInt(n, 10);
+    pagination.page = 1;
+    refresh();
+  };
+  window.gotoPage = (n) => {
+    const total = applyFilters().length;
+    const totalPages = Math.max(1, Math.ceil(total / pagination.pageSize));
+    if (n < 1 || n > totalPages) return;
+    pagination.page = n;
+    refresh();
+  };
+  window.goInventoryDetail = (id) => {
+    window.location.href = `${Utils.nav('/platform/inventory-detail')}?id=${id}`;
+  };
+  window.exportCSV = () => {
+    const items = applyFilters();
+    if (!items.length) return Utils.toast('当前无数据可导出', 'warning');
+    const headers = ['库点名称','仓房-货位','货物名称','库存数量','库存重量','库存货值','质押数量','质押重量','质押货值','冻结数量','冻结重量','数量单位','重量单位'];
+    const rows = items.map(r => [r.warehouseName, r.location, r.productFullName, r.stockPieces, r.stockWeight, r.stockValue, r.pledgePieces, r.pledgeWeight, r.pledgeValue, r.frozenPieces, r.frozenWeight, r.piecesUnit, r.weightUnit]);
+    const csv = [headers, ...rows].map(row => row.map(c => {
+      const v = String(c == null ? '' : c);
+      return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+    }).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `库存台账_${currentState}_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    Utils.toast(`已导出 ${items.length} 条记录`, 'success');
+  };
+
+  function refresh() {
+    document.getElementById('app').innerHTML = Components.pageShell({
+      title: '库存台账',
+    subtitle: '监管方视角 - 全量库存台账',
+      currentPath: '/platform/inventory-ledger',
+      breadcrumb: [
+        { label: '库存管理', path: '/platform/inventory-ledger' },
+        { label: '库存台账', path: '/platform/inventory-ledger' },
+      ],
+      content: render(),
+    });
+  }
+</script>
+</body>
+</html>
