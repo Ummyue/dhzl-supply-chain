@@ -268,6 +268,11 @@ const MockData = {
         { group: '库存管理', items: [
           { icon: 'list', label: '库存台账', path: '/guarantor/inventory-ledger' },
         ]},
+        // v1.7.53：担保方新增【解押出库管理】group（复用货主方 + 监管方放还款详情）
+        { group: '解押出库管理', items: [
+          { icon: 'logistics', label: '解押/出库审批', path: '/platform/approval-outbound' },
+          { icon: 'list', label: '放还款详情', path: '/guarantor/disburse-repayment' },
+        ]},
         { group: '视频监控', items: [
           { icon: 'video', label: '监控概览', path: '/customer/video' },
         ]},
@@ -284,6 +289,11 @@ const MockData = {
         // v1.7.52：资金方新增【库存管理】group - 库存台账（按 bank 过滤）
         { group: '库存管理', items: [
           { icon: 'list', label: '库存台账', path: '/bank/inventory-ledger' },
+        ]},
+        // v1.7.53：资金方新增【解押出库管理】group（复用货主方 + 监管方放还款详情）
+        { group: '解押出库管理', items: [
+          { icon: 'logistics', label: '解押/出库审批', path: '/platform/approval-outbound' },
+          { icon: 'list', label: '放还款详情', path: '/bank/disburse-repayment' },
         ]},
         { group: '视频监控', items: [
           { icon: 'video', label: '监控概览', path: '/customer/video' },
@@ -334,14 +344,15 @@ const MockData = {
         { group: '准入审批', items: [
           { icon: 'shield-check', label: '准入审批', path: '/platform/approval-admission' },
         ]},
-        { group: '融资审核', items: [
+        // v1.7.53：监管方【融资审核】→【融资管理】+ 原【质物清单】一级菜单并入
+        { group: '融资管理', items: [
           { icon: 'file', label: '融资审核', path: '/platform/approval-financing' },
-        ]},
-        { group: '质物清单', items: [
           { icon: 'list', label: '质物清单', path: '/customer/pledge-list' },
         ]},
-        { group: '出库审批', items: [
+        // v1.7.53：监管方【出库审批】→【解押出库管理】+ 加放还款详情
+        { group: '解押出库管理', items: [
           { icon: 'logistics', label: '解押/出库审批', path: '/platform/approval-outbound' },
+          { icon: 'list', label: '放还款详情', path: '/platform/disburse-repayment' },
         ]},
         // v1.7.44：监管方新增「授信管理」（贷后管理改名为授信管理）
         { group: '授信管理', items: [

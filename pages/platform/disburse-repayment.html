@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>放还款详情 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+  <style>
+    /* 状态机 tab */
+    .dr-tab { position: relative; padding: 10px 16px; cursor: pointer; color: #475569; font-size: 13px; white-space: nowrap; transition: color .15s; border-bottom: 2px solid transparent; display: inline-flex; align-items: center; gap: 4px; }
+    .dr-tab:hover { color: #2563eb; }
+    .dr-tab.active { color: #2563eb; font-weight: 600; border-bottom-color: #2563eb; }
+    .dr-tab .count { color: #94a3b8; font-weight: 400; }
+    .dr-tab.active .count { color: #2563eb; }
+  </style>
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.24 放还款详情（按用户截图） ============
+  // 7 筛选器 / 4 状态 tab / 14 列（数据列 12 + 状态 + 操作）/ 数据导出 / 400 条
+  // 行操作 [查看] → /customer/pledge-detail?id={pledgeId}
+
+  const filters = {
+    financingNo:  '',      // 融资申请编号
+    pledgeNo:     '',      // 存贷资产编号
+    bankDraftNo:  '',      // 原柜号/提单号
+    product:      '',      // 金融产品（select）
+    bank:         '',      // 金融机构（select）
+    loanDateStart:'',      // 融资放款日起
+    loanDateEnd:  '',      // 融资放款日止
+    repayDateStart:'',     // 融资还款日起
+    repayDateEnd: '',      // 融资还款日止
+  };
+  let activeTab = 'all';
+
+  const STATUS_LABEL = {
+    disbursed: '已放款',
+    partial:   '部分还款',
+    cleared:   '已结清',
+    overdue:   '逾期',
+  };
+  const STATUS_CLASS = {
+    disbursed: 'bg-blue-100 text-blue-700',
+    partial:   'bg-amber-100 text-amber-700',
+    cleared:   'bg-emerald-100 text-emerald-700',
+    overdue:   'bg-rose-100 text-rose-700',
+  };
+  const TAB_ORDER = ['all','disbursed','partial','cleared'];
+
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '放还款详情',
+    subtitle: '监管方视角 - 全量放还款详情',
+    currentPath: '/platform/disburse-repayment',
+    breadcrumb: [
+      { label: '解押出库管理', path: '/platform/disburse-repayment' },
+      { label: '放还款详情', path: '/platform/disburse-repayment' },
+    ],
+    extra: ``,
+    content: render(),
+  });
+
+  function render() {
+    return `
+      
+      <!-- v1.7.53 监管方角色化提示条 -->
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-xs text-blue-800">
+        <span class="font-medium">监管方视图：</span>您正在查看<strong>放还款详情</strong>，作为监管方可核对放款记录、还款凭证与放还款状态。
+      </div>
+      <!-- 当前搜索 tag -->
+      <div class="bg-white border border-slate-200 rounded-xl px-5 py-3 mb-3 flex items-center justify-between text-sm">
+        <div class="flex items-center flex-wrap gap-1.5 min-h-[24px]">
+          <span class="text-slate-500">当前搜索：</span>
+          ${renderActiveTags()}
+        </div>
+        ${hasAnyFilter() ? `<button onclick="resetAllFilters()" class="text-xs text-rose-500 hover:text-rose-700">清除全部</button>` : ''}
+      </div>
+
+      <!-- 7 个筛选器（3×3，按用户截图） -->
+      <div class="bg-white border border-slate-200 rounded-xl px-5 py-4 mb-3">
+        <div class="grid grid-cols-3 gap-x-6 gap-y-3 mb-3">
+          <div>
+            <label class="text-xs text-slate-500 mb-1 block">融资申请编号</label>
+            <input type="text" value="${filters.financingNo}" oninput="updateFilter('financingNo', this.value)" placeholder="请输入融资申请编号" class="w-full px-3 py-2 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+          <div>
+            <label class="text-xs text-slate-500 mb-1 block">存贷资产编号</label>
+            <input type="text" value="${filters.pledgeNo}" oninput="updateFilter('pledgeNo', this.value)" placeholder="请输入存贷资产编号" class="w-full px-3 py-2 border border-slate-200 rounded text-sm font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+          <div>
+            <label class="text-xs text-slate-500 mb-1 block">原柜号/提单号</label>
+            <input type="text" value="${filters.bankDraftNo}" oninput="updateFilter('bankDraftNo', this.value)" placeholder="请输入原柜号/提单号" class="w-full px-3 py-2 border border-slate-200 rounded text-sm font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-x-6 gap-y-3 mb-3">
+          <div>
+            <label class="text-xs text-slate-500 mb-1 block">金融产品</label>
+            <select onchange="updateFilter('product', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              <option value="">请选择</option>
+              ${uniqueValues('product').map(v => `<option ${filters.product === v ? 'selected' : ''}>${v}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-500 mb-1 block">融资放款日</label>
+            <div class="flex items-center gap-1">
+              <input type="date" value="${filters.loanDateStart}" onchange="updateFilter('loanDateStart', this.value)" class="flex-1 min-w-0 px-2 py-1.5 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              <button class="px-2 py-1.5 border border-slate-200 rounded hover:bg-slate-50" title="选择日期范围">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              </button>
+              <span class="text-slate-300 text-xs">~</span>
+              <input type="date" value="${filters.loanDateEnd}" onchange="updateFilter('loanDateEnd', this.value)" class="flex-1 min-w-0 px-2 py-1.5 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="text-xs text-slate-500 mb-1 block">融资还款日</label>
+            <div class="flex items-center gap-1">
+              <input type="date" value="${filters.repayDateStart}" onchange="updateFilter('repayDateStart', this.value)" class="flex-1 min-w-0 px-2 py-1.5 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              <button class="px-2 py-1.5 border border-slate-200 rounded hover:bg-slate-50" title="选择日期范围">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              </button>
+              <span class="text-slate-300 text-xs">~</span>
+              <input type="date" value="${filters.repayDateEnd}" onchange="updateFilter('repayDateEnd', this.value)" class="flex-1 min-w-0 px-2 py-1.5 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-x-6 gap-y-3">
+          <div>
+            <label class="text-xs text-slate-500 mb-1 block">金融机构</label>
+            <select onchange="updateFilter('bank', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              <option value="">请选择</option>
+              ${uniqueValues('bank').map(v => `<option ${filters.bank === v ? 'selected' : ''}>${v}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 状态机 tab 行 + 数据导出按钮（右上） -->
+      <div class="bg-white border border-slate-200 rounded-t-xl flex items-center justify-between" style="border-bottom: 0;">
+        <div class="flex items-center overflow-x-auto">
+          ${renderTabs()}
+        </div>
+        <button onclick="exportData()" class="px-4 py-1.5 mx-5 my-2 text-xs text-slate-600 hover:text-blue-600 hover:bg-slate-50 border border-slate-200 rounded flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          数据导出
+        </button>
+      </div>
+
+      <!-- 12 数据列 + 状态 + 操作 -->
+      <div class="bg-white border border-slate-200 rounded-b-xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm min-w-[1500px]">
+            <thead class="bg-slate-50 text-slate-600 text-xs">
+              <tr>
+                <th class="text-left px-3 py-3 whitespace-nowrap">融资申请编号</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">金融产品</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">金融机构</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">放款金额（元）</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">当前货值（元）</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">融资放款日</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">融资还款日</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">已还本金（元）</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">已还利息（元）</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">未还本金（元）</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">存贷资产编号</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">原柜号/提单号</th>
+                <th class="text-center px-3 py-3 whitespace-nowrap">状态</th>
+                <th class="text-center px-3 py-3 whitespace-nowrap">操作</th>
+              </tr>
+            </thead>
+            <tbody>${renderRows(applyFilters())}</tbody>
+          </table>
+        </div>
+        ${renderPagination()}
+      </div>
+    `;
+  }
+
+  function uniqueValues(field) {
+    const set = new Set();
+    (MockData.disburseRepaymentList || []).forEach(p => p[field] && set.add(p[field]));
+    return Array.from(set);
+  }
+
+  function applyFilters() {
+    let list = (MockData.disburseRepaymentList || []);
+    if (activeTab !== 'all') list = list.filter(p => p.status === activeTab);
+    if (filters.financingNo)    list = list.filter(p => (p.financingNo || '').includes(filters.financingNo));
+    if (filters.pledgeNo)       list = list.filter(p => (p.pledgeNo || '').includes(filters.pledgeNo));
+    if (filters.bankDraftNo)    list = list.filter(p => (p.bankDraftNo || '').includes(filters.bankDraftNo));
+    if (filters.product)        list = list.filter(p => p.product === filters.product);
+    if (filters.bank)           list = list.filter(p => p.bank === filters.bank);
+    if (filters.loanDateStart)  list = list.filter(p => p.loanDate >= filters.loanDateStart);
+    if (filters.loanDateEnd)    list = list.filter(p => p.loanDate <= filters.loanDateEnd);
+    if (filters.repayDateStart) list = list.filter(p => p.repayDate >= filters.repayDateStart);
+    if (filters.repayDateEnd)   list = list.filter(p => p.repayDate <= filters.repayDateEnd);
+    return list;
+  }
+
+  function tabCounts() {
+    const all = MockData.disburseRepaymentList || [];
+    const c = { all: all.length };
+    Object.keys(STATUS_LABEL).forEach(k => c[k] = all.filter(p => p.status === k).length);
+    return c;
+  }
+
+  function renderTabs() {
+    const counts = tabCounts();
+    return TAB_ORDER.map(k => {
+      const label = k === 'all' ? '全部' : STATUS_LABEL[k];
+      const isActive = k === activeTab;
+      return `
+        <div class="dr-tab ${isActive ? 'active' : ''}" onclick="switchTab('${k}')">
+          <span>${label}</span><span class="count">(${counts[k] || 0})</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderRows(list) {
+    if (!list.length) return `<tr><td colspan="14" class="py-12 text-center text-slate-400 text-sm">📭 当前筛选条件下无放还款记录</td></tr>`;
+    return list.map(p => `
+      <tr class="border-t border-slate-100 hover:bg-blue-50/30">
+        <td class="px-3 py-3 text-blue-600 font-mono text-xs whitespace-nowrap hover:underline">${p.financingNo}</td>
+        <td class="px-3 py-3 text-slate-700 text-xs whitespace-nowrap">${p.product}</td>
+        <td class="px-3 py-3 text-slate-700 text-xs whitespace-nowrap">${p.bank}</td>
+        <td class="px-3 py-3 text-right num-focus text-slate-700 text-xs whitespace-nowrap">${p.loanAmount.toLocaleString()}.0000</td>
+        <td class="px-3 py-3 text-right num-focus text-slate-700 text-xs whitespace-nowrap">${p.currentValue.toLocaleString()}.0000</td>
+        <td class="px-3 py-3 text-slate-700 text-xs whitespace-nowrap font-mono">${p.loanDate}</td>
+        <td class="px-3 py-3 text-slate-700 text-xs whitespace-nowrap font-mono">${p.repayDate}</td>
+        <td class="px-3 py-3 text-right num-focus text-slate-700 text-xs whitespace-nowrap">${p.repaidPrincipal.toLocaleString()}.0000</td>
+        <td class="px-3 py-3 text-right num-focus text-slate-700 text-xs whitespace-nowrap">${p.repaidInterest}.0000</td>
+        <td class="px-3 py-3 text-right num-focus text-slate-700 text-xs whitespace-nowrap">${p.remainingPrincipal.toLocaleString()}.0000</td>
+        <td class="px-3 py-3 text-blue-600 font-mono text-xs whitespace-nowrap hover:underline cursor-pointer" onclick="goPledge('${p.pledgeId}'); event.stopPropagation();">${p.pledgeNo}</td>
+        <td class="px-3 py-3 text-slate-700 text-xs whitespace-nowrap">${p.bankDraftNo}</td>
+        <td class="px-3 py-3 text-center whitespace-nowrap"><span class="inline-block px-2 py-0.5 text-xs rounded ${STATUS_CLASS[p.status] || 'bg-slate-100 text-slate-700'}">${STATUS_LABEL[p.status]}</span></td>
+        <td class="px-3 py-3 text-center whitespace-nowrap">
+          <button onclick="goPledge('${p.pledgeId}'); event.stopPropagation();" class="text-blue-600 hover:text-blue-700 hover:underline text-xs">查看</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function renderPagination() {
+    return `
+      <div class="px-4 py-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+        <span>共 <b class="text-slate-800">400</b> 条记录，第 1 / 80 页</span>
+        <div class="flex items-center gap-1">
+          <button class="px-2 py-1 border border-slate-200 rounded hover:bg-slate-50 disabled:opacity-50" disabled>
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          ${[1,2,3,4,5,6,7,8,9].map(n => `<button class="px-2 py-1 border ${n === 1 ? 'bg-blue-600 text-white border-blue-600' : 'border-slate-200 hover:bg-slate-50'} rounded">${n}</button>`).join('')}
+          <button class="px-2 py-1 border border-slate-200 rounded hover:bg-slate-50">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+          <select class="ml-3 px-2 py-1 border border-slate-200 rounded text-xs">
+            <option>5 条/页</option><option>10 条/页</option><option>20 条/页</option>
+          </select>
+          <span class="ml-2">跳至</span>
+          <input type="number" value="5" class="w-12 px-2 py-1 border border-slate-200 rounded text-xs text-center">
+          <span>页</span>
+        </div>
+      </div>
+    `;
+  }
+
+  function hasAnyFilter() {
+    return Object.values(filters).some(v => v);
+  }
+
+  function renderActiveTags() {
+    const labels = [
+      ['financingNo', `融资申请编号：${filters.financingNo}`],
+      ['pledgeNo',    `存贷资产编号：${filters.pledgeNo}`],
+      ['bankDraftNo', `原柜号/提单号：${filters.bankDraftNo}`],
+      ['product',     `金融产品：${filters.product}`],
+      ['bank',        `金融机构：${filters.bank}`],
+      ['_loanDate',   `放款日 ${filters.loanDateStart || '不限'} ~ ${filters.loanDateEnd || '不限'}`],
+      ['_repayDate',  `还款日 ${filters.repayDateStart || '不限'} ~ ${filters.repayDateEnd || '不限'}`],
+    ];
+    const tags = labels.filter(([k]) => {
+      if (k === '_loanDate') return filters.loanDateStart || filters.loanDateEnd;
+      if (k === '_repayDate') return filters.repayDateStart || filters.repayDateEnd;
+      return filters[k];
+    }).map(([k, label]) => `
+      <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-slate-100 text-slate-700 rounded">
+        ${label}<button onclick="removeTag('${k}')" class="text-slate-400 hover:text-slate-700">×</button>
+      </span>
+    `);
+    if (!tags.length) return '<span class="text-slate-400 text-xs">（无筛选条件 / 默认显示全部）</span>';
+    return tags.join('');
+  }
+
+  // ============ Events ============
+  window.updateFilter = (k, v) => { filters[k] = v; };
+  window.switchTab   = (k) => { activeTab = k; refresh(); };
+  window.removeTag   = (k) => {
+    if (k === '_loanDate')  { filters.loanDateStart = ''; filters.loanDateEnd = ''; }
+    else if (k === '_repayDate') { filters.repayDateStart = ''; filters.repayDateEnd = ''; }
+    else filters[k] = '';
+    refresh();
+  };
+  window.resetAllFilters = () => { Object.keys(filters).forEach(k => filters[k] = ''); refresh(); };
+  window.exportData = () => Utils.toast('已导出当前筛选数据（占位）', 'success');
+
+  // 关键路由：行操作"查看" + 存贷资产编号超链 → 跳对应质押资产详情
+  window.goPledge = (pledgeId) => {
+    window.location.href = `${Utils.nav('/platform/pledge-detail')}?id=${pledgeId}`;
+  };
+
+  function refresh() {
+    document.getElementById('app').innerHTML = Components.pageShell({
+      title: '放还款详情',
+    subtitle: '监管方视角 - 全量放还款详情',
+      currentPath: '/platform/disburse-repayment',
+      breadcrumb: [
+        { label: '解押出库管理', path: '/platform/disburse-repayment' },
+        { label: '放还款详情', path: '/platform/disburse-repayment' },
+      ],
+      extra: '',
+      content: render(),
+    });
+  }
+</script>
+</body>
+</html>
