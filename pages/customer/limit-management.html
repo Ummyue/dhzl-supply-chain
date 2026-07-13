@@ -70,7 +70,34 @@
 
   function render() {
     const list = applyFilters();
+    // v1.7.49: 4 个汇总卡（聚合 limitList 全部数据，与筛选/tab 无关）
+    const allLimits = MockData.limitList || [];
+    const totalAmount  = allLimits.reduce((s, r) => s + (r.totalAmount  || 0), 0);
+    const frozenAmount = allLimits.reduce((s, r) => s + (r.frozenAmount || 0), 0);
+    const usedAmount   = allLimits.reduce((s, r) => s + (r.usedAmount   || 0), 0);
+    const availAmount  = allLimits.reduce((s, r) => s + (r.availableAmount || 0), 0);
     return `
+      <!-- v1.7.49: 4 个汇总卡（加在筛选区上方） -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+        <div class="bg-violet-50 rounded-xl p-4 border border-violet-200">
+          <div class="text-xs text-violet-700">总授信额度</div>
+          <div class="text-2xl font-bold text-violet-700 mt-1 num-focus">¥${(totalAmount / 100000000).toFixed(2)} 亿</div>
+          <div class="text-xs text-violet-600 mt-1">${allLimits.length} 张额度卡</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">冻结额度</div>
+          <div class="text-2xl font-bold text-slate-800 mt-1 num-focus">${Utils.fmtMoney(frozenAmount, false)}</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">已用额度</div>
+          <div class="text-2xl font-bold text-blue-600 mt-1 num-focus">${Utils.fmtMoney(usedAmount, false)}</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+          <div class="text-xs text-slate-500">可用额度</div>
+          <div class="text-2xl font-bold text-emerald-600 mt-1 num-focus">${Utils.fmtMoney(availAmount, false)}</div>
+        </div>
+      </div>
+
       <!-- 筛选区（按用户截图样式：金融机构 / 产品名称 / 授信批复号 / 起始日期范围） -->
       <div class="bg-white border border-slate-200 rounded-xl p-4 mb-3">
         <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
