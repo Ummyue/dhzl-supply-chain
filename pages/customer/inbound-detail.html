@@ -346,7 +346,7 @@
                 <div><dt class="text-xs text-slate-500 mb-1">出质方 <span class="text-rose-500">*</span></dt><dd><input type="text" id="f_applicant" value="${data.applicant || '郑州某冷链贸易有限公司'}" oninput="markDirty()" class="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none"></dd></div>
                 <div><dt class="text-xs text-slate-500 mb-1">联系人 <span class="text-rose-500">*</span></dt><dd><input type="text" id="f_contactPerson" value="${data.contactPerson || '李雪 — 138 0000 1234'}" oninput="markDirty()" class="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none"></dd></div>
                 <div><dt class="text-xs text-slate-500 mb-1">金融产品 <span class="text-rose-500">*</span></dt><dd><select id="f_financeProduct" onchange="markDirty()" class="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
-                  ${(MockData.financeProducts || [
+                  ${([
                     {id: 'fp_001', name: '冷链现货质押融资（90天）'},
                     {id: 'fp_002', name: '冷链现货质押融资（120天）'},
                     {id: 'fp_003', name: '冷链现货质押融资（180天）'},

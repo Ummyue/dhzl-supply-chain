@@ -1975,7 +1975,8 @@ const MockData = {
       sealCompleted: false,
       creator: '陈志强',
       creatorUserRole: 'operator',
-      rejectReason: '货值评估下浮比例超出业务规则上限（建议 5%-10%），当前 12% 过高，请重新提交并调整下浮比例至 8%。',
+      rejectReason: '金融产品选择有误：货物为牛颈骨（红肉/冻品），与所选「冷链现货质押融资（90天）」期限不匹配（货物周转周期约 6 个月），建议改选「冷链现货质押融资（180天）」以更好匹配冻品长期存储需求。',
+      financeProduct: '冷链现货质押融资（180天）',
       rejectTime: '2026-07-07 16:45',
       // v1.7.67: 标识驳回环节(步骤条上标红)
       rejectedAtStep: 'pending_guarantor',
