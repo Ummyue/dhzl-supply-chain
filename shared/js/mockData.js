@@ -280,6 +280,11 @@ const MockData = {
           { icon: 'box', label: '入库审批', path: '/guarantor/approval-inbound' },
           { icon: 'list', label: '出/入库详情', path: '/guarantor/approval-in-out-detail' },
         ]},
+        // v1.7.69：担保方新增【解押出库管理】- 复制自货主方解押出库申请
+        { group: '解押出库管理', items: [
+          { icon: 'logistics', label: '解押/出库审批', path: '/guarantor/approval-outbound' },
+          { icon: 'list', label: '放还款详情', path: '/guarantor/disburse-repayment' },
+        ]},
         { group: '视频监控', items: [
           { icon: 'video', label: '监控概览', path: '/customer/video' },
         ]},
@@ -365,6 +370,11 @@ const MockData = {
         { group: '授信与放款', items: [
           { icon: 'shield-check', label: '授信录入', path: '/bank/approval-credit' },
           { icon: 'cash', label: '放款审核', path: '/bank/approval-loan' },
+        ]},
+        // v1.7.69：资金方新增【解押出库管理】- 复制自货主方解押出库申请
+        { group: '解押出库管理', items: [
+          { icon: 'logistics', label: '解押/出库审批', path: '/bank/approval-outbound' },
+          { icon: 'list', label: '放还款详情', path: '/bank/disburse-repayment' },
         ]},
         { group: '贷后管理', items: [
           { icon: 'list',  label: '质押货物台账', path: '/bank/pledge-ledger' },

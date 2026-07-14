@@ -33,7 +33,7 @@
 <script>
   Components.bindGlobalClose();
 
-  // ============ v1.7.69 监管方【解押/出库审批】列表 - 复制自货主方解押出库申请 (v1.7.23 列表) ============
+  // ============ v1.7.69 资金方【解押/出库审批】列表 - 复制自货主方解押出库申请 (v1.7.23 列表) ============
   // 9 筛选器 / 9 状态 tab / 11 列 / 数据导出按钮 / 400 条记录 第 1/80 页
 
   const filters = {
@@ -63,13 +63,13 @@
 
   document.getElementById('app').innerHTML = Components.pageShell({
     title: '解押/出库审批',
-    currentPath: '/platform/approval-outbound',
+    currentPath: '/bank/approval-outbound',
     breadcrumb: [
-      { label: '解押出库管理', path: '/platform/approval-outbound' },
-      { label: '解押/出库审批', path: '/platform/approval-outbound' },
+      { label: '解押出库管理', path: '/bank/approval-outbound' },
+      { label: '解押/出库审批', path: '/bank/approval-outbound' },
     ],
     extra: `
-      <a href="${Utils.nav('/platform/approval-outbound-create')}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium flex items-center gap-1">
+      <a href="${Utils.nav('/bank/approval-outbound-create')}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium flex items-center gap-1">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         新增解押申请
       </a>
@@ -270,18 +270,18 @@
   window.switchTab   = (k) => { activeTab = k; refresh(); };
   window.removeTag   = (k) => { filters[k] = ''; refresh(); };
   window.resetAllFilters = () => { Object.keys(filters).forEach(k => filters[k] = ''); refresh(); };
-  window.goDetail    = (id) => { window.location.href = `${Utils.nav('/platform/approval-outbound-detail')}?id=${id}`; };
+  window.goDetail    = (id) => { window.location.href = `${Utils.nav('/bank/approval-outbound-detail')}?id=${id}`; };
 
   function refresh() {
     document.getElementById('app').innerHTML = Components.pageShell({
       title: '解押/出库审批',
-      currentPath: '/platform/approval-outbound',
+      currentPath: '/bank/approval-outbound',
       breadcrumb: [
-        { label: '解押出库管理', path: '/platform/approval-outbound' },
-        { label: '解押/出库审批', path: '/platform/approval-outbound' },
+        { label: '解押出库管理', path: '/bank/approval-outbound' },
+        { label: '解押/出库审批', path: '/bank/approval-outbound' },
       ],
       extra: `
-        <a href="${Utils.nav('/platform/approval-outbound-create')}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium flex items-center gap-1">
+        <a href="${Utils.nav('/bank/approval-outbound-create')}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium flex items-center gap-1">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
           新增解押申请
         </a>
