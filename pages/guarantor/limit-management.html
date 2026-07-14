@@ -11,7 +11,7 @@
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>额度管理 - 大河智链</title>
+  <title>额度详情 - 大河智链</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
   <link rel="stylesheet" href="/shared/css/style.css">
@@ -24,134 +24,236 @@
 <script>
   Components.bindGlobalClose();
 
-  // ============ v1.7.44 担保方【授信管理 → 额度管理】列表页 ============
-  // 数据视图：与资金方一致（以客户为主键）
-  // v1.7.44: 担保方按 guarantorId 过滤（只看自己担保的客户）
-  //   当前登录担保方 = MockData.users.guarantor.id (u_guar_001 王建国 中原信用担保)
-  //   → 看到 cl_001 + cl_002 共 2 条（cl_003 由另一家担保方 u_guar_002 担保）
+  // ============ v1.7.70 担保方【额度详情】- 复制自货主方额度详情 (v1.7.19), 替换原额度管理页面 ============
+  // v1.7.70 担保方被动查询视角 - v1.7.44 规范延续
+  // 11 列：授权批复编号 / 金融机构 / 金融产品名称 / 起始日期 / 到期日期 /
+  // 总额度（元）（含「详情」链接）/ 冻结额度（元）/ 已用额度（元）/ 可用额度（元）/
+  // 是否循环使用 / 状态
 
-  const myGuarantorId = MockData.users.guarantor.id;
-  const myCompany = MockData.users.guarantor.company;
-  const allList = MockData.creditLimits || [];
-  const list = allList.filter(r => r.guarantorId === myGuarantorId);
+  const filters = {
+    bank: '',
+    productName: '',
+    authorizedNo: '',
+    startDate: '',
+    endDate: '',
+    dateEnd: '',
+  };
+  let currentTab = 'all'; // all / 启用 / 停用
 
   document.getElementById('app').innerHTML = Components.pageShell({
-    title: '额度管理',
+    title: '额度详情',
     currentPath: '/guarantor/limit-management',
     breadcrumb: [
       { label: '授信管理', path: '/guarantor/limit-management' },
-      { label: '额度管理', path: '/guarantor/limit-management' },
+      { label: '额度详情', path: '/guarantor/limit-management' },
     ],
-    extra: '',
     content: render(),
   });
 
+  function applyFilters() {
+    return (MockData.limitList || []).filter(r => {
+      if (filters.bank && !r.bank.includes(filters.bank)) return false;
+      if (filters.productName && !r.productName.includes(filters.productName)) return false;
+      if (filters.authorizedNo && !r.authorizedNo.includes(filters.authorizedNo)) return false;
+      if (filters.startDate && r.startDate < filters.startDate) return false;
+      if (filters.endDate && r.startDate > filters.endDate) return false;
+      if (currentTab === '启用' && r.state !== '启用') return false;
+      if (currentTab === '停用' && r.state !== '停用') return false;
+      return true;
+    });
+  }
+
+  function tabCount(name) {
+    if (name === 'all') return (MockData.limitList || []).length;
+    return (MockData.limitList || []).filter(r => r.state === name).length;
+  }
+
   function render() {
+    const list = applyFilters();
+    // v1.7.49: 4 个汇总卡（聚合 limitList 全部数据，与筛选/tab 无关）
+    const allLimits = MockData.limitList || [];
+    const totalAmount  = allLimits.reduce((s, r) => s + (r.totalAmount  || 0), 0);
+    const frozenAmount = allLimits.reduce((s, r) => s + (r.frozenAmount || 0), 0);
+    const usedAmount   = allLimits.reduce((s, r) => s + (r.usedAmount   || 0), 0);
+    const availAmount  = allLimits.reduce((s, r) => s + (r.availableAmount || 0), 0);
     return `
-      <!-- 顶部 banner：当前登录担保方信息 -->
-      <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3 text-sm flex items-center gap-2">
-        <svg class="w-4 h-4 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        <div class="flex-1">
-          <span class="font-medium text-amber-800">${myCompany}</span>
-          <span class="text-amber-700 ml-2">（${MockData.users.guarantor.name}）· 仅展示本公司担保的客户额度</span>
-        </div>
-        <span class="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded">已过滤 ${allList.length - list.length} 条</span>
-      </div>
-
-      <!-- v1.7.45: 表格上方左侧「新增额度」按钮 -->
-      <div class="flex items-center justify-between mb-3">
-        <a href="${Utils.nav('/guarantor/limit-create')}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium flex items-center gap-1.5">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-          新增额度
-        </a>
-        <span class="text-xs text-slate-500">仅供担保方录入本公司担保的客户额度时使用</span>
-      </div>
-
-      <!-- 4 个统计卡 -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
+      <!-- v1.7.49: 4 个汇总卡（加在筛选区上方） -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
         <div class="bg-violet-50 rounded-xl p-4 border border-violet-200">
-          <div class="text-xs text-violet-700">担保客户数</div>
-          <div class="text-2xl font-bold text-violet-700 mt-1">${list.length}</div>
+          <div class="text-xs text-violet-700">总授信额度</div>
+          <div class="text-2xl font-bold text-violet-700 mt-1 num-focus">¥${(totalAmount / 100000000).toFixed(2)} 亿</div>
+          <div class="text-xs text-violet-600 mt-1">${allLimits.length} 张额度卡</div>
         </div>
         <div class="bg-white rounded-xl p-4 border border-slate-200">
-          <div class="text-xs text-slate-500">担保总额度</div>
-          <div class="text-2xl font-bold text-slate-800 mt-1 num-focus">${(list.reduce((s, c) => s + c.totalLimit, 0) / 10000).toFixed(0)}万</div>
+          <div class="text-xs text-slate-500">冻结额度</div>
+          <div class="text-2xl font-bold text-slate-800 mt-1 num-focus">${Utils.fmtMoney(frozenAmount, false)}</div>
         </div>
         <div class="bg-white rounded-xl p-4 border border-slate-200">
-          <div class="text-xs text-slate-500">已用敞口</div>
-          <div class="text-2xl font-bold text-blue-600 mt-1 num-focus">${(list.reduce((s, c) => s + c.usedLimit, 0) / 10000).toFixed(0)}万</div>
+          <div class="text-xs text-slate-500">已用额度</div>
+          <div class="text-2xl font-bold text-blue-600 mt-1 num-focus">${Utils.fmtMoney(usedAmount, false)}</div>
         </div>
         <div class="bg-white rounded-xl p-4 border border-slate-200">
           <div class="text-xs text-slate-500">可用额度</div>
-          <div class="text-2xl font-bold text-emerald-600 mt-1 num-focus">${(list.reduce((s, c) => s + c.availableLimit, 0) / 10000).toFixed(0)}万</div>
+          <div class="text-2xl font-bold text-emerald-600 mt-1 num-focus">${Utils.fmtMoney(availAmount, false)}</div>
         </div>
       </div>
 
-      <!-- 担保方视角：本公司担保客户额度清单 -->
-      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div class="px-5 py-3 border-b border-slate-200 flex items-center justify-between">
-          <h3 class="font-semibold text-slate-800">担保客户额度清单</h3>
-          <span class="text-xs text-slate-500">共 ${list.length} 条</span>
+      <!-- 筛选区（按用户截图样式：金融机构 / 产品名称 / 授信批复号 / 起始日期范围） -->
+      <div class="bg-white border border-slate-200 rounded-xl p-4 mb-3">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">金融机构</label>
+            <input type="text" value="${filters.bank}" oninput="updateFilter('bank', this.value)" placeholder="请输入金融机构" class="w-full px-3 py-2 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">产品名称</label>
+            <input type="text" value="${filters.productName}" oninput="updateFilter('productName', this.value)" placeholder="请输入产品名称" class="w-full px-3 py-2 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">授信批复号</label>
+            <input type="text" value="${filters.authorizedNo}" oninput="updateFilter('authorizedNo', this.value)" placeholder="请输入授信批复号" class="w-full px-3 py-2 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">起始日期范围</label>
+            <div class="flex items-center gap-1">
+              <input type="date" value="${filters.startDate}" onchange="updateFilter('startDate', this.value)" class="flex-1 min-w-0 px-2 py-1.5 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              <button onclick="Utils.toast('打开日期范围选择器（占位）','info')" class="px-2 py-1.5 border border-slate-200 rounded text-sm hover:bg-slate-50" title="打开日期选择">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="resetFilters()" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">重置</button>
+            <button onclick="refresh()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35"/></svg>
+              查询
+            </button>
+          </div>
         </div>
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end mt-3">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">终止日期范围</label>
+            <div class="flex items-center gap-1">
+              <input type="date" value="${filters.endDate}" onchange="updateFilter('endDate', this.value)" class="flex-1 min-w-0 px-2 py-1.5 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              <button onclick="Utils.toast('打开日期范围选择器（占位）','info')" class="px-2 py-1.5 border border-slate-200 rounded text-sm hover:bg-slate-50" title="打开日期选择">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              </button>
+            </div>
+          </div>
+          <div></div><div></div><div></div><div></div>
+        </div>
+      </div>
+
+      <!-- 3 个 tab 状态筛选 -->
+      <div class="bg-white border border-slate-200 rounded-xl mb-3 px-2 pt-1">
+        <div class="flex items-center gap-1">
+          ${[
+            { id: 'all',   label: '全部' },
+            { id: '启用', label: '启用' },
+            { id: '停用', label: '停用' },
+          ].map(t => `
+            <button onclick="switchTab('${t.id}')" class="px-5 py-2.5 text-sm font-medium border-b-2 transition ${currentTab === t.id ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'}">
+              ${t.label} <span class="text-xs text-slate-400">(${tabCount(t.id)})</span>
+            </button>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- 11 列额度列表（按用户截图） -->
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
         <div class="overflow-x-auto">
-          <table class="w-full text-sm">
+          <table class="w-full text-sm min-w-[1500px]">
             <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
               <tr>
-                <th class="text-left px-4 py-3">客户</th>
-                <th class="text-left px-4 py-3">统一社会信用代码</th>
-                <th class="text-right px-3 py-3">总额度</th>
-                <th class="text-right px-3 py-3">已用</th>
-                <th class="text-right px-3 py-3">可用</th>
-                <th class="text-center px-3 py-3">使用率</th>
-                <th class="text-center px-3 py-3">利率</th>
-                <th class="text-center px-3 py-3">有效期</th>
-                <th class="text-center px-3 py-3">业务数</th>
-                <th class="text-center px-3 py-3">状态</th>
-                <th class="text-center px-3 py-3">操作</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">授权批复编号</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">金融机构</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">金融产品名称</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">起始日期</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">到期日期</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">总额度（元）</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">冻结额度（元）</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">已用额度（元）</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">可用额度（元）</th>
+                <th class="text-center px-3 py-3 whitespace-nowrap">是否循环使用</th>
+                <th class="text-center px-3 py-3 whitespace-nowrap">状态</th>
               </tr>
             </thead>
-            <tbody>
-              ${list.length ? list.map(c => {
-                const usedRate = c.totalLimit > 0 ? (c.usedLimit / c.totalLimit * 100).toFixed(1) : '0.0';
-                return `
-                  <tr class="border-t border-slate-100 hover:bg-slate-50">
-                    <td class="px-4 py-3 font-medium">${c.customer}</td>
-                    <td class="px-4 py-3 font-mono text-xs">${c.creditCode}</td>
-                    <td class="px-3 py-3 text-right num-focus font-medium">${Utils.fmtMoney(c.totalLimit)}</td>
-                    <td class="px-3 py-3 text-right num-focus text-blue-600">${Utils.fmtMoney(c.usedLimit)}</td>
-                    <td class="px-3 py-3 text-right num-focus text-emerald-600">${Utils.fmtMoney(c.availableLimit)}</td>
-                    <td class="px-3 py-3 text-center">
-                      <div class="flex items-center gap-1 justify-center">
-                        <div class="w-16 h-2 bg-slate-100 rounded-full overflow-hidden">
-                          <div class="h-full bg-gradient-to-r ${usedRate > 80 ? 'from-rose-500 to-rose-600' : 'from-blue-500 to-blue-600'}" style="width: ${usedRate}%"></div>
-                        </div>
-                        <span class="text-xs ${usedRate > 80 ? 'text-rose-600' : 'text-slate-500'}">${usedRate}%</span>
-                      </div>
-                    </td>
-                    <td class="px-3 py-3 text-center num-focus">${c.interestRate}</td>
-                    <td class="px-3 py-3 text-center text-xs">${c.validFrom}<br>~ ${c.validTo}</td>
-                    <td class="px-3 py-3 text-center">${c.bizCount}</td>
-                    <td class="px-3 py-3 text-center"><span class="px-2 py-0.5 rounded text-xs bg-emerald-100 text-emerald-700">生效中</span></td>
-                    <td class="px-3 py-3 text-center">
-                      <a href="${Utils.nav('/guarantor/limit-detail')}?id=${c.id}" class="text-blue-600 hover:underline text-xs mr-2">详情</a>
-                      <a href="${Utils.nav('/guarantor/limit-edit')}?id=${c.id}" class="text-orange-600 hover:underline text-xs">修改</a>
-                    </td>
-                  </tr>
-                `;
-              }).join('') : `
-                <tr><td colspan="11" class="py-12 text-center text-slate-400 text-sm">📭 暂无可担保客户额度数据</td></tr>
-              `}
-            </tbody>
+            <tbody>${renderRows(list)}</tbody>
           </table>
         </div>
-      </div>
-
-      <!-- 担保方说明 banner -->
-      <div class="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700 flex items-start gap-2">
-        <svg class="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        <div>担保方视角：本模块用于跟踪本公司所担保客户的授信额度分配与使用情况。如某客户使用率超 80%，请关注后续追保或代偿风险。详情可跳转至「质押管理 → 风险监控」。</div>
+        ${renderPagination(list)}
       </div>
     `;
+  }
+
+  function renderRows(list) {
+    if (!list.length) {
+      return `<tr><td colspan="11" class="py-12 text-center text-slate-400 text-sm">📭 当前筛选条件下无额度记录</td></tr>`;
+    }
+    return list.map(r => `
+      <tr class="border-t border-slate-100 hover:bg-blue-50/30 cursor-pointer" onclick="viewLimitDetail('${r.id}')">
+        <td class="px-3 py-2.5 font-mono text-xs text-slate-700 whitespace-nowrap">${r.authorizedNo}</td>
+        <td class="px-3 py-2.5 text-slate-700 text-xs whitespace-nowrap">${r.bank}</td>
+        <td class="px-3 py-2.5 text-slate-800 font-medium text-xs whitespace-nowrap">${r.productName}</td>
+        <td class="px-3 py-2.5 text-slate-700 text-xs font-mono whitespace-nowrap">${r.startDate}</td>
+        <td class="px-3 py-2.5 text-slate-700 text-xs font-mono whitespace-nowrap">${r.maturityDate}</td>
+        <td class="px-3 py-2.5 text-right num-focus text-slate-700 whitespace-nowrap">
+          <div class="flex items-center justify-end gap-2">
+            <span>${Utils.fmtMoney(r.totalAmount, false)}</span>
+            <a onclick="event.stopPropagation()" href="${Utils.nav('/customer/limit-detail')}?id=${r.id}" class="text-blue-600 hover:underline text-xs font-normal">详情</a>
+          </div>
+        </td>
+        <td class="px-3 py-2.5 text-right num-focus text-slate-700 whitespace-nowrap">${Utils.fmtMoney(r.frozenAmount, false)}</td>
+        <td class="px-3 py-2.5 text-right num-focus text-rose-700 whitespace-nowrap">${Utils.fmtMoney(r.usedAmount, false)}</td>
+        <td class="px-3 py-2.5 text-right num-focus text-emerald-700 whitespace-nowrap">${Utils.fmtMoney(r.availableAmount, false)}</td>
+        <td class="px-3 py-2.5 text-center text-xs whitespace-nowrap">${r.circular ? '是' : '否'}</td>
+        <td class="px-3 py-2.5 text-center whitespace-nowrap">${r.state === '启用' ? '<span class="px-2 py-0.5 text-xs bg-emerald-100 text-emerald-700 rounded">启用</span>' : '<span class="px-2 py-0.5 text-xs bg-slate-100 text-slate-500 rounded">停用</span>'}</td>
+      </tr>
+    `).join('');
+  }
+
+  function renderPagination(list) {
+    const total = list.length;
+    return `
+      <div class="px-4 py-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+        <span>共 <b class="text-slate-800">${(MockData.limitList || []).length * 33 + 4}</b> 条记录，第 1 / 80 页</span>
+        <div class="flex items-center gap-1">
+          <button class="px-2 py-1 border border-slate-200 rounded hover:bg-slate-50 disabled:opacity-50" disabled><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></button>
+          ${[1,2,3,4,5,6,7,8,9].map(n => `<button class="px-2 py-1 border ${n === 1 ? 'bg-blue-600 text-white border-blue-600' : 'border-slate-200 hover:bg-slate-50'} rounded">${n}</button>`).join('')}
+          <button class="px-2 py-1 border border-slate-200 rounded hover:bg-slate-50"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></button>
+          <select class="ml-2 px-2 py-1 border border-slate-200 rounded text-xs">
+            <option>10 条/页</option><option>20 条/页</option><option>50 条/页</option>
+          </select>
+          <span class="ml-2">跳至</span>
+          <input type="number" value="5" class="w-12 px-2 py-1 border border-slate-200 rounded text-xs text-center">
+          <span>页</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // ============ Events ============
+  window.updateFilter = (k, v) => { filters[k] = v; };
+  window.refresh = () => { refresh(); };
+  window.switchTab = (t) => { currentTab = t; refresh(); };
+  window.resetFilters = () => {
+    Object.keys(filters).forEach(k => filters[k] = '');
+    refresh();
+  };
+  window.viewLimitDetail = (id) => {
+    window.location.href = `${Utils.nav('/customer/limit-detail')}?id=${id}`;
+  };
+
+  function refresh() {
+    document.getElementById('app').innerHTML = Components.pageShell({
+      title: '额度详情',
+      currentPath: '/guarantor/limit-management',
+      breadcrumb: [
+        { label: '授信管理', path: '/guarantor/limit-management' },
+        { label: '额度详情', path: '/guarantor/limit-management' },
+      ],
+      content: render(),
+    });
   }
 </script>
 </body>
