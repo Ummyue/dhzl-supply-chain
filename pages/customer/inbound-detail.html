@@ -18,6 +18,66 @@
 </head>
 <body class="bg-slate-50">
 <div id="app"></div>
+
+<!-- ========== v1.7.56 取消申请 modal ========== -->
+<div id="cancelModal" class="hidden fixed inset-0 bg-black/50 z-50 grid place-items-center">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+      <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+        <svg class="w-5 h-5 text-rose-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        取消入库申请
+      </h3>
+      <button onclick="closeCancelModal()" class="text-slate-400 hover:text-slate-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="p-6">
+      <div class="text-sm text-slate-600 mb-4">
+        即将取消申请编号 <span id="cancelModalBizNo" class="font-mono font-medium text-slate-800">--</span>。取消后该申请将<strong>作废</strong>，无法再恢复，请确认。
+      </div>
+      <label class="block text-sm font-medium text-slate-700 mb-2">
+        取消原因 <span class="text-rose-500">*</span>
+      </label>
+      <textarea id="cancelReason" rows="4" placeholder="请填写取消原因，例如：单据不齐全 / 货主方决定暂不申请入库..." class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-rose-200 focus:border-rose-400"></textarea>
+      <div class="text-xs text-slate-400 mt-1">💡 必填项，最多 200 字</div>
+    </div>
+    <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2">
+      <button onclick="closeCancelModal()" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">取消</button>
+      <button onclick="confirmCancel()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded text-sm font-medium">确认取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== v1.7.56 提交审核 modal ========== -->
+<div id="submitModal" class="hidden fixed inset-0 bg-black/50 z-50 grid place-items-center">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+      <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+        <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
+        提交入库申请
+      </h3>
+      <button onclick="closeSubmitModal()" class="text-slate-400 hover:text-slate-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="p-6">
+      <div class="text-sm text-slate-600 mb-4">
+        即将提交申请编号 <span id="submitModalBizNo" class="font-mono font-medium text-slate-800">--</span>。<br>
+        提交后将进入<strong>待担保方确认</strong>环节，由担保方审核入库货物是否符合担保标准。
+      </div>
+      <label class="block text-sm font-medium text-slate-700 mb-2">
+        提交备注 <span class="text-slate-400 text-xs font-normal">（选填）</span>
+      </label>
+      <textarea id="submitRemark" rows="3" placeholder="可填写本次入库的特殊情况说明、附件补充说明等..." class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"></textarea>
+      <div class="text-xs text-slate-400 mt-1">💡 选填项，最多 200 字</div>
+    </div>
+    <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2">
+      <button onclick="closeSubmitModal()" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">取消</button>
+      <button onclick="confirmSubmit()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">确认提交</button>
+    </div>
+  </div>
+</div>
+
 <script src="/shared/js/utils.js"></script>
 <script src="/shared/js/mockData.js"></script>
 <script src="/shared/js/components.js"></script>
@@ -99,6 +159,8 @@
   const currentStepIdx = statusToStep(data.status);
   const isFinalized = ['rejected', 'voided', 'cancelled'].includes(data.status);
   const isRejected = data.status === 'rejected';
+  // v1.7.56 货主方：draft 状态显示【取消申请】+【提交审核】操作栏
+  const isDraft = data.status === 'draft' || data.status === 'pending_submit';
   const statusLabelMap = {
     draft: '草稿', pending_submit: '待提交', pending_owner_seal: '待货主盖章',
     pending_guarantor: '待担保确认', reviewing: '待监管确认', pending_supervisor: '待监管确认',
@@ -254,6 +316,52 @@
           </table>
         </div>
       </section>
+
+      <!-- 5. v1.7.56 货主方操作区（draft 状态显示取消/提交，其他状态显示当前节点） -->
+      ${renderActionBar()}
+    `;
+  }
+
+  // v1.7.56 货主方操作区：draft 状态显示【取消申请】+【提交审核】；非当前节点显示"只读查看"提示
+  function renderActionBar() {
+    if (isFinalized) {
+      return `
+        <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 shadow-lg z-10">
+          <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="text-sm text-slate-500">
+              <span class="font-medium text-slate-700">流程已结束：</span>${statusLabelMap[data.status]} ${data.rejectedReason ? '· ' + data.rejectedReason : (data.voidReason || '')}
+            </div>
+            <button onclick="goBack()" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">返回列表</button>
+          </div>
+        </div>
+      `;
+    }
+    if (!isDraft) {
+      return `
+        <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 shadow-lg z-10">
+          <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="text-sm text-slate-500">
+              <span class="font-medium text-slate-700">当前节点：</span>${statusLabelMap[data.status] || data.status}
+            </div>
+            <button onclick="goBack()" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">返回列表</button>
+          </div>
+        </div>
+      `;
+    }
+    // draft 状态：取消申请 + 提交审核
+    return `
+      <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-4 shadow-lg z-10">
+        <div class="max-w-7xl mx-auto">
+          <div class="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <div class="text-xs text-amber-800">📝 该申请当前为<strong>待提交</strong>状态，您可以选择取消或提交审核。提交后将进入担保方确认环节。</div>
+          </div>
+          <div class="flex items-center justify-end gap-2">
+            <button onclick="goBack()" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">返回列表</button>
+            <button onclick="openCancelModal()" class="px-4 py-2 border border-rose-300 text-rose-600 hover:bg-rose-50 rounded text-sm">取消申请</button>
+            <button onclick="openSubmitModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">提交审核</button>
+          </div>
+        </div>
+      </div>
     `;
   }
 
@@ -355,6 +463,56 @@
   window.downloadDoc = (no) => Utils.toast(`下载入库申请清单 #${no}（占位）`, 'info');
   window.downloadAttachment = (type, btn) => Utils.toast(`下载 ${type}（占位）`, 'info');
   window.downloadAllAttachments = () => Utils.toast('一键下载全部附件（占位）', 'info');
+
+  // ============ v1.7.56 货主方操作：取消申请 + 提交审核 ============
+  // 取消申请 modal
+  window.openCancelModal = () => {
+    const bizNoEl = document.getElementById('cancelModalBizNo');
+    if (bizNoEl) bizNoEl.textContent = data.bizNo;
+    document.getElementById('cancelModal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('cancelReason')?.focus(), 100);
+  };
+  window.closeCancelModal = () => {
+    document.getElementById('cancelModal').classList.add('hidden');
+    const ta = document.getElementById('cancelReason');
+    if (ta) ta.value = '';
+  };
+  window.confirmCancel = () => {
+    const ta = document.getElementById('cancelReason');
+    const reason = (ta?.value || '').trim();
+    if (!reason) {
+      return Utils.toast('取消原因为必填项，请填写后再确认', 'warning');
+    }
+    if (reason.length > 200) {
+      return Utils.toast('取消原因不能超过 200 字', 'warning');
+    }
+    Utils.toast('✓ 申请已取消（mock）', 'success', 2000);
+    closeCancelModal();
+    setTimeout(() => goBack(), 1500);
+  };
+
+  // 提交审核 modal
+  window.openSubmitModal = () => {
+    const bizNoEl = document.getElementById('submitModalBizNo');
+    if (bizNoEl) bizNoEl.textContent = data.bizNo;
+    document.getElementById('submitModal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('submitRemark')?.focus(), 100);
+  };
+  window.closeSubmitModal = () => {
+    document.getElementById('submitModal').classList.add('hidden');
+    const ta = document.getElementById('submitRemark');
+    if (ta) ta.value = '';
+  };
+  window.confirmSubmit = () => {
+    const ta = document.getElementById('submitRemark');
+    const remark = (ta?.value || '').trim();
+    if (remark.length > 200) {
+      return Utils.toast('提交备注不能超过 200 字', 'warning');
+    }
+    Utils.toast('✓ 申请已提交，进入待担保方确认（mock）', 'success', 2000);
+    closeSubmitModal();
+    setTimeout(() => goBack(), 1500);
+  };
 </script>
 </body>
 </html>
