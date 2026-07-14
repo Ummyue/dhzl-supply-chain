@@ -232,8 +232,6 @@ const MockData = {
           { icon: 'box', label: '入库申请', path: '/customer/inbound' },
           // v1.7.34 暂时隐藏【在库货物】，后续看需不需要
           // { icon: 'package', label: '在库货物', path: '/customer/monitoring' },
-          // v1.7.57：货主方【入库盖章】(提交后进入盖章流程，盖章员李雪)
-          { icon: 'shield', label: '入库盖章', path: '/customer/inbound-seal' },
           { icon: 'list', label: '出/入库详情', path: '/customer/in-out-detail' },
         ]},
         { group: '视频监控', items: [
