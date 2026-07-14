@@ -78,7 +78,7 @@
     </div>
     <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2">
       <button onclick="closeRejectAdmissionModal()" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">取消</button>
-      <button onclick="confirmRejectAdmission()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded text-sm font-medium">确认驳回</button>
+      <button onclick="confirmRejectAdmission()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded text-sm font-medium">确认</button>
     </div>
   </div>
 </div>
@@ -155,8 +155,10 @@
   let q4_financial = '';
   let q4_credit = '';
   let q4_other = '';
-  let q4_conclusion = '';   // pass | reject
+  let q4_conclusion = '';   // pass | reject（v1.7.72: 不再从 radio 赋值，由底部按钮通过 passFinal/openRejectAdmissionModal('tab4') 隐式确认）
   let q4_remark = '';
+  // v1.7.72: 弹窗上下文，区分 tab1 驳回（终止申请）vs tab4 不通过（提交最终结论）
+  let currentRejectContext = 'tab1';
 
   // ============ 步骤条（completed/active/pending 三态）============
   function renderStepBar() {
@@ -540,29 +542,15 @@
             </div>
           </div>
         </div>
-        <!-- 3. 结论 -->
+        <!-- 3. 结论（v1.7.72: 决策由底部 3 按钮【审批通过/不通过/取消】承担，移除 radio+textarea） -->
         <div class="bg-white border-2 border-blue-200 rounded-xl p-5">
           <div class="flex items-center gap-2 mb-3">
             <span class="w-1 h-4 bg-blue-500 rounded"></span>
             <h3 class="text-sm font-semibold text-slate-700">结论</h3>
           </div>
-          <div class="flex items-center gap-6 text-sm pt-1 mb-4">
-            <span class="req text-slate-700 whitespace-nowrap">是否通过</span>
-            <label class="flex items-center gap-1.5 cursor-pointer">
-              <input type="radio" name="q4-conclusion" value="pass" onchange="onQ4Conclusion('pass')" ${q4_conclusion === 'pass' ? 'checked' : ''}>
-              <span>通过</span>
-              <span class="help-icon">?</span>
-            </label>
-            <label class="flex items-center gap-1.5 cursor-pointer">
-              <input type="radio" name="q4-conclusion" value="reject" onchange="onQ4Conclusion('reject')" ${q4_conclusion === 'reject' ? 'checked' : ''}>
-              <span>不通过</span>
-              <span class="help-icon">?</span>
-            </label>
-          </div>
-          <div>
-            <div class="text-slate-500 text-sm mb-1">备注</div>
-            <textarea id="q4-remark" maxlength="100" oninput="onQ4('remark', this.value)" class="form-textarea" placeholder="输入内容">${q4_remark}</textarea>
-            <div class="text-right text-xs text-slate-400 mt-1">已输入 <span id="q4-remark-count">${q4_remark.length}</span>/100</div>
+          <div class="text-sm text-slate-500 leading-relaxed">
+            请在底部操作栏选择本次准入审批的最终结论：<span class="text-slate-700 font-medium">【审批通过】</span> 或 <span class="text-slate-700 font-medium">【不通过】</span>。
+            <br>选择【不通过】时需填写不通过原因（≤100 字）。
           </div>
         </div>
       </div>
@@ -594,7 +582,7 @@
               <span class="inline-flex w-4 h-4 bg-yellow-400 rounded items-center justify-center text-[10px]">⚡</span>
               通过-进入资质审核阶段
             </button>
-            <button onclick="openRejectAdmissionModal()" class="px-12 py-2.5 border border-rose-500 text-rose-600 hover:bg-rose-50 rounded text-sm font-medium flex items-center gap-1.5">
+            <button onclick="openRejectAdmissionModal('tab1')" class="px-12 py-2.5 border border-rose-500 text-rose-600 hover:bg-rose-50 rounded text-sm font-medium flex items-center gap-1.5">
               <span class="inline-flex w-4 h-4 bg-yellow-400 rounded items-center justify-center text-[10px]">⚡</span>
               驳回
             </button>
@@ -606,16 +594,37 @@
         </div>
       `;
     }
-    // tab 2/3/4 保持原样: 下一步/提交 + 取消
-    const nextLabel = isLast ? '提交' : '下一步';
-    const onClickFn = isLast ? 'submitFinal()' : 'goNext()';
+    // tab 2/3 保持原样: 下一步 + 取消
+    if (!isLast) {
+      const onClickFn = 'goNext()';
+      return `
+        <div class="footer-spacer"></div>
+        <div class="footer-actions">
+          <div class="max-w-[1280px] mx-auto px-6 flex items-center justify-center gap-4">
+            <button id="btn-next" onclick="${onClickFn}" disabled class="px-12 py-2.5 bg-blue-600 text-white rounded text-sm font-medium opacity-50 cursor-not-allowed flex items-center gap-1.5">
+              <span class="inline-flex w-4 h-4 bg-yellow-400 rounded items-center justify-center text-[10px]">⚡</span>
+              下一步
+            </button>
+            <button onclick="cancelApproval()" class="px-12 py-2.5 border border-blue-500 text-blue-600 hover:bg-blue-50 rounded text-sm font-medium flex items-center gap-1.5">
+              <span class="inline-flex w-4 h-4 bg-yellow-400 rounded items-center justify-center text-[10px]">⚡</span>
+              取消
+            </button>
+          </div>
+        </div>
+      `;
+    }
+    // v1.7.72 tab 4 风险评估: 3 按钮【审批通过/不通过/取消】（决策由这 3 个按钮承担）
     return `
       <div class="footer-spacer"></div>
       <div class="footer-actions">
         <div class="max-w-[1280px] mx-auto px-6 flex items-center justify-center gap-4">
-          <button id="btn-next" onclick="${onClickFn}" disabled class="px-12 py-2.5 bg-blue-600 text-white rounded text-sm font-medium opacity-50 cursor-not-allowed flex items-center gap-1.5">
+          <button onclick="passFinal()" class="px-12 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium flex items-center gap-1.5">
             <span class="inline-flex w-4 h-4 bg-yellow-400 rounded items-center justify-center text-[10px]">⚡</span>
-            ${nextLabel}
+            审批通过
+          </button>
+          <button onclick="openRejectAdmissionModal('tab4')" class="px-12 py-2.5 border border-rose-500 text-rose-600 hover:bg-rose-50 rounded text-sm font-medium flex items-center gap-1.5">
+            <span class="inline-flex w-4 h-4 bg-yellow-400 rounded items-center justify-center text-[10px]">⚡</span>
+            不通过
           </button>
           <button onclick="cancelApproval()" class="px-12 py-2.5 border border-blue-500 text-blue-600 hover:bg-blue-50 rounded text-sm font-medium flex items-center gap-1.5">
             <span class="inline-flex w-4 h-4 bg-yellow-400 rounded items-center justify-center text-[10px]">⚡</span>
@@ -636,7 +645,8 @@
       return !!q3_situation.trim();
     }
     if (currentTab === 'riskAssessment') {
-      return !!(q4_compliance.trim() && q4_financial.trim() && q4_credit.trim() && q4_other.trim() && q4_conclusion);
+      // v1.7.72: 移除 q4_conclusion 校验（决策由底部 3 按钮承担，不再依赖 radio）
+      return !!(q4_compliance.trim() && q4_financial.trim() && q4_credit.trim() && q4_other.trim());
     }
     return false;
   }
@@ -668,8 +678,9 @@
     Utils.toast('✓ 已通过基础信息收集阶段，进入资质审核（mock）', 'success', 1800);
     setTimeout(() => switchTab('qualification'), 600);
   };
-  // 驳回 modal
-  window.openRejectAdmissionModal = function() {
+  // 驳回/不通过 modal（v1.7.72: 加 ctx 参数，'tab1' 终止申请 / 'tab4' 提交最终结论）
+  window.openRejectAdmissionModal = function(ctx) {
+    currentRejectContext = ctx || 'tab1';
     const bizNoEl = document.getElementById('rejectAdmissionBizNo');
     if (bizNoEl) bizNoEl.textContent = urlId;
     document.getElementById('rejectAdmissionModal').classList.remove('hidden');
@@ -691,8 +702,28 @@
     const reason = (ta?.value || '').trim();
     if (!reason) return Utils.toast('驳回说明为必填项，请填写后再确认', 'warning');
     if (reason.length > 100) return Utils.toast('驳回说明不能超过 100 字', 'warning');
+    if (currentRejectContext === 'tab4') {
+      // v1.7.72: tab 4 风险评估阶段的「不通过」分支
+      q4_conclusion = 'reject';
+      q4_remark = reason;  // 弹窗填的备注写回 q4_remark，便于后续记录展示
+      Utils.toast(`已不通过：申请 ${urlId} 已通知货主方（mock）`, 'warning', 1800);
+      closeRejectAdmissionModal();
+      setTimeout(() => {
+        window.location.href = Utils.nav('/platform/approval-admission');
+      }, 1200);
+      return;
+    }
+    // tab 1 基础信息收集阶段的「驳回」分支
     Utils.toast(`✓ 已驳回准入申请 ${urlId}（mock）`, 'warning', 1800);
     closeRejectAdmissionModal();
+    setTimeout(() => {
+      window.location.href = Utils.nav('/platform/approval-admission');
+    }, 1200);
+  };
+  // v1.7.72: tab 4 风险评估的【审批通过】分支
+  window.passFinal = function() {
+    q4_conclusion = 'pass';
+    Utils.toast(`已通过：申请 ${urlId} 完成全部 4 步准入审批（mock）`, 'success', 2000);
     setTimeout(() => {
       window.location.href = Utils.nav('/platform/approval-admission');
     }, 1200);
@@ -719,10 +750,7 @@
     if (field === 'remark')     { q4_remark = v; const c = document.getElementById('q4-remark-count'); if (c) c.textContent = v.length; }
     updateNextBtn();
   };
-  window.onQ4Conclusion = function(v) {
-    q4_conclusion = v;
-    updateNextBtn();
-  };
+  // v1.7.72: 移除 onQ4Conclusion（radio 取消，决策由底部 3 按钮承担）
 
   window.goNext = function() {
     if (!canGoNext()) return;
