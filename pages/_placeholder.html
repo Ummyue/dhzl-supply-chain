@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>功能开发中 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.63 通用缺省页（占位/404/功能开发中）============
+  // 用法：
+  //   /pages/_placeholder.html              → 通用空状态
+  //   /pages/_placeholder.html?title=XXX    → 自定义标题
+  //   /pages/_placeholder.html?path=XXX     → 显示来源 URL
+  //   /pages/_placeholder.html?reason=XXX   → 自定义说明
+  const urlParams = new URLSearchParams(window.location.search);
+  const pageTitle = urlParams.get('title') || '功能开发中';
+  const sourcePath = urlParams.get('path') || '';
+  const reasonText = urlParams.get('reason') || '该功能正在开发中，敬请期待。如需提前接入，请联系平台运营。';
+
+  // 面包屑：首页 → 当前占位
+  const breadcrumb = [
+    { label: '首页', path: '/dashboard' },
+    { label: pageTitle },
+  ];
+
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: pageTitle,
+    subtitle: '通用缺省页 - 占位/404/功能开发中',
+    currentPath: '/placeholder',
+    breadcrumb: breadcrumb,
+    extra: '',
+    content: render(),
+  });
+
+  function render() {
+    return `
+      <!-- 顶部说明：缺省页用途 -->
+      <div class="bg-blue-50 border border-blue-200 rounded-xl p-5 mb-4">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+            <span class="text-blue-600 text-xl">💡</span>
+          </div>
+          <div class="flex-1">
+            <h2 class="text-base font-bold text-blue-900 mb-1">这是一个占位页</h2>
+            <div class="text-sm text-blue-800">
+              当菜单/链接/URL 暂时没有对应页面内容时，可统一跳到本页面。<br>
+              支持通过 URL query 自定义：
+              <code class="text-xs bg-white px-1.5 py-0.5 rounded border border-blue-200">?title=XXX</code> /
+              <code class="text-xs bg-white px-1.5 py-0.5 rounded border border-blue-200">?path=XXX</code> /
+              <code class="text-xs bg-white px-1.5 py-0.5 rounded border border-blue-200">?reason=XXX</code>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 主视觉：空状态插画 -->
+      <div class="bg-white border border-slate-200 rounded-xl p-12 mb-4">
+        <div class="max-w-2xl mx-auto text-center">
+          <!-- 大型 SVG 插画 -->
+          <div class="inline-flex items-center justify-center w-32 h-32 rounded-full bg-gradient-to-br from-blue-50 to-indigo-50 mb-6">
+            <svg class="w-20 h-20 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"/>
+            </svg>
+          </div>
+
+          <!-- 标题 + 描述 -->
+          <h1 class="text-3xl font-bold text-slate-800 mb-3">${pageTitle}</h1>
+          <p class="text-base text-slate-600 leading-relaxed mb-2">${reasonText}</p>
+          ${sourcePath ? `<p class="text-xs text-slate-400 font-mono mt-3">请求路径: <span class="text-slate-600">${sourcePath}</span></p>` : ''}
+
+          <!-- 操作按钮 -->
+          <div class="flex items-center justify-center gap-3 mt-8">
+            <a href="${Utils.nav('/dashboard')}" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+              返回首页
+            </a>
+            <button onclick="Components.toggleProductMenu()" class="px-5 py-2.5 border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-md text-sm font-medium flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+              切换子产品
+            </button>
+            <button onclick="history.back()" class="px-5 py-2.5 border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-md text-sm font-medium flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+              返回上一页
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部说明：占位页使用方式 -->
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-5">
+        <h3 class="text-sm font-semibold text-slate-800 mb-3">📋 开发者参考：3 种使用方式</h3>
+        <div class="space-y-2 text-xs text-slate-600">
+          <div class="flex items-start gap-2">
+            <span class="font-bold text-slate-700 w-20 flex-shrink-0">方式 A</span>
+            <span><strong>菜单项占位</strong>：mockData.menus 中 path 改为 <code class="bg-white px-1.5 py-0.5 rounded border">/pages/_placeholder?title=功能名&path=原路径</code></span>
+          </div>
+          <div class="flex items-start gap-2">
+            <span class="font-bold text-slate-700 w-20 flex-shrink-0">方式 B</span>
+            <span><strong>页面内按钮</strong>：详情页"该功能开发中"按钮 onclick="window.location.href='/pages/_placeholder?title=XXX'"</span>
+          </div>
+          <div class="flex items-start gap-2">
+            <span class="font-bold text-slate-700 w-20 flex-shrink-0">方式 C</span>
+            <span><strong>404 兜底</strong>：在 _redirects 文件末尾加 <code class="bg-white px-1.5 py-0.5 rounded border">/*  /pages/_placeholder  404</code>（慎用，会影响所有未匹配 URL）</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+</script>
+</body>
+</html>
