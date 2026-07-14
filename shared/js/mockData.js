@@ -2617,7 +2617,7 @@ const MockData = {
       rejectedBy: '', rejectedReason: '',
       products: [{ name: '水煮山羊肉', pieces: 1190, weight: 23800, evaluatePrice: 63, evaluateValue: 1499400 }],
     },
-    // ----- pending_supervisor_eval（监管评估）-----
+    // ----- pending_supervisor_eval（待监管方评估货值）-----
     {
       id: 'fn_001', bizNo: 'FN_20260705001', applicant: '郑州某冷链贸易有限公司',
       inboundBizNo: 'IN_20260705001', pledgeBizNo: 'PLEDGE_20260708001',
@@ -2632,7 +2632,7 @@ const MockData = {
       rejectedBy: '', rejectedReason: '',
       products: [{ name: '水煮山羊肉', pieces: 1190, weight: 23800, evaluatePrice: 63, evaluateValue: 1499400 }],
     },
-    // ----- pending_owner_confirm（货方确认）-----
+    // ----- pending_owner_confirm（待融资方确认货值）-----
     {
       id: 'fn_002', bizNo: 'FN_20260628001', applicant: '郑州某冷链贸易有限公司',
       inboundBizNo: 'IN_20260628001', pledgeBizNo: 'PLEDGE_20260705002',
@@ -2647,7 +2647,7 @@ const MockData = {
       rejectedBy: '', rejectedReason: '',
       products: [{ name: '冷冻去骨牛7件套', pieces: 1716, weight: 39853.96, evaluatePrice: 55.5, evaluateValue: 2211894.56 }],
     },
-    // ----- pending_supervisor（监管审核）-----
+    // ----- pending_supervisor（待监管方盖章）-----
     {
       id: 'fn_003', bizNo: 'FN_20260630001', applicant: '郑州某冷链贸易有限公司',
       inboundBizNo: 'IN_20260630001', pledgeBizNo: 'PLEDGE_20260706003',
@@ -2662,7 +2662,7 @@ const MockData = {
       rejectedBy: '', rejectedReason: '',
       products: [{ name: '蒙古水煮牛肉Qq', pieces: 480, weight: 9600, evaluatePrice: 78, evaluateValue: 748800 }],
     },
-    // ----- pending_guarantor（担保审核）-----
+    // ----- pending_guarantor（待担保方审核）-----
     {
       id: 'fn_004', bizNo: 'FN_20260625001', applicant: '郑州某冷链贸易有限公司',
       inboundBizNo: 'IN_20260625001', pledgeBizNo: 'PLEDGE_20260701004',

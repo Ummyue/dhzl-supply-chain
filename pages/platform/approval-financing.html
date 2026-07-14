@@ -28,7 +28,7 @@
   document.getElementById('app').innerHTML = Components.pageShell({
     title: '融资审核工作台',
     currentPath: '/platform/approval-financing',
-    breadcrumb: [{ label: '工作台', path: '/dashboard' }, { label: '融资审核', path: '/platform/approval-financing' }, '监管审核列表'],
+    breadcrumb: [{ label: '工作台', path: '/dashboard' }, { label: '融资管理', path: '/platform/approval-financing' }, '待监管方盖章列表'],
     extra: `<button onclick="window.__FinancingList.exportCSV()" class="px-3 py-2 border border-slate-300 hover:border-emerald-500 hover:text-emerald-600 text-slate-700 rounded-md text-sm font-medium flex items-center gap-1 transition">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
         导出
@@ -40,19 +40,19 @@
 
       ${FinancingList.render({
         actionRenderer: (rec) => {
-          // 监管方专属：status 涉及监管审核时显示对应动作
+          // 监管方专属：status 涉及待监管方盖章时显示对应动作
           const showEvaluate = rec.status === 'pending_supervisor_eval';
           const showAudit = rec.status === 'pending_supervisor';
           const showDetail = true;
           return `
             ${showDetail ? `<button onclick="alert('查看 ${rec.bizNo} 详情（待完善审批内容）')" class="text-blue-600 hover:underline text-xs font-medium">详情</button>` : ''}
-            ${showEvaluate ? `<button onclick="alert('即将对 ${rec.bizNo} 进行监管评估（待完善审批内容）')" class="text-amber-600 hover:underline text-xs font-medium">监管评估</button>` : ''}
-            ${showAudit ? `<button onclick="alert('即将对 ${rec.bizNo} 进行监管审核（待完善审批内容）')" class="text-blue-600 hover:underline text-xs font-medium">监管审核</button>` : ''}
+            ${showEvaluate ? `<button onclick="alert('即将对 ${rec.bizNo} 进行待监管方评估货值（待完善审批内容）')" class="text-amber-600 hover:underline text-xs font-medium">待监管方评估货值</button>` : ''}
+            ${showAudit ? `<button onclick="alert('即将对 ${rec.bizNo} 进行待监管方盖章（待完善审批内容）')" class="text-blue-600 hover:underline text-xs font-medium">待监管方盖章</button>` : ''}
           `;
         },
         statusLabelMap: {
-          'pending_supervisor_eval': { text: '⏳ 监管评估中（您）', color: 'text-amber-600' },
-          'pending_supervisor': { text: '⏳ 监管审核中（您）', color: 'text-blue-600' },
+          'pending_supervisor_eval': { text: '⏳ 待监管方评估货值中（您）', color: 'text-amber-600' },
+          'pending_supervisor': { text: '⏳ 待监管方盖章中（您）', color: 'text-blue-600' },
         },
       })}
     `
