@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>入库盖章 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.57 货主方【入库盖章】列表页 ============
+  // 自动切换到 customer_seal 角色（盖章员视角）
+  Utils.setRole('customer_seal');
+  Utils.setUser(MockData.users.customer_seal);
+  const user = Utils.getUser();
+
+  // 没有盖章权限 → 提示并跳回入库申请
+  if (!user.sealPermission) {
+    Utils.toast('⚠ 您无电子签章权限', 'error');
+    setTimeout(() => window.location.href = Utils.nav('/customer/inbound'), 1200);
+  }
+
+  // 待盖章列表：status === 'pending_owner_seal'
+  const sealList = (MockData.inboundList || []).filter(r => r.status === 'pending_owner_seal');
+
+  // 统计
+  const totalSealing = sealList.length;
+  const totalValue = sealList.reduce((a, r) => a + (r.totalValue || 0), 0);
+  const totalLoan = sealList.reduce((a, r) => a + (r.expectedLoan || 0), 0);
+  const sealDone = (MockData.inboundList || []).filter(r =>
+    r.status === 'pending_guarantor' && r.sealCompleted === true
+  ).length;
+
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '入库盖章',
+    subtitle: '货主方盖章员视角 - 待盖章入库申请',
+    currentPath: '/customer/inbound-seal',
+    breadcrumb: [
+      { label: '智慧仓储', path: '/dashboard' },
+      { label: '货物管理', path: '/customer/inbound' },
+      '入库盖章',
+    ],
+    extra: '',
+    content: render(),
+  });
+
+  function render() {
+    return `
+      <!-- 顶部说明：盖章员信息 -->
+      <div class="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5 mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 text-white flex items-center justify-center font-bold text-lg">${user.avatar || '李'}</div>
+          <div class="flex-1">
+            <div class="text-base font-bold text-amber-900">${user.name}（${user.department || ''} ${user.title || ''}）</div>
+            <div class="text-xs text-amber-700 mt-0.5">${user.company} · 已通过实名认证 ✓ · ${(user.sealScope || []).length} 枚可用印章</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-amber-600">流程说明</div>
+            <div class="text-xs text-amber-800">货主方提交后 → 盖章员盖章 → 担保方确认</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 个统计卡 -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        <div class="bg-white border border-slate-200 rounded-xl p-4">
+          <div class="text-xs text-slate-500 mb-1">待盖章申请</div>
+          <div class="text-2xl font-bold text-amber-600 num-focus">${totalSealing}</div>
+          <div class="text-xs text-slate-400 mt-1">条</div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4">
+          <div class="text-xs text-slate-500 mb-1">待盖章总货值</div>
+          <div class="text-2xl font-bold text-rose-600 num-focus">¥${totalValue.toLocaleString()}</div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4">
+          <div class="text-xs text-slate-500 mb-1">待盖章拟融资金额</div>
+          <div class="text-2xl font-bold text-blue-600 num-focus">¥${totalLoan.toLocaleString()}</div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4">
+          <div class="text-xs text-slate-500 mb-1">已盖章申请（本月）</div>
+          <div class="text-2xl font-bold text-emerald-600 num-focus">${sealDone}</div>
+          <div class="text-xs text-slate-400 mt-1">条</div>
+        </div>
+      </div>
+
+      <!-- 待盖章列表 -->
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div class="px-6 py-3 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+          <h3 class="font-bold text-slate-800">待盖章入库申请</h3>
+          <div class="text-xs text-slate-500">共 ${totalSealing} 条 · 货主方 operator 已提交，等待盖章</div>
+        </div>
+        ${totalSealing === 0 ? `
+          <div class="p-12 text-center">
+            <div class="text-slate-300 text-5xl mb-3">📭</div>
+            <div class="text-sm text-slate-500">暂无待盖章申请</div>
+            <div class="text-xs text-slate-400 mt-2">货主方提交入库申请后，将自动出现在此列表</div>
+          </div>
+        ` : `
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 text-slate-600">
+              <tr>
+                <th class="text-left px-4 py-3 whitespace-nowrap">申请编号</th>
+                <th class="text-left px-4 py-3 whitespace-nowrap">货品</th>
+                <th class="text-right px-4 py-3 whitespace-nowrap">货值</th>
+                <th class="text-right px-4 py-3 whitespace-nowrap">拟融资金额</th>
+                <th class="text-left px-4 py-3 whitespace-nowrap">仓库</th>
+                <th class="text-left px-4 py-3 whitespace-nowrap">提交时间</th>
+                <th class="text-left px-4 py-3 whitespace-nowrap">提交备注</th>
+                <th class="text-left px-4 py-3 whitespace-nowrap">状态</th>
+                <th class="text-left px-4 py-3 whitespace-nowrap">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sealList.map(r => `
+                <tr class="border-t border-slate-100 hover:bg-amber-50/30">
+                  <td class="px-4 py-3">
+                    <div class="font-mono text-blue-700 font-medium">${r.bizNo}</div>
+                    <div class="text-xs text-slate-400 mt-0.5">${r.applyDate || ''}</div>
+                  </td>
+                  <td class="px-4 py-3">
+                    ${(r.products || []).slice(0, 2).map(p => `
+                      <div class="text-xs text-slate-800">${p.name} <span class="text-slate-400">×${p.pieces}件</span></div>
+                    `).join('')}
+                    ${(r.products || []).length > 2 ? `<div class="text-xs text-slate-400">+${r.products.length - 2} 项</div>` : ''}
+                  </td>
+                  <td class="px-4 py-3 text-right num-focus font-medium text-slate-800">¥${(r.totalValue || 0).toLocaleString()}</td>
+                  <td class="px-4 py-3 text-right num-focus text-slate-700">¥${(r.expectedLoan || 0).toLocaleString()}</td>
+                  <td class="px-4 py-3 text-xs text-slate-600">${r.warehouse || ''}</td>
+                  <td class="px-4 py-3 text-xs text-slate-600 font-mono">${r.submitTime || r.createdAt || ''}</td>
+                  <td class="px-4 py-3 text-xs text-slate-500 max-w-[200px] truncate" title="${r.submitRemark || ''}">${r.submitRemark || '—'}</td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">
+                      <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                      待盖章
+                    </span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <button onclick="goSealDetail('${r.id}')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded text-xs font-medium">
+                      🔖 进入盖章
+                    </button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `}
+      </div>
+
+      <!-- 印章说明 -->
+      <div class="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4 text-xs text-blue-800">
+        <div class="font-medium mb-2">💡 盖章流程说明</div>
+        <ol class="space-y-1 ml-4 list-decimal">
+          <li>货主方 operator（陈志强）在【入库申请】创建并提交申请</li>
+          <li>申请状态变为 <code class="text-amber-700">pending_owner_seal</code>（待货主方盖章）</li>
+          <li>盖章员 <strong>${user.name}</strong>（您）在此列表查看待盖章申请</li>
+          <li>点击【进入盖章】→ 拖拽印章到入库申请清单 → 确认盖章</li>
+          <li>盖章完成后，状态变为 <code class="text-blue-700">pending_guarantor</code>，进入担保方确认环节</li>
+        </ol>
+      </div>
+    `;
+  }
+
+  // ============ Events ============
+  window.goSealDetail = (id) => {
+    window.location.href = Utils.nav('/customer/inbound-seal-detail?id=') + id;
+  };
+</script>
+</body>
+</html>
