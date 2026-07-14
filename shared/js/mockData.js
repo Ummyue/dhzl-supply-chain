@@ -271,23 +271,7 @@ const MockData = {
           { icon: 'video', label: '监控概览', path: '/customer/video' },
         ]},
       ],
-      bank: [
-        { group: '工作台', items: [
-          { icon: 'home', label: '首页概览', path: '/dashboard' },
-        ]},
-        // v1.7.52：资金方新增【库存管理】group - 库存台账（按 bank 过滤）
-        { group: '库存管理', items: [
-          { icon: 'list', label: '库存台账', path: '/bank/inventory-ledger' },
-        ]},
-        // v1.7.51：资金方新增【货物管理】group - 入库审批 + 出/入库详情
-        { group: '货物管理', items: [
-          { icon: 'box', label: '入库审批', path: '/bank/approval-inbound' },
-          { icon: 'list', label: '出/入库详情', path: '/bank/approval-in-out-detail' },
-        ]},
-        { group: '视频监控', items: [
-          { icon: 'video', label: '监控概览', path: '/customer/video' },
-        ]},
-      ],
+      // v1.7.62：智慧仓储模块下隐藏资金方角色（资金方在供应链金融/数字供应链模块下保留）
       warehouse: [
         { group: '工作台', items: [
           { icon: 'home', label: '首页概览', path: '/dashboard' },

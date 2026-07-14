@@ -34,25 +34,6 @@
     { id: 'rejected', label: '驳回', separator: true },
     { id: 'voided', label: '作废' },
   ];
-    'pending_funding': { text: '⏳ 资方审核', color: 'text-blue-600' },
-    'pending_disbursement': { text: '⏳ 待放款', color: 'text-violet-600' },
-    'released': { text: '✓ 已放款', color: 'text-emerald-600' },
-    'settled': { text: '✓ 已结清', color: 'text-emerald-600' },
-    'rejected': { text: '🔴 已驳回', color: 'text-red-600' },
-  };
-
-  const FINANCING_TABS = [
-    { id: 'all', label: '全部' },
-    { id: 'pending_supervisor_eval', label: '待监管方评估货值' },
-    { id: 'pending_owner_confirm', label: '待融资方确认货值' },
-    { id: 'pending_supervisor', label: '待监管方盖章' },
-    { id: 'pending_guarantor', label: '待担保方审核' },
-    { id: 'pending_funding', label: '资方审核' },
-    { id: 'pending_disbursement', label: '待放款' },
-    { id: 'released', label: '已放款' },
-    { id: 'settled', label: '已结清' },
-    { id: 'rejected', label: '已驳回', separator: true },
-  ];
 
   // 公共筛选器结构（金融从业者使用习惯）
   const DEFAULT_FILTER_FIELDS = [
