@@ -242,14 +242,13 @@ const MockData = {
         { group: '工作台', items: [
           { icon: 'home', label: '首页概览', path: '/dashboard' },
         ]},
-        { group: '货物管理', items: [
-          { icon: 'box', label: '入库审批', path: '/platform/approval-inbound' },
-          { icon: 'list', label: '出/入库详情', path: '/platform/approval-in-out-detail' },
-          { icon: 'package', label: '在库监控', path: '/platform/monitoring-dashboard' },
-        ]},
         // v1.7.52：监管方新增【库存管理】group - 库存台账（复用货主方）
         { group: '库存管理', items: [
           { icon: 'list', label: '库存台账', path: '/platform/inventory-ledger' },
+        ]},
+        { group: '货物管理', items: [
+          { icon: 'box', label: '入库审批', path: '/platform/approval-inbound' },
+          { icon: 'list', label: '出/入库详情', path: '/platform/approval-in-out-detail' },
         ]},
         { group: '视频监控', items: [
           { icon: 'video', label: '监控概览', path: '/customer/video' },
@@ -259,19 +258,14 @@ const MockData = {
         { group: '工作台', items: [
           { icon: 'home', label: '首页概览', path: '/dashboard' },
         ]},
-        // v1.7.51：担保方新增【货物管理】group - 入库审批 + 出/入库详情
-        { group: '货物管理', items: [
-          { icon: 'box', label: '入库审批', path: '/guarantor/approval-inbound' },
-          { icon: 'list', label: '出/入库详情', path: '/guarantor/approval-in-out-detail' },
-        ]},
         // v1.7.52：担保方新增【库存管理】group - 库存台账（按 guarantorId 过滤）
         { group: '库存管理', items: [
           { icon: 'list', label: '库存台账', path: '/guarantor/inventory-ledger' },
         ]},
-        // v1.7.53：担保方新增【解押出库管理】group（复用货主方 + 监管方放还款详情）
-        { group: '解押出库管理', items: [
-          { icon: 'logistics', label: '解押/出库审批', path: '/platform/approval-outbound' },
-          { icon: 'list', label: '放还款详情', path: '/guarantor/disburse-repayment' },
+        // v1.7.51：担保方新增【货物管理】group - 入库审批 + 出/入库详情
+        { group: '货物管理', items: [
+          { icon: 'box', label: '入库审批', path: '/guarantor/approval-inbound' },
+          { icon: 'list', label: '出/入库详情', path: '/guarantor/approval-in-out-detail' },
         ]},
         { group: '视频监控', items: [
           { icon: 'video', label: '监控概览', path: '/customer/video' },
@@ -281,14 +275,14 @@ const MockData = {
         { group: '工作台', items: [
           { icon: 'home', label: '首页概览', path: '/dashboard' },
         ]},
+        // v1.7.52：资金方新增【库存管理】group - 库存台账（按 bank 过滤）
+        { group: '库存管理', items: [
+          { icon: 'list', label: '库存台账', path: '/bank/inventory-ledger' },
+        ]},
         // v1.7.51：资金方新增【货物管理】group - 入库审批 + 出/入库详情
         { group: '货物管理', items: [
           { icon: 'box', label: '入库审批', path: '/bank/approval-inbound' },
           { icon: 'list', label: '出/入库详情', path: '/bank/approval-in-out-detail' },
-        ]},
-        // v1.7.52：资金方新增【库存管理】group - 库存台账（按 bank 过滤）
-        { group: '库存管理', items: [
-          { icon: 'list', label: '库存台账', path: '/bank/inventory-ledger' },
         ]},
         // v1.7.53：资金方新增【解押出库管理】group（复用货主方 + 监管方放还款详情）
         { group: '解押出库管理', items: [
@@ -358,19 +352,9 @@ const MockData = {
         { group: '授信管理', items: [
           { icon: 'chart', label: '额度管理', path: '/platform/limit-management' },
         ]},
-        // ===== 「数据中心」归属 =====
-        // 现状：5 项全放「供应链金融」下（风险/追保/还款/资产/统计 都是金融风控相关）
-        // 如有意见请告知调整
-        { group: '数据中心', items: [
-          { icon: 'alert',   label: '风险预警',   path: '/platform/risk-alerts' },
-          { icon: 'cash',    label: '追保管理',   path: '/platform/supplementary' },
-          { icon: 'list',    label: '还款管理',   path: '/platform/loan-repayment' },
-          { icon: 'package', label: '资产管理',   path: '/platform/asset-management' },
-          { icon: 'chart',   label: '综合统计',   path: '/platform/data-statistics' },
-        ]},
       ],
       guarantor: [
-        { group: '融资审核', items: [
+        { group: '融资管理', items: [
           { icon: 'shield-check', label: '融资审核', path: '/guarantor/approval-financing' },
         ]},
         { group: '质押管理', items: [
@@ -383,7 +367,7 @@ const MockData = {
         ]},
       ],
       bank: [
-        { group: '融资审核', items: [
+        { group: '融资管理', items: [
           { icon: 'shield-check', label: '融资审核', path: '/bank/approval-financing' },
         ]},
         { group: '授信与放款', items: [
