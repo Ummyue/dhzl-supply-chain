@@ -18,6 +18,36 @@
 </head>
 <body class="bg-slate-50">
 <div id="app"></div>
+
+<!-- ========== v1.7.55 驳回 modal ========== -->
+<div id="rejectModal" class="hidden fixed inset-0 bg-black/50 z-50 grid place-items-center">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+      <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+        <svg class="w-5 h-5 text-rose-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        驳回入库申请
+      </h3>
+      <button onclick="closeRejectModal()" class="text-slate-400 hover:text-slate-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="p-6">
+      <div class="text-sm text-slate-600 mb-4">
+        即将驳回申请编号 <span id="modalBizNo" class="font-mono font-medium text-slate-800">--</span>，驳回后流程将终止，货主方需修改后重新提交。
+      </div>
+      <label class="block text-sm font-medium text-slate-700 mb-2">
+        驳回说明 <span class="text-rose-500">*</span>
+      </label>
+      <textarea id="modalRejectReason" rows="4" placeholder="请详细填写驳回原因，例如：货值评估下浮比例超出业务规则上限..." class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-rose-200 focus:border-rose-400"></textarea>
+      <div class="text-xs text-slate-400 mt-1">💡 必填项，最多 200 字</div>
+    </div>
+    <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2">
+      <button onclick="closeRejectModal()" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">取消</button>
+      <button onclick="confirmReject()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded text-sm font-medium">确认驳回</button>
+    </div>
+  </div>
+</div>
+
 <script src="/shared/js/utils.js"></script>
 <script src="/shared/js/mockData.js"></script>
 <script src="/shared/js/components.js"></script>
@@ -26,7 +56,7 @@
 
   // ============ v1.7.51 监管方【入库审批详情】============
   // 复用货主方 inbound-detail.html 基础信息 + 5 步步骤条 + 货物明细 + 附件
-  // 监管方特有：底部【通过/驳回】操作栏 + 评估单价输入 + 驳回说明
+  // 监管方特有：底部【通过/驳回】操作栏（驳回必填说明走 modal，v1.7.55）
   const urlId = new URLSearchParams(window.location.search).get('id');
 
   const DEMO = {
@@ -71,7 +101,7 @@
 
   const fromList = (urlId && MockData.inboundList.find(i => i.id === urlId)) || null;
   // v1.7.51 监管方操作区状态（在 render 之前声明，避免 TDZ）
-  let actionForm = { evaluatePrice: '', rejectReason: '' };
+  let actionForm = { rejectReason: '' };
   const data = {
     id: 'demo',
     bizNo: DEMO.bizNo,
@@ -281,24 +311,13 @@
         </div>
       `;
     }
-    // 监管方当前节点：通过/驳回 + 评估单价 + 驳回说明
+    // 监管方当前节点：通过 / 驳回（驳回弹 modal 必填说明）
     return `
       <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-4 shadow-lg z-10">
         <div class="max-w-7xl mx-auto">
-          <div class="grid grid-cols-3 gap-4 mb-3">
-            <div>
-              <label class="block text-xs text-slate-500 mb-1">评估单价（元/kg）<span class="text-red-500">*</span></label>
-              <input type="number" id="evaluatePrice" value="${actionForm.evaluatePrice}" oninput="actionForm.evaluatePrice=this.value" placeholder="如 60.00" class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
-              <div class="text-xs text-slate-400 mt-1">💡 建议下浮市场价 5%-10%</div>
-            </div>
-            <div class="col-span-2">
-              <label class="block text-xs text-slate-500 mb-1">驳回说明（驳回时必填）</label>
-              <textarea id="rejectReason" rows="1" oninput="actionForm.rejectReason=this.value" placeholder="驳回时填写原因，例如：货值评估下浮比例超出业务规则上限..." class="w-full px-3 py-2 border border-slate-300 rounded text-sm">${actionForm.rejectReason}</textarea>
-            </div>
-          </div>
           <div class="flex items-center justify-end gap-2">
             <button onclick="goBack()" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">返回列表</button>
-            <button onclick="rejectInbound()" class="px-4 py-2 border border-rose-300 text-rose-600 hover:bg-rose-50 rounded text-sm">驳回</button>
+            <button onclick="openRejectModal()" class="px-4 py-2 border border-rose-300 text-rose-600 hover:bg-rose-50 rounded text-sm">驳回</button>
             <button onclick="approveInbound()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">通过并生成质物清单</button>
           </div>
         </div>
@@ -397,20 +416,34 @@
 
   // v1.7.51 监管方操作
   window.approveInbound = () => {
-    if (!actionForm.evaluatePrice) {
-      return Utils.toast('请先填写评估单价', 'warning');
-    }
     Utils.toast('✓ 监管方审核通过，已生成质物清单（mock）', 'success', 2000);
     setTimeout(() => goBack(), 1500);
   };
-  window.rejectInbound = () => {
-    if (!actionForm.rejectReason.trim()) {
-      return Utils.toast('驳回时必须填写驳回说明', 'warning');
+
+  // ============ v1.7.55 驳回 modal（监管方 + 担保方共用结构）============
+  window.openRejectModal = () => {
+    const bizNoEl = document.getElementById('modalBizNo');
+    if (bizNoEl) bizNoEl.textContent = data.bizNo;
+    document.getElementById('rejectModal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('modalRejectReason')?.focus(), 100);
+  };
+  window.closeRejectModal = () => {
+    document.getElementById('rejectModal').classList.add('hidden');
+    const ta = document.getElementById('modalRejectReason');
+    if (ta) ta.value = '';
+  };
+  window.confirmReject = () => {
+    const ta = document.getElementById('modalRejectReason');
+    const reason = (ta?.value || '').trim();
+    if (!reason) {
+      return Utils.toast('驳回说明为必填项，请填写后再确认', 'warning');
     }
-    if (actionForm.rejectReason.length > 200) {
+    if (reason.length > 200) {
       return Utils.toast('驳回说明不能超过 200 字', 'warning');
     }
-    Utils.toast('已驳回，货主方收到驳回通知', 'success', 2000);
+    actionForm.rejectReason = reason;
+    Utils.toast('已驳回，货主方收到驳回通知', 'warning', 2000);
+    closeRejectModal();
     setTimeout(() => goBack(), 1500);
   };
 </script>
