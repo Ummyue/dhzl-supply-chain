@@ -66,10 +66,45 @@
 
     /* title bar */
     .pd-title-bar { display: inline-block; width: 4px; height: 18px; background: #2563eb; border-radius: 1px; margin-right: 8px; vertical-align: middle; }
+    /* v1.7.73 底部固定操作栏 + 驳回弹窗 */
+    .footer-actions { position: fixed; bottom: 0; left: 0; right: 0; z-index: 40; background: #fff; border-top: 1px solid #e2e8f0; padding: 14px 0; box-shadow: 0 -2px 8px rgba(0,0,0,0.04); }
+    .footer-spacer { height: 80px; }
   </style>
 </head>
 <body class="bg-slate-50">
 <div id="app"></div>
+
+<!-- v1.7.73 驳回二次确认弹窗 -->
+<div id="rejectDischargeModal" class="hidden fixed inset-0 bg-black/50 z-50 grid place-items-center">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+      <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+        <svg class="w-5 h-5 text-rose-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        驳回解押/出库申请
+      </h3>
+      <button onclick="closeRejectDischargeModal()" class="text-slate-400 hover:text-slate-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="p-6">
+      <div class="text-sm text-slate-700 mb-3">
+        即将驳回解押/出库申请 <span id="rejectDischargeApplyNo" class="font-mono font-medium text-slate-900">--</span>。
+      </div>
+      <div class="text-sm text-rose-600 mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg">
+        ⚠ <strong>驳回后该申请将终止</strong>，不会进入后续盖章/还款阶段，请谨慎确认。
+      </div>
+      <label class="block text-sm font-medium text-slate-700 mb-2">
+        驳回说明 <span class="text-rose-500">*</span>
+      </label>
+      <textarea id="rejectDischargeReason" rows="4" maxlength="100" placeholder="请明确告知客户驳回原因..." class="form-textarea"></textarea>
+      <div class="text-right text-xs text-slate-400 mt-1"><span id="rejectDischargeCount">0</span>/100</div>
+    </div>
+    <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2">
+      <button onclick="closeRejectDischargeModal()" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">取消</button>
+      <button onclick="confirmRejectDischarge()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded text-sm font-medium">确认</button>
+    </div>
+  </div>
+</div>
 <script src="/shared/js/utils.js"></script>
 <script src="/shared/js/mockData.js"></script>
 <script src="/shared/js/components.js"></script>
@@ -189,12 +224,45 @@
       </div>
 
       <!-- 4. 出库/还款信息 -->
-      <div class="bg-white border border-slate-200 rounded-xl px-6 py-5 mb-8">
+      <div class="bg-white border border-slate-200 rounded-xl px-6 py-5 mb-4">
         <h3 class="text-base font-bold text-slate-800 mb-3"><span class="inline-block w-1 h-4 bg-blue-500 rounded mr-2 align-middle"></span>出库/还款信息</h3>
         <div class="border border-slate-200 rounded overflow-hidden">
           ${finRow3('拟还款日期', repay.planDate || '2026-03-22', '计息天数（天）', repay.interestDays ?? 120, '逾期天数（天）', repay.overdueDays ?? 0)}
           ${finRow3('应还本金（元）', `<span class="num-focus">${Utils.fmtMoney(repay.principal || 300000)}</span>`, '应还利息（元）', `<span class="num-focus">${Utils.fmtMoney(repay.interest || 10000)}</span>`, '应还罚息（元）', `<span class="num-focus">${Utils.fmtMoney(repay.penalty || 0)}</span>`)}
           ${finRow3('应还总金额（元）', `<span class="num-focus font-bold">${Utils.fmtMoney(repay.totalAmount || 320000)}</span>`, '还款账户', `<span class="num-focus text-blue-700">${repay.repayAccount || '中国银行西安华陆大厦支行 102084339010'}</span>`)}
+        </div>
+      </div>
+
+      <!-- v1.7.73 底部固定操作栏：审批通过 / 驳回（终态不显示） -->
+      ${renderFooterActions(detail.statusTag || 'pending_supervisor')}
+    `;
+  }
+
+  // v1.7.73 底部固定操作栏渲染：终态（completed/rejected/invalid）不显示
+  function renderFooterActions(status) {
+    const finalStatuses = ['completed', 'rejected', 'invalid'];
+    if (finalStatuses.includes(status)) {
+      return `
+        <div class="footer-spacer"></div>
+        <div class="footer-actions">
+          <div class="max-w-[1280px] mx-auto px-6 flex items-center justify-center gap-2 text-sm text-slate-500">
+            <span>流程已结束：<b class="text-slate-700">${statusText(status)}</b>，当前状态不可操作。请通过面包屑返回列表。</span>
+          </div>
+        </div>
+      `;
+    }
+    return `
+      <div class="footer-spacer"></div>
+      <div class="footer-actions">
+        <div class="max-w-[1280px] mx-auto px-6 flex items-center justify-center gap-4">
+          <button onclick="passDischarge()" class="px-12 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium flex items-center gap-1.5">
+            <span class="inline-flex w-4 h-4 bg-yellow-400 rounded items-center justify-center text-[10px]">⚡</span>
+            审批通过
+          </button>
+          <button onclick="openRejectDischargeModal()" class="px-12 py-2.5 border border-rose-500 text-rose-600 hover:bg-rose-50 rounded text-sm font-medium flex items-center gap-1.5">
+            <span class="inline-flex w-4 h-4 bg-yellow-400 rounded items-center justify-center text-[10px]">⚡</span>
+            驳回
+          </button>
         </div>
       </div>
     `;
@@ -265,6 +333,40 @@
     } catch (e) {
       Utils.toast('复制失败，请手动选择', 'error');
     }
+  };
+
+  // ============ v1.7.73 审批通过 / 驳回（3 角色共用） ============
+  window.passDischarge = function() {
+    Utils.toast(`✓ 已审批通过：申请 ${detail.applyNo}（mock）`, 'success', 1800);
+    // mock：直接返回列表（实际项目走下一节点 / 推进步骤条）
+    setTimeout(() => {
+      window.location.href = Utils.nav('/bank/approval-outbound');
+    }, 1200);
+  };
+  window.openRejectDischargeModal = function() {
+    const el = document.getElementById('rejectDischargeApplyNo');
+    if (el) el.textContent = detail.applyNo || '--';
+    document.getElementById('rejectDischargeModal').classList.remove('hidden');
+    const ta = document.getElementById('rejectDischargeReason');
+    if (ta) { ta.value = ''; ta.focus(); }
+    const c = document.getElementById('rejectDischargeCount');
+    if (c) c.textContent = '0';
+  };
+  window.closeRejectDischargeModal = function() {
+    document.getElementById('rejectDischargeModal').classList.add('hidden');
+    const ta = document.getElementById('rejectDischargeReason');
+    if (ta) ta.value = '';
+  };
+  window.confirmRejectDischarge = function() {
+    const ta = document.getElementById('rejectDischargeReason');
+    const reason = (ta?.value || '').trim();
+    if (!reason) return Utils.toast('驳回说明为必填项，请填写后再确认', 'warning');
+    if (reason.length > 100) return Utils.toast('驳回说明不能超过 100 字', 'warning');
+    Utils.toast(`✓ 已驳回解押/出库申请 ${detail.applyNo}（mock）`, 'warning', 1800);
+    closeRejectDischargeModal();
+    setTimeout(() => {
+      window.location.href = Utils.nav('/bank/approval-outbound');
+    }, 1200);
   };
 
   function statusText(s) {
