@@ -1977,6 +1977,9 @@ const MockData = {
       creatorUserRole: 'operator',
       rejectReason: '货值评估下浮比例超出业务规则上限（建议 5%-10%），当前 12% 过高，请重新提交并调整下浮比例至 8%。',
       rejectTime: '2026-07-07 16:45',
+      // v1.7.67: 标识驳回环节(步骤条上标红)
+      rejectedAtStep: 'pending_guarantor',
+      rejectedBy: '担保方',
     },
     {
       id: 'in_006',
@@ -2004,6 +2007,9 @@ const MockData = {
       creatorUserRole: 'operator',
       rejectReason: '随附单据不完整：缺少《入境货物检验检疫证明》，请补充后重新提交。',
       rejectTime: '2026-07-06 14:20',
+      // v1.7.67: 标识驳回环节(步骤条上标红)
+      rejectedAtStep: 'pending_supervisor',
+      rejectedBy: '监管方',
     },
     // ========== v1.7.55 新增：担保方【待担保确认】状态数据(3 条覆盖完整进度) ==========
     {
@@ -3679,4 +3685,33 @@ const MockData = {
   })(),
 };
 
+// ========== v1.7.67 驳回详情页：入库申请修改/重新提交/作废 ==========
+// 提供 mock 层的内存修改 + 状态机流转函数（演示型，刷新后回退）
+MockData.updateMockInbound = function(id, fields, nextStatus) {
+  const target = MockData.inboundList.find(r => r.id === id);
+  if (!target) return null;
+  // 合并字段（如 applicant/financeProduct/pledgeRows 等顶层字段 + products/expectedLoan/totalValue 等）
+  Object.assign(target, fields);
+  if (Array.isArray(fields.pledgeRows)) target.pledgeRows = fields.pledgeRows;
+  if (nextStatus) {
+    target.status = nextStatus;
+    target.currentApprover = nextStatus === 'draft' ? 'customer' : (nextStatus === 'voided' ? null : 'customer');
+    if (nextStatus === 'draft') {
+      // 重新提交 → 回到草稿状态，记录重新提交时间 + 清掉驳回节点标记
+      target.resubmitTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      target.rejectedReason = null;
+      target.rejectTime = null;
+      target.rejectReason = null;
+      target.rejectedAtStep = null;
+      target.rejectedBy = null;
+    } else if (nextStatus === 'voided') {
+      // 作废 → 记录作废时间 + 原因
+      target.voidTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      target.voidReason = fields.voidReason || '货主方主动取消';
+    }
+  }
+  return target;
+};
+// 暴露给 window（v1.7.67 详情页通过 window.MockData.updateMockInbound 调用）
 window.MockData = MockData;
+window.MockData.updateMockInbound = MockData.updateMockInbound;

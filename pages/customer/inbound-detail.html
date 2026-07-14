@@ -138,6 +138,69 @@
   </div>
 </div>
 
+<!-- ========== v1.7.67 重新提交确认 modal ========== -->
+<div id="resubmitModal" class="hidden fixed inset-0 bg-black/50 z-50 grid place-items-center">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+      <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+        <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg>
+        重新提交入库申请
+      </h3>
+      <button onclick="closeResubmitModal()" class="text-slate-400 hover:text-slate-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="p-6">
+      <div class="text-sm text-slate-700 mb-3">
+        即将重新提交申请编号 <span id="resubmitModalBizNo" class="font-mono font-medium text-slate-900">--</span>。
+      </div>
+      <div class="text-sm text-slate-600 mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        💡 <strong>重新提交后</strong>，该申请状态将变为 <code class="text-blue-700">草稿</code>，需重新走完"提交审核"流程。
+      </div>
+      <label class="block text-sm font-medium text-slate-700 mb-2">
+        重新提交说明 <span class="text-slate-400 text-xs font-normal">（选填）</span>
+      </label>
+      <textarea id="resubmitRemark" rows="3" placeholder="可说明本次修改内容、驳回原因改进等..." class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"></textarea>
+    </div>
+    <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2">
+      <button onclick="closeResubmitModal()" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">取消</button>
+      <button onclick="confirmResubmit()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">🔄 确认重新提交</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== v1.7.67 取消申请 modal（二次确认 + 必填原因） ========== -->
+<div id="cancelAppModal" class="hidden fixed inset-0 bg-black/50 z-50 grid place-items-center">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+      <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+        <svg class="w-5 h-5 text-rose-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        取消入库申请
+      </h3>
+      <button onclick="closeCancelAppModal()" class="text-slate-400 hover:text-slate-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="p-6">
+      <div class="text-sm text-slate-700 mb-3">
+        即将取消申请编号 <span id="cancelAppModalBizNo" class="font-mono font-medium text-slate-900">--</span>。
+      </div>
+      <div class="text-sm text-rose-600 mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg">
+        ⚠ <strong>取消后该申请将彻底作废</strong>，无法再恢复。
+      </div>
+      <label class="block text-sm font-medium text-slate-700 mb-2">
+        取消原因 <span class="text-rose-500">*</span>
+      </label>
+      <textarea id="cancelAppReason" rows="4" placeholder="请说明取消原因..." class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-rose-200 focus:border-rose-400"></textarea>
+      <div class="text-xs text-slate-400 mt-1">💡 必填项，最多 200 字</div>
+    </div>
+    <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2">
+      <button onclick="closeCancelAppModal()" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">取消</button>
+      <button onclick="confirmCancelApp()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded text-sm font-medium">确认取消申请</button>
+    </div>
+  </div>
+</div>
+
 <script src="/shared/js/utils.js"></script>
 <script src="/shared/js/mockData.js"></script>
 <script src="/shared/js/components.js"></script>
@@ -226,6 +289,10 @@
   // v1.7.66 货主方盖章员：李雪进入且当前节点为待货主盖章(① 或 ②) 时显示【确认盖章】+【作废】
   const isSealUser = user && user.userRole === 'sealUser';
   const isSealTurn = isSealUser && (data.status === 'pending_owner_seal' || data.status === 'pending_owner_seal_2' || data.status === 'pending_owner_seal_3');
+  // v1.7.67 驳回状态机下的"可编辑表单"模式：仅货主方操作员（非盖章员）看驳回时可编辑
+  const isRejectedEditable = isRejected && !isSealUser;
+  // v1.7.67 字段变更跟踪：用于启用/禁用【重新提交】按钮
+  let _isDirty = false;
   const statusLabelMap = {
     draft: '草稿', pending_submit: '待提交', pending_owner_seal: '待货主盖章',
     pending_guarantor: '待担保确认', reviewing: '待监管确认', pending_supervisor: '待监管确认',
@@ -234,12 +301,12 @@
   };
 
   document.getElementById('app').innerHTML = Components.pageShell({
-    title: '入库详情',
+    title: isRejectedEditable ? '入库申请（驳回修改）' : '入库详情',
     currentPath: '/customer/inbound',
     breadcrumb: [
       { label: '货物管理', path: '/customer/inbound' },
       { label: '入库申请', path: '/customer/inbound' },
-      { label: '入库详情', path: '/customer/inbound-detail' },
+      { label: isRejectedEditable ? '入库申请（驳回修改）' : '入库详情', path: '/customer/inbound-detail' },
     ],
     extra: '',
     content: render(),
@@ -260,7 +327,7 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
           </button>
           <span class="px-2 py-0.5 text-xs ${isRejected ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700'} rounded">${statusLabelMap[data.status] || data.status}</span>
-          ${isFinalized ? `<span class="px-2 py-0.5 text-xs bg-rose-100 text-rose-700 rounded">${data.rejectedReason ? '驳回原因：' + data.rejectedReason : (data.voidReason || '已作废')}</span>` : ''}
+          ${isFinalized ? `<span class="px-2 py-0.5 text-xs bg-rose-100 text-rose-700 rounded">${data.rejectReason ? '驳回原因：' + data.rejectReason : (data.voidReason || '已作废')}</span>` : ''}
         </div>
         <div class="flex items-center gap-2 text-xs text-slate-500">
           <span>最后更新：${data.createdAt || '2026-06-11 14:23'}</span>
@@ -273,6 +340,24 @@
           <!-- 左侧：基础信息 3×3 -->
           <div class="flex-1 p-6 border-r border-slate-200">
             <div class="grid grid-cols-3 gap-x-6 gap-y-4">
+              ${isRejectedEditable ? `
+                <div><dt class="text-xs text-slate-500 mb-1">出质方 <span class="text-rose-500">*</span></dt><dd><input type="text" id="f_applicant" value="${data.applicant || '郑州某冷链贸易有限公司'}" oninput="markDirty()" class="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none"></dd></div>
+                <div><dt class="text-xs text-slate-500 mb-1">联系人 <span class="text-rose-500">*</span></dt><dd><input type="text" id="f_contactPerson" value="${data.contactPerson || '李雪 — 138 0000 1234'}" oninput="markDirty()" class="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none"></dd></div>
+                <div><dt class="text-xs text-slate-500 mb-1">金融产品 <span class="text-rose-500">*</span></dt><dd><select id="f_financeProduct" onchange="markDirty()" class="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
+                  ${(MockData.financeProducts || [
+                    {id: 'fp_001', name: '冷链现货质押融资（90天）'},
+                    {id: 'fp_002', name: '冷链现货质押融资（120天）'},
+                    {id: 'fp_003', name: '冷链现货质押融资（180天）'},
+                    {id: 'fp_004', name: '中原e贷'},
+                  ]).map(p => `<option value="${p.name}" ${(data.financeProduct || '').includes(p.name.split('（')[0]) ? 'selected' : ''}>${p.name}</option>`).join('')}
+                </select></dd></div>
+                <div><dt class="text-xs text-slate-500 mb-1">监管方 <span class="text-rose-500">*</span></dt><dd><input type="text" id="f_supervisor" value="${data.supervisor || '大河智链物流（郑州）有限公司'}" oninput="markDirty()" class="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none"></dd></div>
+                <div><dt class="text-xs text-slate-500 mb-1">质权方 <span class="text-rose-500">*</span></dt><dd><input type="text" id="f_pledgee" value="${data.pledgee || '河南农担股份有限公司'}" oninput="markDirty()" class="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none"></dd></div>
+                <div><dt class="text-xs text-slate-500 mb-1">申请日期 <span class="text-rose-500">*</span></dt><dd><input type="date" id="f_applyDate" value="${data.applyDate || '2026-06-11'}" oninput="markDirty()" class="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none"></dd></div>
+                <div><dt class="text-xs text-slate-500 mb-1">创建人</dt><dd class="text-sm text-slate-800">${data.creator || '张三'}</dd></div>
+                <div><dt class="text-xs text-slate-500 mb-1">创建时间</dt><dd class="text-sm text-slate-800 font-mono">${data.createdAt || '2022-08-12 12:22:32'}</dd></div>
+                <div><dt class="text-xs text-slate-500 mb-1">仓库地点 <span class="text-rose-500">*</span></dt><dd><input type="text" id="f_warehouse" value="${data.warehouse || '郑州仓'}" oninput="markDirty()" class="w-full px-2 py-1 text-sm border border-slate-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none"></dd></div>
+              ` : `
               <div><dt class="text-xs text-slate-500 mb-1">出质方</dt><dd class="text-sm font-medium text-slate-800">${data.applicant || '郑州某冷链贸易有限公司'}</dd></div>
               <div><dt class="text-xs text-slate-500 mb-1">联系人</dt><dd class="text-sm text-slate-800">${data.contactPerson || '李雪 — 138 0000 1234'}</dd></div>
               <div><dt class="text-xs text-slate-500 mb-1">金融产品</dt><dd class="text-sm text-slate-800">${data.financeProduct || '冷链现货质押融资（90天）'}</dd></div>
@@ -284,6 +369,7 @@
               <div><dt class="text-xs text-slate-500 mb-1">创建人</dt><dd class="text-sm text-slate-800">${data.creator || '张三'}</dd></div>
               <div><dt class="text-xs text-slate-500 mb-1">创建时间</dt><dd class="text-sm text-slate-800 font-mono">${data.createdAt || '2022-08-12 12:22:32'}</dd></div>
               <div><dt class="text-xs text-slate-500 mb-1">仓库地点</dt><dd class="text-sm text-slate-800">${data.warehouse || '郑州仓'}</dd></div>
+              `}
             </div>
           </div>
 
@@ -389,6 +475,26 @@
 
   // v1.7.56 货主方操作区：draft 状态显示【取消申请】+【提交审核】；非当前节点显示"只读查看"提示
   function renderActionBar() {
+    // v1.7.67 驳回状态机下的"可编辑表单"模式：显示【重新提交】(默认disabled) +【取消申请】
+    if (isRejectedEditable) {
+      return `
+      <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-4 shadow-lg z-10">
+        <div class="max-w-7xl mx-auto">
+          <div class="mb-3 p-3 bg-rose-50 border border-rose-200 rounded-lg flex items-start gap-2">
+            <span class="text-rose-600 text-lg">⚠</span>
+            <div class="text-xs text-rose-800">
+              此申请<strong>已被驳回</strong>（${data.rejectedBy || ''}驳回 · ${data.rejectReason || data.rejectedReason || '原因：未提供'}）。您可修改下方字段后<strong>重新提交</strong>（将回到草稿状态重走流程），或<strong>取消申请</strong>彻底作废。
+            </div>
+          </div>
+          <div class="flex items-center justify-end gap-2">
+            <button onclick="goBack()" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">返回列表</button>
+            <button onclick="openCancelAppModal()" class="px-4 py-2 border border-slate-400 text-slate-600 hover:bg-slate-50 rounded text-sm">取消申请</button>
+            <button id="btnResubmit" onclick="openResubmitModal()" disabled class="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium opacity-50 cursor-not-allowed">🔄 重新提交</button>
+          </div>
+        </div>
+      </div>
+    `;
+    }
     // v1.7.66 盖章员（李雪）当前节点 = 待货主盖章：显示【确认盖章】+【作废】
     if (isSealTurn) {
       return `
@@ -411,7 +517,7 @@
         <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 shadow-lg z-10">
           <div class="max-w-7xl mx-auto flex items-center justify-between">
             <div class="text-sm text-slate-500">
-              <span class="font-medium text-slate-700">流程已结束：</span>${statusLabelMap[data.status]} ${data.rejectedReason ? '· ' + data.rejectedReason : (data.voidReason || '')}
+              <span class="font-medium text-slate-700">流程已结束：</span>${statusLabelMap[data.status]} ${data.rejectReason ? '· ' + data.rejectReason : (data.voidReason || '')}
             </div>
             <button onclick="goBack()" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">返回列表</button>
           </div>
@@ -457,8 +563,14 @@
     const isDone = idx < currentStepIdx;
     const isCurrent = idx === currentStepIdx && !isRejected;
     const isPending = idx > currentStepIdx;
+    // v1.7.67: 驳回状态机下,被驳回的节点标红+显示×+驳回原因 tooltip
+    const isRejectedHere = isRejected && step.key === data.rejectedAtStep;
     let circleCls, textCls, lineCls;
-    if (isDone) {
+    if (isRejectedHere) {
+      circleCls = 'bg-rose-600 border-rose-600 text-white';
+      textCls = 'text-rose-700 font-medium';
+      lineCls = 'bg-rose-300';
+    } else if (isDone) {
       circleCls = 'bg-blue-600 border-blue-600 text-white';
       textCls = 'text-blue-700 font-medium';
       lineCls = 'bg-blue-600';
@@ -471,25 +583,72 @@
       textCls = 'text-slate-400';
       lineCls = 'bg-slate-200';
     }
-    const numIcon = isDone
-      ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>'
-      : `<span class="text-sm font-bold">${idx + 1}</span>`;
+    let numIcon;
+    if (isRejectedHere) {
+      numIcon = '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/></svg>';
+    } else if (isDone) {
+      numIcon = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>';
+    } else {
+      numIcon = `<span class="text-sm font-bold">${idx + 1}</span>`;
+    }
+    // 驳回节点: 圆形+驳回标签 + tooltip
+    const rejectTag = isRejectedHere
+      ? `<div class="absolute -top-2 -right-2 px-1.5 py-0.5 bg-rose-600 text-white text-[10px] rounded-full font-medium">驳回</div>`
+      : '';
+    const tooltip = isRejectedHere && data.rejectReason
+      ? `<div class="group relative inline-block ml-1">
+           <svg class="w-3.5 h-3.5 text-rose-500 cursor-help" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+           <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 max-w-xs" style="white-space: normal; width: max-content; max-width: 280px;">
+             <div class="font-medium text-rose-300 mb-1">⚠ ${data.rejectedBy || '审核方'}驳回 · ${data.rejectTime || ''}</div>
+             <div class="text-left">${data.rejectReason}</div>
+             <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-800"></div>
+           </div>
+         </div>`
+      : '';
     const connector = idx < STEP_DEFS.length - 1
-      ? `<div class="flex-1 h-0.5 ${idx < currentStepIdx ? 'bg-blue-600' : 'bg-slate-200'} mx-3 -mt-7"></div>`
+      ? `<div class="flex-1 h-0.5 ${isRejectedHere ? 'bg-rose-300' : (idx < currentStepIdx ? 'bg-blue-600' : 'bg-slate-200')} mx-3 -mt-7"></div>`
       : '';
     return `
       <div class="flex flex-col items-center min-w-0 relative" style="flex: 1">
         <div class="relative flex items-center w-full">
-          <div class="w-14 h-14 rounded-full border-2 ${circleCls} grid place-items-center flex-shrink-0 transition-all">${numIcon}</div>
+          <div class="w-14 h-14 rounded-full border-2 ${circleCls} grid place-items-center flex-shrink-0 transition-all relative">
+            ${numIcon}
+            ${rejectTag}
+          </div>
           ${connector}
         </div>
-        <div class="text-sm ${textCls} mt-2 whitespace-nowrap">${step.label}</div>
+        <div class="text-sm ${textCls} mt-2 whitespace-nowrap flex items-center gap-1">
+          ${step.label}
+          ${tooltip}
+        </div>
+        ${isRejectedHere ? `<div class="text-xs text-rose-600 mt-1">${data.rejectedBy || ''}驳回 · ${data.rejectTime || ''}</div>` : ''}
       </div>
     `;
   }
 
   function renderPledgeRows() {
-    return data.pledgeRows.map(r => `
+    return data.pledgeRows.map(r => {
+      if (isRejectedEditable) {
+        return `
+      <tr class="border-t border-slate-100 bg-amber-50/30">
+        <td class="px-2 py-2">${r.no}</td>
+        <td class="px-2 py-2"><input type="text" value="${r.name}" oninput="markDirty()" data-row="${r.no}" data-key="name" class="w-24 px-1.5 py-1 text-xs border border-slate-300 rounded focus:border-blue-500 outline-none"></td>
+        <td class="px-2 py-2"><input type="text" value="${r.country}" oninput="markDirty()" data-row="${r.no}" data-key="country" class="w-16 px-1.5 py-1 text-xs border border-slate-300 rounded focus:border-blue-500 outline-none"></td>
+        <td class="px-2 py-2"><input type="text" value="${r.factoryNo}" oninput="markDirty()" data-row="${r.no}" data-key="factoryNo" class="w-20 px-1.5 py-1 text-xs border border-slate-300 rounded focus:border-blue-500 outline-none"></td>
+        <td class="px-2 py-2 text-right num-focus"><input type="number" value="${r.qty}" oninput="markDirty()" data-row="${r.no}" data-key="qty" class="w-20 px-1.5 py-1 text-xs border border-slate-300 rounded text-right focus:border-blue-500 outline-none"></td>
+        <td class="px-2 py-2"><input type="text" value="${r.qtyUnit}" oninput="markDirty()" data-row="${r.no}" data-key="qtyUnit" class="w-12 px-1.5 py-1 text-xs border border-slate-300 rounded focus:border-blue-500 outline-none"></td>
+        <td class="px-2 py-2 text-right num-focus"><input type="number" step="0.01" value="${r.weight}" oninput="markDirty()" data-row="${r.no}" data-key="weight" class="w-24 px-1.5 py-1 text-xs border border-slate-300 rounded text-right focus:border-blue-500 outline-none"></td>
+        <td class="px-2 py-2"><input type="text" value="${r.weightUnit}" oninput="markDirty()" data-row="${r.no}" data-key="weightUnit" class="w-12 px-1.5 py-1 text-xs border border-slate-300 rounded focus:border-blue-500 outline-none"></td>
+        <td class="px-2 py-2"><input type="date" value="${r.plannedInbound}" oninput="markDirty()" data-row="${r.no}" data-key="plannedInbound" class="w-32 px-1.5 py-1 text-xs border border-slate-300 rounded focus:border-blue-500 outline-none"></td>
+        <td class="px-2 py-2"><input type="date" value="${r.produceDate}" oninput="markDirty()" data-row="${r.no}" data-key="produceDate" class="w-32 px-1.5 py-1 text-xs border border-slate-300 rounded focus:border-blue-500 outline-none"></td>
+        <td class="px-2 py-2"><input type="text" value="${r.batchNo}" oninput="markDirty()" data-row="${r.no}" data-key="batchNo" class="w-24 px-1.5 py-1 text-xs border border-slate-300 rounded focus:border-blue-500 outline-none"></td>
+        <td class="px-2 py-2"><input type="text" value="${r.contractNo}" oninput="markDirty()" data-row="${r.no}" data-key="contractNo" class="w-24 px-1.5 py-1 text-xs border border-slate-300 rounded focus:border-blue-500 outline-none"></td>
+        <td class="px-2 py-2"><input type="text" value="${r.waybill}" oninput="markDirty()" data-row="${r.no}" data-key="waybill" class="w-24 px-1.5 py-1 text-xs border border-slate-300 rounded focus:border-blue-500 outline-none"></td>
+        <td class="px-2 py-2"><input type="text" value="${r.cabinet}" oninput="markDirty()" data-row="${r.no}" data-key="cabinet" class="w-16 px-1.5 py-1 text-xs border border-slate-300 rounded focus:border-blue-500 outline-none"></td>
+        <td class="px-2 py-2"><input type="text" value="${r.location}" oninput="markDirty()" data-row="${r.no}" data-key="location" class="w-32 px-1.5 py-1 text-xs border border-blue-300 rounded text-blue-700 focus:border-blue-500 outline-none"></td>
+      </tr>`;
+      }
+      return `
       <tr class="border-t border-slate-100 hover:bg-blue-50/30">
         <td class="px-2 py-2">${r.no}</td>
         <td class="px-2 py-2">${r.name}</td>
@@ -506,8 +665,8 @@
         <td class="px-2 py-2">${r.waybill}</td>
         <td class="px-2 py-2">${r.cabinet}</td>
         <td class="px-2 py-2"><span class="text-blue-700">${r.location}</span></td>
-      </tr>
-    `).join('');
+      </tr>`;
+    }).join('');
   }
 
   function renderAttachments() {
@@ -647,6 +806,125 @@
     }
     Utils.toast('✓ 申请已作废（mock）', 'warning', 2000);
     closeVoidModal();
+    setTimeout(() => goBack(), 1500);
+  };
+
+  // ============ v1.7.67 驳回详情页：字段变更跟踪 + 重新提交/取消申请 ============
+  // 1. markDirty: 任意字段变更时启用【重新提交】按钮
+  window.markDirty = () => {
+    if (_isDirty) return;
+    _isDirty = true;
+    const btn = document.getElementById('btnResubmit');
+    if (btn) {
+      btn.disabled = false;
+      btn.classList.remove('opacity-50', 'cursor-not-allowed');
+      btn.classList.add('hover:bg-blue-700');
+    }
+  };
+
+  // 2. 收集当前所有变更后的字段
+  function collectResubmitFields() {
+    // 基础信息 7 字段
+    const f_applicant = document.getElementById('f_applicant')?.value.trim() || '';
+    const f_contactPerson = document.getElementById('f_contactPerson')?.value.trim() || '';
+    const f_financeProduct = document.getElementById('f_financeProduct')?.value.trim() || '';
+    const f_supervisor = document.getElementById('f_supervisor')?.value.trim() || '';
+    const f_pledgee = document.getElementById('f_pledgee')?.value.trim() || '';
+    const f_applyDate = document.getElementById('f_applyDate')?.value || '';
+    const f_warehouse = document.getElementById('f_warehouse')?.value.trim() || '';
+    // 入库货物明细(所有 input[data-row][data-key])
+    const newRows = JSON.parse(JSON.stringify(data.pledgeRows || []));
+    document.querySelectorAll('input[data-row][data-key]').forEach(inp => {
+      const no = Number(inp.dataset.row);
+      const key = inp.dataset.key;
+      const row = newRows.find(r => r.no === no);
+      if (!row) return;
+      if (key === 'qty' || key === 'weight') {
+        row[key] = Number(inp.value) || 0;
+      } else {
+        row[key] = inp.value;
+      }
+    });
+    return {
+      applicant: f_applicant,
+      contactPerson: f_contactPerson,
+      financeProduct: f_financeProduct,
+      supervisor: f_supervisor,
+      pledgee: f_pledgee,
+      applyDate: f_applyDate,
+      warehouse: f_warehouse,
+      pledgeRows: newRows,
+    };
+  }
+
+  // 3. 重新提交 modal
+  window.openResubmitModal = () => {
+    const bizNoEl = document.getElementById('resubmitModalBizNo');
+    if (bizNoEl) bizNoEl.textContent = data.bizNo;
+    document.getElementById('resubmitModal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('resubmitRemark')?.focus(), 100);
+  };
+  window.closeResubmitModal = () => {
+    document.getElementById('resubmitModal').classList.add('hidden');
+    const ta = document.getElementById('resubmitRemark');
+    if (ta) ta.value = '';
+  };
+  window.confirmResubmit = () => {
+    const ta = document.getElementById('resubmitRemark');
+    const remark = (ta?.value || '').trim();
+    if (remark.length > 200) {
+      return Utils.toast('重新提交说明不能超过 200 字', 'warning');
+    }
+    // 必填校验
+    const fields = collectResubmitFields();
+    if (!fields.applicant) return Utils.toast('出质方为必填项', 'warning');
+    if (!fields.contactPerson) return Utils.toast('联系人为必填项', 'warning');
+    if (!fields.financeProduct) return Utils.toast('金融产品为必填项', 'warning');
+    if (!fields.supervisor) return Utils.toast('监管方为必填项', 'warning');
+    if (!fields.pledgee) return Utils.toast('质权方为必填项', 'warning');
+    if (!fields.applyDate) return Utils.toast('申请日期为必填项', 'warning');
+    if (!fields.warehouse) return Utils.toast('仓库地点为必填项', 'warning');
+    if (!fields.pledgeRows || fields.pledgeRows.length === 0) return Utils.toast('入库货物明细不能为空', 'warning');
+    // 调用 mockData 内存修改 + 状态变 draft
+    const updated = MockData.updateMockInbound(data.id, { ...fields, resubmitRemark: remark }, 'draft');
+    if (!updated) {
+      Utils.toast('重新提交失败：未找到该申请', 'error');
+      return;
+    }
+    Utils.toast('✓ 已重新提交，状态回到「草稿」，请在列表中点击【提交审核】继续流程', 'success', 2500);
+    closeResubmitModal();
+    setTimeout(() => goBack(), 1800);
+  };
+
+  // 4. 取消申请 modal
+  window.openCancelAppModal = () => {
+    const bizNoEl = document.getElementById('cancelAppModalBizNo');
+    if (bizNoEl) bizNoEl.textContent = data.bizNo;
+    document.getElementById('cancelAppModal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('cancelAppReason')?.focus(), 100);
+  };
+  window.closeCancelAppModal = () => {
+    document.getElementById('cancelAppModal').classList.add('hidden');
+    const ta = document.getElementById('cancelAppReason');
+    if (ta) ta.value = '';
+  };
+  window.confirmCancelApp = () => {
+    const ta = document.getElementById('cancelAppReason');
+    const reason = (ta?.value || '').trim();
+    if (!reason) {
+      return Utils.toast('取消原因为必填项，请填写后再确认', 'warning');
+    }
+    if (reason.length > 200) {
+      return Utils.toast('取消原因不能超过 200 字', 'warning');
+    }
+    // 调用 mockData 内存修改 + 状态变 voided
+    const updated = MockData.updateMockInbound(data.id, { voidReason: reason }, 'voided');
+    if (!updated) {
+      Utils.toast('取消失败：未找到该申请', 'error');
+      return;
+    }
+    Utils.toast('✓ 申请已取消并作废（mock）', 'warning', 2000);
+    closeCancelAppModal();
     setTimeout(() => goBack(), 1500);
   };
 </script>
