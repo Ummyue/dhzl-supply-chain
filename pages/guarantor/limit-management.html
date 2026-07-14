@@ -144,18 +144,24 @@
         </div>
       </div>
 
-      <!-- 3 个 tab 状态筛选 -->
+      <!-- 3 个 tab 状态筛选 + v1.7.71 担保方【新增额度】按钮（参考截图1右侧位置） -->
       <div class="bg-white border border-slate-200 rounded-xl mb-3 px-2 pt-1">
-        <div class="flex items-center gap-1">
-          ${[
-            { id: 'all',   label: '全部' },
-            { id: '启用', label: '启用' },
-            { id: '停用', label: '停用' },
-          ].map(t => `
-            <button onclick="switchTab('${t.id}')" class="px-5 py-2.5 text-sm font-medium border-b-2 transition ${currentTab === t.id ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'}">
-              ${t.label} <span class="text-xs text-slate-400">(${tabCount(t.id)})</span>
-            </button>
-          `).join('')}
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-1">
+            ${[
+              { id: 'all',   label: '全部' },
+              { id: '启用', label: '启用' },
+              { id: '停用', label: '停用' },
+            ].map(t => `
+              <button onclick="switchTab('${t.id}')" class="px-5 py-2.5 text-sm font-medium border-b-2 transition ${currentTab === t.id ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'}">
+                ${t.label} <span class="text-xs text-slate-400">(${tabCount(t.id)})</span>
+              </button>
+            `).join('')}
+          </div>
+          <button onclick="Utils.nav('/guarantor/limit-create')" class="mr-2 mb-1.5 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            新增额度
+          </button>
         </div>
       </div>
 
