@@ -284,11 +284,6 @@ const MockData = {
           { icon: 'box', label: '入库审批', path: '/bank/approval-inbound' },
           { icon: 'list', label: '出/入库详情', path: '/bank/approval-in-out-detail' },
         ]},
-        // v1.7.53：资金方新增【解押出库管理】group（复用货主方 + 监管方放还款详情）
-        { group: '解押出库管理', items: [
-          { icon: 'logistics', label: '解押/出库审批', path: '/platform/approval-outbound' },
-          { icon: 'list', label: '放还款详情', path: '/bank/disburse-repayment' },
-        ]},
         { group: '视频监控', items: [
           { icon: 'video', label: '监控概览', path: '/customer/video' },
         ]},
