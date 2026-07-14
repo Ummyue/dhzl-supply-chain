@@ -9,8 +9,31 @@
     'pending': { text: '未提交', color: 'text-slate-500' },
     'pending_supervisor_eval': { text: '⏳ 待监管方评估货值', color: 'text-amber-600' },
     'pending_owner_confirm': { text: '⏳ 待融资方确认货值', color: 'text-amber-600' },
+    'pending_owner_seal_2': { text: '⏳ 待融资方盖章', color: 'text-amber-600' },
     'pending_supervisor': { text: '⏳ 待监管方盖章', color: 'text-blue-600' },
     'pending_guarantor': { text: '⏳ 待担保方审核', color: 'text-blue-600' },
+    'pending_guarantor_seal': { text: '⏳ 待担保方盖章', color: 'text-blue-600' },
+    'pending_funding': { text: '⏳ 待资金方审核', color: 'text-blue-600' },
+    'pending_disbursement': { text: '⏳ 待放款', color: 'text-violet-600' },
+    'released': { text: '✓ 已放款', color: 'text-emerald-600' },
+    'rejected': { text: '🔴 驳回', color: 'text-red-600' },
+    'voided': { text: '⚫ 作废', color: 'text-slate-500' },
+  };
+
+  const FINANCING_TABS = [
+    { id: 'all', label: '全部' },
+    { id: 'pending_supervisor_eval', label: '待监管方评估货值' },
+    { id: 'pending_owner_confirm', label: '待融资方确认货值' },
+    { id: 'pending_owner_seal_2', label: '待融资方盖章' },
+    { id: 'pending_supervisor', label: '待监管方盖章' },
+    { id: 'pending_guarantor', label: '待担保方审核' },
+    { id: 'pending_guarantor_seal', label: '待担保方盖章' },
+    { id: 'pending_funding', label: '待资金方审核' },
+    { id: 'pending_disbursement', label: '待放款' },
+    { id: 'released', label: '已放款' },
+    { id: 'rejected', label: '驳回', separator: true },
+    { id: 'voided', label: '作废' },
+  ];
     'pending_funding': { text: '⏳ 资方审核', color: 'text-blue-600' },
     'pending_disbursement': { text: '⏳ 待放款', color: 'text-violet-600' },
     'released': { text: '✓ 已放款', color: 'text-emerald-600' },
@@ -231,8 +254,9 @@
     ];
     const statusCsvLabel = {
       'pending': '未提交', 'pending_supervisor_eval': '待监管方评估货值', 'pending_owner_confirm': '待融资方确认货值',
-      'pending_supervisor': '待监管方盖章', 'pending_guarantor': '待担保方审核', 'pending_funding': '资方审核',
-      'pending_disbursement': '待放款', 'released': '已放款', 'settled': '已结清', 'rejected': '已驳回',
+      'pending_owner_seal_2': '待融资方盖章', 'pending_supervisor': '待监管方盖章', 'pending_guarantor': '待担保方审核',
+      'pending_guarantor_seal': '待担保方盖章', 'pending_funding': '待资金方审核',
+      'pending_disbursement': '待放款', 'released': '已放款', 'rejected': '驳回', 'voided': '作废',
     };
     const rows = list.map(rec => [
       rec.bizNo, rec.applicant, rec.bank || '', rec.productName || '',
