@@ -279,6 +279,8 @@
     ...(fromList || {}),
     // 覆盖 pledgeRows：mockData 里的 list 通常没有 pledgeRows，需要用 DEMO
     pledgeRows: (fromList && fromList.pledgeRows) || DEMO.pledgeRows,
+    // v1.7.68 attachments 纳入 data, 让驳回修改后的附件变更能调 updateMockInbound 保存
+    attachments: (fromList && fromList.attachments) || attachments,
   };
 
   const currentStepIdx = statusToStep(data.status);
@@ -670,7 +672,10 @@
   }
 
   function renderAttachments() {
-    return attachments.map(a => `
+    return (data.attachments || attachments).map((a, typeIdx) => {
+      // v1.7.68 驳回可编辑模式下, 文件加 × 删除按钮 + 类型后加 + 上传按钮
+      const editable = isRejectedEditable;
+      return `
       <tr class="border-t border-slate-100">
         <td class="py-3 px-3 align-top">
           <span class="${a.required ? 'text-rose-500' : 'text-slate-700'}">${a.required ? '* ' : ''}${a.type}</span>
@@ -678,21 +683,24 @@
         <td class="py-3 px-3">
           ${a.files.length === 0 ? '<span class="text-slate-300 text-xs">（暂无文件）</span>' : `
             <div class="flex items-center gap-2 flex-wrap">
-              ${a.files.map(f => `
+              ${a.files.map((f, fileIdx) => `
                 <div class="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-50 rounded text-xs">
                   <svg class="w-3 h-3 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>
                   <span class="text-blue-700">${f.name}</span>
                   <span class="text-slate-400 text-[11px] whitespace-nowrap">📅 ${f.time}</span>
+                  ${editable ? `<button onclick="onDeleteAttachment(${typeIdx}, ${fileIdx})" title="删除该文件" class="text-rose-400 hover:text-rose-600 ml-0.5">×</button>` : ''}
                 </div>
               `).join('')}
             </div>
           `}
         </td>
-        <td class="py-3 px-3 align-top">
+        <td class="py-3 px-3 align-top flex items-center gap-3">
           ${a.files.length ? `<button onclick="downloadAttachment('${a.type}', this)" class="text-blue-600 hover:underline">下载</button>` : '<span class="text-slate-300">—</span>'}
+          ${editable ? `<button onclick="onUploadAttachment(${typeIdx})" class="text-blue-600 hover:underline">+ 上传</button>` : ''}
         </td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
   }
 
   // ============ Events ============
@@ -854,8 +862,38 @@
       applyDate: f_applyDate,
       warehouse: f_warehouse,
       pledgeRows: newRows,
+      attachments: data.attachments,  // v1.7.68 附件已纳入 data, 重新提交时一并保存
     };
   }
+
+  // v1.7.68 附件可编辑: 上传/删除
+  window.onUploadAttachment = (typeIdx) => {
+    if (!isRejectedEditable) return;
+    // mock 模式: 用一个固定文件名 + 当前时间作为新增文件
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth()+1).padStart(2,'0');
+    const dd = String(now.getDate()).padStart(2,'0');
+    const HH = String(now.getHours()).padStart(2,'0');
+    const MM = String(now.getMinutes()).padStart(2,'0');
+    const SS = String(now.getSeconds()).padStart(2,'0');
+    const timeStr = `${yyyy}-${mm}-${dd} ${HH}:${MM}:${SS}`;
+    const fileName = `补充资料-${mm}-${dd} ${HH}:${MM}.pdf`;
+    data.attachments[typeIdx].files.push({ name: fileName, time: timeStr });
+    markDirty();
+    refresh();
+    Utils.toast(`已上传 ${data.attachments[typeIdx].type}：${fileName}`, 'success', 1500);
+  };
+  window.onDeleteAttachment = (typeIdx, fileIdx) => {
+    if (!isRejectedEditable) return;
+    const att = data.attachments[typeIdx];
+    const f = att.files[fileIdx];
+    if (!confirm(`确定删除文件"${f.name}"？`)) return;
+    att.files.splice(fileIdx, 1);
+    markDirty();
+    refresh();
+    Utils.toast(`已删除 ${att.type}：${f.name}`, 'warning', 1500);
+  };
 
   // 3. 重新提交 modal
   window.openResubmitModal = () => {
