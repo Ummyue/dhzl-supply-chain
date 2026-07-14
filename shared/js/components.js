@@ -68,9 +68,9 @@ const Components = {
             </button>
             <div id="roleMenu" class="hidden absolute right-0 top-full mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-50">
               <div class="px-3 py-2 text-xs text-slate-400 border-b border-slate-100">切换演示角色</div>
-              ${['customer', 'platform', 'guarantor', 'bank'].map(r => `
+              ${['customer', 'customer_seal', 'platform', 'guarantor', 'bank'].map(r => `
                 <button onclick="Components.switchRole('${r}')" class="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-2 text-sm ${role === r ? 'bg-blue-50 text-blue-700' : ''}">
-                  <span class="w-2 h-2 rounded-full ${r === 'customer' ? 'bg-emerald-500' : r === 'platform' ? 'bg-blue-500' : r === 'guarantor' ? 'bg-amber-500' : 'bg-violet-500'}"></span>
+                  <span class="w-2 h-2 rounded-full ${r === 'customer' ? 'bg-emerald-500' : r === 'customer_seal' ? 'bg-emerald-300' : r === 'platform' ? 'bg-blue-500' : r === 'guarantor' ? 'bg-amber-500' : 'bg-violet-500'}"></span>
                   <span class="flex-1">${Utils.roleLabel(r)}</span>
                   <span class="text-xs text-slate-400">${MockData.users[r].name}</span>
                 </button>

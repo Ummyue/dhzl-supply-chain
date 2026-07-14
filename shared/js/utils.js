@@ -168,7 +168,7 @@ const Utils = {
 
   // 角色标识
   roleLabel(r) {
-    return { 'customer': '货主方', 'platform': '监管方', 'guarantor': '担保方', 'bank': '资金方' }[r] || r;
+    return { 'customer': '货主方', 'customer_seal': '货主方盖章员', 'platform': '监管方', 'guarantor': '担保方', 'bank': '资金方' }[r] || r;
   },
 
   // 计算融资规模（货值 × 质押率）

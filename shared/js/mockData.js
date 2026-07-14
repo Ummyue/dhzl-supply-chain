@@ -238,6 +238,19 @@ const MockData = {
           { icon: 'video', label: '监控概览', path: '/customer/video' },
         ]},
       ],
+      // v1.7.66：货主方盖章员(李雪)菜单 - 货主方子角色，专注盖章业务
+      customer_seal: [
+        { group: '工作台', items: [
+          { icon: 'home', label: '首页概览', path: '/dashboard' },
+        ]},
+        { group: '货物管理', items: [
+          // 复用货主方【入库申请】列表 + 详情，状态机 [待货主盖章] 展示待盖章数据
+          { icon: 'shield', label: '入库申请', path: '/customer/inbound' },
+        ]},
+        { group: '视频监控', items: [
+          { icon: 'video', label: '监控概览', path: '/customer/video' },
+        ]},
+      ],
       platform: [
         { group: '工作台', items: [
           { icon: 'home', label: '首页概览', path: '/dashboard' },
@@ -2235,6 +2248,74 @@ const MockData = {
       supervisor: '大河智链物流（郑州）有限公司',
       pledgee: '中原再担保股份有限公司',
       submitRemark: '单据齐全已上传，请审核盖章',
+    },
+    // ========== v1.7.66 新增：货主方盖章员【待货主盖章】枚举数据(2 条覆盖完整进度) ==========
+    // in_015: 货主方提交后第一次盖章(pending_owner_seal)
+    // in_016: 担保方审核通过后第二次盖章(pending_owner_seal_2) - v1.7 三次盖章②
+    {
+      id: 'in_015',
+      bizNo: 'IN_20260715001',
+      applicant: '郑州某冷链贸易有限公司',
+      contactPerson: '李雪 — 138 0000 1234',
+      customerCode: 'JMY',
+      guarantorId: 'u_guar_002',
+      warehouse: '物流港二期大河智链监管库',
+      vehicleNo: '豫A·W3364',
+      driver: '钱国栋',
+      driverPhone: '132 0000 8877',
+      products: [
+        { id: 'MNG_SZNRQq_3191401', name: '蒙古水煮牛肉Qq', pieces: 250, weight: 5000, evaluatePrice: 78, evaluateValue: 390000 },
+      ],
+      totalValue: 390000,
+      expectedLoan: 312000,
+      applyDate: '2026-07-15',
+      inboundDate: '2026-07-17',
+      status: 'pending_owner_seal',
+      currentApprover: 'customer_seal',
+      drafter: '陈志强',
+      sealUser: '李雪',
+      sealCompleted: false,
+      creator: '陈志强',
+      createdAt: '2026-07-15 08:30',
+      submitTime: '2026-07-15 10:15',
+      creatorUserRole: 'operator',
+      financeProduct: '中原e贷',
+      supervisor: '大河智链物流（郑州）有限公司',
+      pledgee: '中原再担保股份有限公司',
+      submitRemark: '首次盖章（货主方盖章①），请审核',
+    },
+    {
+      id: 'in_016',
+      bizNo: 'IN_20260712002',
+      applicant: '郑州某冷链贸易有限公司',
+      contactPerson: '李雪 — 138 0000 1234',
+      customerCode: 'JMY',
+      guarantorId: 'u_guar_001',
+      warehouse: '天津港国际冷链基地',
+      vehicleNo: '豫A·X4475',
+      driver: '郑志强',
+      driverPhone: '131 0000 9988',
+      products: [
+        { id: 'AUTO_MULTI_003', name: '冷冻去骨牛7件套', pieces: 360, weight: 7200, evaluatePrice: 55.5, evaluateValue: 399600 },
+        { id: 'MNG_SZSYR_BWS_005', name: '保乐肩-巴西-4490', pieces: 120, weight: 2400, evaluatePrice: 75, evaluateValue: 180000 },
+      ],
+      totalValue: 579600,
+      expectedLoan: 463680,
+      applyDate: '2026-07-12',
+      inboundDate: '2026-07-14',
+      status: 'pending_owner_seal_2',
+      currentApprover: 'customer_seal',
+      drafter: '陈志强',
+      sealUser: '李雪',
+      sealCompleted: false,
+      creator: '陈志强',
+      createdAt: '2026-07-12 14:00',
+      submitTime: '2026-07-12 17:00',
+      creatorUserRole: 'operator',
+      financeProduct: '中原e贷',
+      supervisor: '大河智链物流（郑州）有限公司',
+      pledgee: '中原再担保股份有限公司',
+      submitRemark: '担保方审核通过后第二次盖章（货主方盖章②），请审核',
     },
     // ========== v1.7.5 新增：可质押货物（已入库待融资，inbound_completed） ==========
     {
