@@ -77,57 +77,23 @@
 
   function render() {
     return `
-      <!-- 当前搜索 tag -->
-      <div class="bg-white border border-slate-200 rounded-xl px-5 py-3 mb-3 flex items-center justify-between text-sm">
-        <div class="flex items-center flex-wrap gap-1.5 min-h-[24px]">
-          <span class="text-slate-500">当前搜索：</span>
-          ${renderActiveTags()}
-        </div>
-        ${hasAnyFilter() ? `<button onclick="resetAllFilters()" class="text-xs text-rose-500 hover:text-rose-700">清除全部</button>` : ''}
-      </div>
+      ${Components.filterBar({
+        filters: filters,
+        fields: [
+          { key: 'applyNo', type: 'text', placeholder: '请输入出库申请单编号', suggest: { primaryKey: 'applyNo', secondaryKey: 'warehouse' } },
+          { key: 'warehouse', type: 'select', placeholder: '库点', options: [{ value: '', label: '请选择' }, ...uniqueValues('warehouse').map(v => ({ value: v, label: v }))] },
+          { key: 'position', type: 'select', placeholder: '仓房-货位', options: [{ value: '', label: '请选择' }, ...uniqueValues('position').map(v => ({ value: v, label: v }))] },
+          { key: 'product', type: 'select', placeholder: '金融产品', options: [{ value: '', label: '请选择' }, ...uniqueValues('product').map(v => ({ value: v, label: v }))] },
+          { key: 'pledgeFinancingNo', type: 'text', placeholder: '请输入货押融资编号' },
+          { key: 'inventoryAssetNo', type: 'text', placeholder: '请输入存贷资产编号' },
+        ],
+        dataSource: getMyList(),
+        onChange: 'refresh',
+        hasExport: true,
+        exportCSV: 'exportOutboundCSV',
+      })}
 
-      <!-- 9 个筛选器（3×3） -->
-      <div class="bg-white border border-slate-200 rounded-xl px-5 py-4 mb-3">
-        <div class="grid grid-cols-3 gap-x-6 gap-y-3 mb-3">
-          <div>
-            <label class="text-xs text-slate-500 mb-1 block">出库申请单编号</label>
-            <input type="text" value="${filters.applyNo}" oninput="updateFilter('applyNo', this.value)" placeholder="请输入出库申请单编号" class="w-full px-3 py-2 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-          </div>
-          <div>
-            <label class="text-xs text-slate-500 mb-1 block">库点</label>
-            <select onchange="updateFilter('warehouse', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-              <option value="">请选择</option>
-              ${uniqueValues('warehouse').map(v => `<option ${filters.warehouse === v ? 'selected' : ''}>${v}</option>`).join('')}
-            </select>
-          </div>
-          <div>
-            <label class="text-xs text-slate-500 mb-1 block">仓房-货位</label>
-            <select onchange="updateFilter('position', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-              <option value="">请选择</option>
-              ${uniqueValues('position').map(v => `<option ${filters.position === v ? 'selected' : ''}>${v}</option>`).join('')}
-            </select>
-          </div>
-        </div>
-        <div class="grid grid-cols-3 gap-x-6 gap-y-3">
-          <div>
-            <label class="text-xs text-slate-500 mb-1 block">金融产品</label>
-            <select onchange="updateFilter('product', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-              <option value="">请选择</option>
-              ${uniqueValues('product').map(v => `<option ${filters.product === v ? 'selected' : ''}>${v}</option>`).join('')}
-            </select>
-          </div>
-          <div>
-            <label class="text-xs text-slate-500 mb-1 block">货押融资编号</label>
-            <input type="text" value="${filters.pledgeFinancingNo}" oninput="updateFilter('pledgeFinancingNo', this.value)" placeholder="请输入货押融资编号" class="w-full px-3 py-2 border border-slate-200 rounded text-sm font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-          </div>
-          <div>
-            <label class="text-xs text-slate-500 mb-1 block">存贷资产编号</label>
-            <input type="text" value="${filters.inventoryAssetNo}" oninput="updateFilter('inventoryAssetNo', this.value)" placeholder="请输入存贷资产编号" class="w-full px-3 py-2 border border-slate-200 rounded text-sm font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-          </div>
-        </div>
-      </div>
-
-      <!-- 状态机 tab 行 -->
+          <!-- 状态机 tab 行 -->
       <div class="bg-white border border-slate-200 rounded-t-xl overflow-x-auto" style="border-bottom: 0;">
         <div class="flex items-center">
           ${renderTabs()}
@@ -167,8 +133,14 @@
     return Array.from(set);
   }
 
+  // 担保方:按 guarantorId 过滤
+  function getMyList() {
+    const currentUser = Utils.getUser() || { id: 'u_guar_001' };
+    return (MockData.dischargeList || []).filter(p => p.guarantorId === currentUser.id);
+  }
+
   function applyFilters() {
-    let list = (MockData.dischargeList || []);
+    let list = getMyList();
     if (activeTab !== 'all') list = list.filter(p => p.status === activeTab);
     if (filters.applyNo)           list = list.filter(p => (p.applyNo || '').includes(filters.applyNo));
     if (filters.warehouse)         list = list.filter(p => p.warehouse === filters.warehouse);
@@ -222,33 +194,11 @@
     return Components.pagination({ total: total || 0, page: 1, pageSize: 10, onChange: 'window.__noop', onPageSize: 'window.__noop', onJump: 'window.__noop' });
   }
 
-  function hasAnyFilter() {
-    return Object.values(filters).some(v => v);
-  }
-
-  function renderActiveTags() {
-    const labels = [
-      ['applyNo',           `编号：${filters.applyNo}`],
-      ['warehouse',         `库点：${filters.warehouse}`],
-      ['position',          `仓房-货位：${filters.position}`],
-      ['product',           `金融产品：${filters.product}`],
-      ['pledgeFinancingNo', `货押融资编号：${filters.pledgeFinancingNo}`],
-      ['inventoryAssetNo',  `存贷资产编号：${filters.inventoryAssetNo}`],
-    ];
-    const tags = labels.filter(([k]) => filters[k]).map(([k, label]) => `
-      <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-slate-100 text-slate-700 rounded">
-        ${label}<button onclick="removeTag('${k}')" class="text-slate-400 hover:text-slate-700">×</button>
-      </span>
-    `);
-    if (!tags.length) return '<span class="text-slate-400 text-xs">（无筛选条件 / 默认显示全部）</span>';
-    return tags.join('');
-  }
-
   // ============ Events ============
   window.updateFilter = (k, v) => { filters[k] = v; };
   window.switchTab   = (k) => { activeTab = k; refresh(); };
-  window.removeTag   = (k) => { filters[k] = ''; refresh(); };
-  window.resetAllFilters = () => { Object.keys(filters).forEach(k => filters[k] = ''); refresh(); };
+  window.removeTag   = (k, isDate) => { if (isDate) { /* */ } else { filters[k] = ''; const i = document.getElementById('filterInput_' + k); if (i) i.value = ''; } refresh(); };
+  window.resetAllFilters = () => { Object.keys(filters).forEach(k => filters[k] = ''); document.querySelectorAll('[id^="filterInput_"]').forEach(i => i.value = ''); refresh(); };
   window.goDetail    = (id) => { window.location.href = `${Utils.nav('/guarantor/approval-outbound-detail')}?id=${id}`; };
 
   function refresh() {

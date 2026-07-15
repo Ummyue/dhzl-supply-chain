@@ -94,53 +94,21 @@
         </div>
         <div class="bg-white rounded-xl p-4 border border-slate-200">
           <div class="text-xs text-slate-500">可用额度</div>
-          <div class="text-2xl font-bold text-emerald-600 mt-1 num-focus">${Utils.fmtMoney(availAmount, false)}</div>
-        </div>
-      </div>
+                ${Components.filterBar({
+        filters: filters,
+        fields: [
+          { key: 'bank', type: 'text', placeholder: '请输入金融机构' },
+          { key: 'productName', type: 'text', placeholder: '请输入产品名称' },
+          { key: 'authorizedNo', type: 'text', placeholder: '请输入授信批复号' },
+          { key: 'date', type: 'dateRange', placeholder: '起始日期', fromKey: 'startDate', toKey: 'endDate' },
+        ],
+        dataSource: MockData.limitList,
+        onChange: 'refresh',
+        hasExport: true,
+        exportCSV: 'exportLimitsCSV',
+      })}
 
-      <!-- 筛选区（按用户截图样式：金融机构 / 产品名称 / 授信批复号 / 起始日期范围） -->
-      <div class="bg-white border border-slate-200 rounded-xl p-4 mb-3">
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">金融机构</label>
-            <input type="text" value="${filters.bank}" oninput="updateFilter('bank', this.value)" placeholder="请输入金融机构" class="w-full px-3 py-2 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">产品名称</label>
-            <input type="text" value="${filters.productName}" oninput="updateFilter('productName', this.value)" placeholder="请输入产品名称" class="w-full px-3 py-2 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">授信批复号</label>
-            <input type="text" value="${filters.authorizedNo}" oninput="updateFilter('authorizedNo', this.value)" placeholder="请输入授信批复号" class="w-full px-3 py-2 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">起始日期范围</label>
-            <div class="flex items-center gap-1">
-              <input type="date" value="${filters.startDate}" onchange="updateFilter('startDate', this.value)" class="flex-1 min-w-0 px-2 py-1.5 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-              <button onclick="Utils.toast('打开日期范围选择器（占位）','info')" class="px-2 py-1.5 border border-slate-200 rounded text-sm hover:bg-slate-50" title="打开日期选择">
-                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-              </button>
-            </div>
-          </div>
-          <div class="flex items-center gap-2">
-            <button onclick="resetFilters()" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">重置</button>
-            <button onclick="refresh()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium flex items-center gap-1">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35"/></svg>
-              查询
-            </button>
-          </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end mt-3">
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">终止日期范围</label>
-            <div class="flex items-center gap-1">
-              <input type="date" value="${filters.endDate}" onchange="updateFilter('endDate', this.value)" class="flex-1 min-w-0 px-2 py-1.5 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-              <button onclick="Utils.toast('打开日期范围选择器（占位）','info')" class="px-2 py-1.5 border border-slate-200 rounded text-sm hover:bg-slate-50" title="打开日期选择">
-                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-              </button>
-            </div>
-          </div>
-          <div></div><div></div><div></div><div></div>
+<div></div>
         </div>
       </div>
 

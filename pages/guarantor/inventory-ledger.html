@@ -101,48 +101,34 @@
         ${Components.statCard({ label: '质押预估总货值',     value: `${s.pledgeValue.toFixed(4)} 元`,  hint: '质押预估总货值 = 当前在押状态下评估货值合计',                                color: 'text-violet-700' })}
       </div>
 
-      <!-- 筛选区：金融机构 / 仓库 / 仓房-货位 / 货物名称 -->
-      <div class="bg-white border border-slate-200 rounded-xl p-4 mb-3">
-        <!-- 当前搜索 tag + 清除全部 -->
-        <div class="flex items-center justify-between mb-3 text-sm">
-          <div class="flex items-center flex-wrap gap-1.5 min-h-[24px]">
-            <span class="text-slate-500">当前搜索：</span>
-            ${renderActiveTags()}
-            ${hasAnyFilter() ? `<button onclick="resetAllFilters()" class="text-xs text-rose-500 hover:text-rose-700 ml-2">清除全部</button>` : ''}
-          </div>
-        </div>
-        <!-- 1 行 4 列下拉：金融机构 / 仓库名称 / 仓房-货位 / 货物名称 -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">金融机构</label>
-            <select onchange="setFilter('bank', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
-              <option value="">全部</option>
-              ${['中原银行', '工商银行', '中融信托·冷链金融部', '招商银行'].map(b => `<option value="${b}" ${filters.bank === b ? 'selected' : ''}>${b}</option>`).join('')}
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">仓库名称</label>
-            <select onchange="setFilter('warehouse', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
-              <option value="">请选择</option>
-              ${[...new Set((MockData.inventoryLedger || []).map(r => r.warehouseName).filter(Boolean))].map(w => `<option value="${w}" ${filters.warehouse === w ? 'selected' : ''}>${w}</option>`).join('')}
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">仓房-货位</label>
-            <select onchange="setFilter('location', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
-              <option value="">请选择</option>
-              ${[...new Set((MockData.inventoryLedger || []).map(r => r.location).filter(Boolean))].map(l => `<option value="${l}" ${filters.location === l ? 'selected' : ''}>${l}</option>`).join('')}
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">货物名称</label>
-            <select onchange="setFilter('product', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
-              <option value="">请选择</option>
-              ${[...new Set((MockData.inventoryLedger || []).map(r => r.productFullName).filter(Boolean))].map(p => `<option value="${p}" ${filters.product === p ? 'selected' : ''}>${p}</option>`).join('')}
-            </select>
-          </div>
-        </div>
-      </div>
+      ${Components.filterBar({
+        filters: filters,
+        fields: [
+          { key: 'bank', type: 'select', placeholder: '金融机构', options: [
+            { value: '', label: '全部' },
+            { value: '中原银行', label: '中原银行' },
+            { value: '工商银行', label: '工商银行' },
+            { value: '中融信托·冷链金融部', label: '中融信托·冷链金融部' },
+            { value: '招商银行', label: '招商银行' },
+          ] },
+          { key: 'warehouse', type: 'select', placeholder: '仓库名称', options: [
+            { value: '', label: '请选择' },
+            ...[...new Set((MockData.inventoryLedger || []).map(r => r.warehouseName).filter(Boolean))].map(w => ({ value: w, label: w })),
+          ] },
+          { key: 'location', type: 'select', placeholder: '仓房-货位', options: [
+            { value: '', label: '请选择' },
+            ...[...new Set((MockData.inventoryLedger || []).map(r => r.location).filter(Boolean))].map(l => ({ value: l, label: l })),
+          ] },
+          { key: 'product', type: 'select', placeholder: '货物名称', options: [
+            { value: '', label: '请选择' },
+            ...[...new Set((MockData.inventoryLedger || []).map(r => r.productFullName).filter(Boolean))].map(p => ({ value: p, label: p })),
+          ] },
+        ],
+        dataSource: MockData.inventoryLedger,
+        onChange: 'refresh',
+        hasExport: true,
+        exportCSV: 'exportCSV',
+      })}
 
       <!-- 状态机筛选 + 数据导出（v1.7.29 移除 4 个状态机 tab，与库点名称列状态徽标一起去掉） -->
       <div class="bg-white border border-slate-200 rounded-xl p-3 mb-3 flex items-center justify-end">
@@ -207,24 +193,6 @@
     `).join('');
   }
 
-  function renderActiveTags() {
-    const tags = [];
-    if (filters.bank) tags.push({ key: 'bank', label: `金融机构：${filters.bank}` });
-    if (filters.warehouse) tags.push({ key: 'warehouse', label: `仓库：${filters.warehouse}` });
-    if (filters.location) tags.push({ key: 'location', label: `货位：${filters.location}` });
-    if (filters.product) tags.push({ key: 'product', label: `货物：${filters.product}` });
-    if (!tags.length) return '<span class="text-slate-400 text-xs">（无筛选条件 / 默认显示全部）</span>';
-    return tags.map(t => `
-      <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-slate-100 text-slate-700 rounded">
-        ${t.label}<button onclick="removeTag('${t.key}')" class="text-slate-400 hover:text-slate-700">×</button>
-      </span>
-    `).join('');
-  }
-
-  function hasAnyFilter() {
-    return !!(filters.bank || filters.warehouse || filters.location || filters.product);
-  }
-
   // ============ 分页辅助（v1.7.29 新增：单页 10/20/50/100 切换） ============
   function getPagedList(allList) {
     const start = (pagination.page - 1) * pagination.pageSize;
@@ -236,11 +204,12 @@
   }
 
   // ============ Events ============
-  window.setFilter = (k, v) => { filters[k] = v; pagination.page = 1; refresh(); };
-  window.removeTag = (k) => { filters[k] = ''; pagination.page = 1; refresh(); };
+  window.updateFilter = (k, v) => { filters[k] = v; pagination.page = 1; };
+  window.removeTag = (k, isDate) => { if (isDate) { /* */ } else { filters[k] = ''; const i = document.getElementById('filterInput_' + k); if (i) i.value = ''; } pagination.page = 1; refresh(); };
   window.resetAllFilters = () => {
     filters.bank = '';
     filters.warehouse = filters.location = filters.product = '';
+    document.querySelectorAll('[id^="filterInput_"]').forEach(i => i.value = '');
     pagination.page = 1;
     refresh();
   };
