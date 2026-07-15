@@ -82,76 +82,30 @@
       <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-xs text-blue-800">
         <span class="font-medium">担保方视图：</span>您正在查看<strong>放还款详情</strong>，作为担保方可核对放款记录、还款凭证与放还款状态。
       </div>
-      <!-- 当前搜索 tag -->
-      <div class="bg-white border border-slate-200 rounded-xl px-5 py-3 mb-3 flex items-center justify-between text-sm">
-        <div class="flex items-center flex-wrap gap-1.5 min-h-[24px]">
-          <span class="text-slate-500">当前搜索：</span>
-          ${renderActiveTags()}
-        </div>
-        ${hasAnyFilter() ? `<button onclick="resetAllFilters()" class="text-xs text-rose-500 hover:text-rose-700">清除全部</button>` : ''}
-      </div>
+            ${Components.filterBar({
+        filters: filters,
+        fields: [
+          { key: 'financingNo', type: 'text', placeholder: '请输入融资申请编号' },
+          { key: 'pledgeNo', type: 'text', placeholder: '请输入存贷资产编号' },
+          { key: 'bankDraftNo', type: 'text', placeholder: '请输入原柜号/提单号' },
+          { key: 'product', type: 'select', placeholder: '金融产品', options: [
+            { value: '', label: '请选择' },
+            ...[...new Set((MockData.disbursementList || []).map(d => d.product).filter(Boolean))].map(p => ({ value: p, label: p })),
+          ] },
+          { key: 'loanDate', type: 'dateRange', placeholder: '放款日期', fromKey: 'loanDateStart', toKey: 'loanDateEnd' },
+          { key: 'repayDate', type: 'dateRange', placeholder: '还款日期', fromKey: 'repayDateStart', toKey: 'repayDateEnd' },
+          { key: 'bank', type: 'select', placeholder: '金融机构', options: [
+            { value: '', label: '请选择' },
+            ...[...new Set((MockData.disbursementList || []).map(d => d.bank).filter(Boolean))].map(b => ({ value: b, label: b })),
+          ] },
+        ],
+        dataSource: MockData.disbursementList,
+        onChange: 'refresh',
+        hasExport: true,
+        exportCSV: 'exportDisbursementCSV',
+      })}
 
-      <!-- 7 个筛选器（3×3，按用户截图） -->
-      <div class="bg-white border border-slate-200 rounded-xl px-5 py-4 mb-3">
-        <div class="grid grid-cols-3 gap-x-6 gap-y-3 mb-3">
-          <div>
-            <label class="text-xs text-slate-500 mb-1 block">融资申请编号</label>
-            <input type="text" value="${filters.financingNo}" oninput="updateFilter('financingNo', this.value)" placeholder="请输入融资申请编号" class="w-full px-3 py-2 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-          </div>
-          <div>
-            <label class="text-xs text-slate-500 mb-1 block">存贷资产编号</label>
-            <input type="text" value="${filters.pledgeNo}" oninput="updateFilter('pledgeNo', this.value)" placeholder="请输入存贷资产编号" class="w-full px-3 py-2 border border-slate-200 rounded text-sm font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-          </div>
-          <div>
-            <label class="text-xs text-slate-500 mb-1 block">原柜号/提单号</label>
-            <input type="text" value="${filters.bankDraftNo}" oninput="updateFilter('bankDraftNo', this.value)" placeholder="请输入原柜号/提单号" class="w-full px-3 py-2 border border-slate-200 rounded text-sm font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-          </div>
-        </div>
-
-        <div class="grid grid-cols-3 gap-x-6 gap-y-3 mb-3">
-          <div>
-            <label class="text-xs text-slate-500 mb-1 block">金融产品</label>
-            <select onchange="updateFilter('product', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-              <option value="">请选择</option>
-              ${uniqueValues('product').map(v => `<option ${filters.product === v ? 'selected' : ''}>${v}</option>`).join('')}
-            </select>
-          </div>
-          <div>
-            <label class="text-xs text-slate-500 mb-1 block">融资放款日</label>
-            <div class="flex items-center gap-1">
-              <input type="date" value="${filters.loanDateStart}" onchange="updateFilter('loanDateStart', this.value)" class="flex-1 min-w-0 px-2 py-1.5 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-              <button class="px-2 py-1.5 border border-slate-200 rounded hover:bg-slate-50" title="选择日期范围">
-                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-              </button>
-              <span class="text-slate-300 text-xs">~</span>
-              <input type="date" value="${filters.loanDateEnd}" onchange="updateFilter('loanDateEnd', this.value)" class="flex-1 min-w-0 px-2 py-1.5 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-            </div>
-          </div>
-          <div>
-            <label class="text-xs text-slate-500 mb-1 block">融资还款日</label>
-            <div class="flex items-center gap-1">
-              <input type="date" value="${filters.repayDateStart}" onchange="updateFilter('repayDateStart', this.value)" class="flex-1 min-w-0 px-2 py-1.5 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-              <button class="px-2 py-1.5 border border-slate-200 rounded hover:bg-slate-50" title="选择日期范围">
-                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-              </button>
-              <span class="text-slate-300 text-xs">~</span>
-              <input type="date" value="${filters.repayDateEnd}" onchange="updateFilter('repayDateEnd', this.value)" class="flex-1 min-w-0 px-2 py-1.5 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-            </div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-3 gap-x-6 gap-y-3">
-          <div>
-            <label class="text-xs text-slate-500 mb-1 block">金融机构</label>
-            <select onchange="updateFilter('bank', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-              <option value="">请选择</option>
-              ${uniqueValues('bank').map(v => `<option ${filters.bank === v ? 'selected' : ''}>${v}</option>`).join('')}
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- 状态机 tab 行 + 数据导出按钮（右上） -->
+    <!-- 状态机 tab 行 + 数据导出按钮（右上） -->
       <div class="bg-white border border-slate-200 rounded-t-xl flex items-center justify-between" style="border-bottom: 0;">
         <div class="flex items-center overflow-x-auto">
           ${renderTabs()}
@@ -261,33 +215,6 @@
     return Components.pagination({ total: total || 0, page: 1, pageSize: 10, onChange: 'window.__noop', onPageSize: 'window.__noop', onJump: 'window.__noop' });
   }
 
-  function hasAnyFilter() {
-    return Object.values(filters).some(v => v);
-  }
-
-  function renderActiveTags() {
-    const labels = [
-      ['financingNo', `融资申请编号：${filters.financingNo}`],
-      ['pledgeNo',    `存贷资产编号：${filters.pledgeNo}`],
-      ['bankDraftNo', `原柜号/提单号：${filters.bankDraftNo}`],
-      ['product',     `金融产品：${filters.product}`],
-      ['bank',        `金融机构：${filters.bank}`],
-      ['_loanDate',   `放款日 ${filters.loanDateStart || '不限'} ~ ${filters.loanDateEnd || '不限'}`],
-      ['_repayDate',  `还款日 ${filters.repayDateStart || '不限'} ~ ${filters.repayDateEnd || '不限'}`],
-    ];
-    const tags = labels.filter(([k]) => {
-      if (k === '_loanDate') return filters.loanDateStart || filters.loanDateEnd;
-      if (k === '_repayDate') return filters.repayDateStart || filters.repayDateEnd;
-      return filters[k];
-    }).map(([k, label]) => `
-      <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-slate-100 text-slate-700 rounded">
-        ${label}<button onclick="removeTag('${k}')" class="text-slate-400 hover:text-slate-700">×</button>
-      </span>
-    `);
-    if (!tags.length) return '<span class="text-slate-400 text-xs">（无筛选条件 / 默认显示全部）</span>';
-    return tags.join('');
-  }
-
   // ============ Events ============
   window.updateFilter = (k, v) => { filters[k] = v; };
   window.switchTab   = (k) => { activeTab = k; refresh(); };
@@ -297,7 +224,7 @@
     else filters[k] = '';
     refresh();
   };
-  window.resetAllFilters = () => { Object.keys(filters).forEach(k => filters[k] = ''); refresh(); };
+  window.resetAllFilters = () => { Object.keys(filters).forEach(k => filters[k] = ''); document.querySelectorAll('[id^="filterInput_"]').forEach(i => i.value = ''); refresh(); };
   window.exportData = () => Utils.toast('已导出当前筛选数据（占位）', 'success');
 
   // 关键路由：行操作"查看" + 存贷资产编号超链 → 跳对应质押资产详情

@@ -106,94 +106,38 @@
           </div>
         </div>
 
-        <!-- 当前搜索 + 清除 -->
-        <div class="border-b border-slate-200 px-4 py-3 bg-slate-50/50">
-          <div class="flex items-center justify-between mb-3 text-sm">
-            <div class="flex items-center flex-wrap gap-1.5 min-h-[24px]">
-              <span class="text-slate-500">当前搜索：</span>
-              ${renderActiveTags()}
-              ${hasAnyFilter() ? `<button onclick="resetAllFilters()" class="text-xs text-rose-500 hover:text-rose-700 ml-2">清除全部</button>` : ''}
-            </div>
-          </div>
+              ${Components.filterBar({
+        filters: state,
+        fields: [
+          { key: 'bizNoSearch', type: 'text', placeholder: isIn ? '请输入入库单号' : '请输入出库单号', suggest: { primaryKey: 'bizNo', secondaryKey: 'bizNo' } },
+          { key: 'warehouseId', type: 'select', placeholder: '库点名称', options: [{ value: '', label: '请选择' }, ...MockData.warehouses.map(w => ({ value: w.id, label: w.name }))] },
+          { key: 'location', type: 'select', placeholder: '仓房-货位', options: [{ value: '', label: '请选择' }, ...uniqueLocations().map(l => ({ value: l, label: l }))] },
+          { key: 'applyNoSearch', type: 'text', placeholder: isIn ? '请输入入库申请编号' : '请输入出库申请编号' },
+          { key: 'productName', type: 'select', placeholder: '货物名称', options: [{ value: '', label: '请选择' }, ...uniqueProducts().map(p => ({ value: p, label: p }))] },
+          { key: 'date', type: 'dateRange', placeholder: isIn ? '入库时间' : '出库时间', fromKey: 'dateStart', toKey: 'dateEnd' },
+          ...(isIn ? [
+            { key: 'dataType', type: 'select', placeholder: '数据类型', options: [
+              { value: '', label: '请选择' },
+              { value: '手动添加', label: '手动添加' },
+              { value: '数据同步', label: '数据同步' },
+              { value: 'API导入', label: 'API导入' },
+            ] },
+          ] : [
+            { key: 'contractNo', type: 'text', placeholder: '请输入关联合同/订单编号' },
+            { key: 'dataType', type: 'select', placeholder: '数据类型', options: [
+              { value: '', label: '请选择' },
+              { value: '手动添加', label: '手动添加' },
+              { value: '数据同步', label: '数据同步' },
+            ] },
+          ]),
+        ],
+        dataSource: MockData.warehouses,
+        onChange: 'refreshPage',
+        hasExport: true,
+        exportCSV: 'exportInOutCSV',
+      })}
 
-          <!-- 3 行 × 3 列的筛选控件 -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-            <!-- 行 1 -->
-            <div>
-              <label class="block text-xs text-slate-500 mb-1">${isIn ? '入库单号' : '出库单号'}</label>
-              <input type="text" placeholder="${isIn ? '请输入入库单号' : '请输入出库单号'}" value="${state.bizNoSearch}" oninput="updateFilter('bizNoSearch', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-            </div>
-            <div>
-              <label class="block text-xs text-slate-500 mb-1">库点名称</label>
-              <select onchange="updateFilter('warehouseId', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
-                <option value="">请选择</option>
-                ${MockData.warehouses.map(w => `<option value="${w.id}" ${state.warehouseId === w.id ? 'selected' : ''}>${w.name}</option>`).join('')}
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs text-slate-500 mb-1">仓房-货位</label>
-              <select onchange="updateFilter('location', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
-                <option value="">请选择</option>
-                ${uniqueLocations().map(l => `<option value="${l}" ${state.location === l ? 'selected' : ''}>${l}</option>`).join('')}
-              </select>
-            </div>
-
-            <!-- 行 2 -->
-            <div>
-              <label class="block text-xs text-slate-500 mb-1">${isIn ? '入库' : '出库'}申请编号</label>
-              <input type="text" placeholder="${isIn ? '请输入入库申请编号' : '请输入出库申请编号'}" value="${state.applyNoSearch}" oninput="updateFilter('applyNoSearch', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-            </div>
-            <div>
-              <label class="block text-xs text-slate-500 mb-1">货物名称</label>
-              <select onchange="updateFilter('productName', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
-                <option value="">请选择</option>
-                ${uniqueProducts().map(p => `<option value="${p}" ${state.productName === p ? 'selected' : ''}>${p}</option>`).join('')}
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs text-slate-500 mb-1">${isIn ? '入库时间' : '出库时间'}</label>
-              <div class="flex items-center gap-1">
-                <input type="date" value="${state.dateStart}" onchange="updateFilter('dateStart', this.value)" class="w-full px-1.5 py-1.5 text-xs border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-                <span class="text-slate-400 text-xs">~</span>
-                <input type="date" value="${state.dateEnd}" onchange="updateFilter('dateEnd', this.value)" class="w-full px-1.5 py-1.5 text-xs border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-              </div>
-            </div>
-
-            <!-- 行 3 -->
-            ${isIn ? `
-              <div>
-                <label class="block text-xs text-slate-500 mb-1">数据类型</label>
-                <select onchange="updateFilter('dataType', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
-                  <option value="">请选择</option>
-                  <option value="手动添加" ${state.dataType === '手动添加' ? 'selected' : ''}>手动添加</option>
-                  <option value="数据同步" ${state.dataType === '数据同步' ? 'selected' : ''}>数据同步</option>
-                  <option value="API导入" ${state.dataType === 'API导入' ? 'selected' : ''}>API导入</option>
-                </select>
-              </div>
-              <div></div>
-            ` : `
-              <div>
-                <label class="block text-xs text-slate-500 mb-1">关联合同/订单编号</label>
-                <input type="text" placeholder="请输入关联合同/订单编号" value="${state.contractNo}" oninput="updateFilter('contractNo', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-              </div>
-              <div>
-                <label class="block text-xs text-slate-500 mb-1">数据类型</label>
-                <select onchange="updateFilter('dataType', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
-                  <option value="">请选择</option>
-                  <option value="手动添加" ${state.dataType === '手动添加' ? 'selected' : ''}>手动添加</option>
-                  <option value="数据同步" ${state.dataType === '数据同步' ? 'selected' : ''}>数据同步</option>
-                </select>
-              </div>
-            `}
-            <div class="flex items-end justify-end">
-              <button onclick="exportInOutCSV()" class="px-3 py-1.5 text-sm text-blue-600 hover:underline">
-                数据导出
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 表格 -->
+    <!-- 表格 -->
         <div class="overflow-x-auto">
           <table class="w-full text-sm min-w-[1200px]">
             <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
@@ -239,34 +183,6 @@
   }
   function uniqueProducts() {
     return [...new Set(getActiveList().map(r => r.productName).filter(Boolean))];
-  }
-
-  function hasAnyFilter() {
-    return ['bizNoSearch', 'warehouseId', 'location', 'applyNoSearch', 'productName',
-            'dateStart', 'dateEnd', 'contractNo', 'dataType'].some(k => state[k]);
-  }
-
-  function renderActiveTags() {
-    const tags = [];
-    const keyMap = { bizNoSearch: '单号', warehouseId: '库点', location: '货位',
-                      applyNoSearch: '申请编号', productName: '货物', contractNo: '合同/订单', dataType: '数据类型' };
-    Object.keys(keyMap).forEach(k => {
-      if (state[k]) {
-        let val = state[k];
-        if (k === 'warehouseId') val = (MockData.warehouses.find(w => w.id === val) || {}).name || val;
-        tags.push({ key: k, val: state[k], label: `${keyMap[k]}：${val}` });
-      }
-    });
-    if (state.dateStart || state.dateEnd) {
-      tags.push({ key: '_date', val: '_date', label: `日期：${state.dateStart || '不限'} ~ ${state.dateEnd || '不限'}` });
-    }
-    if (!tags.length) return '<span class="text-slate-400 text-xs">（无筛选条件）</span>';
-    return tags.map(t => `
-      <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-slate-100 text-slate-700 rounded">
-        ${t.label}
-        <button onclick="removeTag('${t.key}')" class="text-slate-400 hover:text-slate-700">×</button>
-      </span>
-    `).join('');
   }
 
   function renderRows(items, isIn) {
