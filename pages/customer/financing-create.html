@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  // GitHub Pages 子路径部署 vs Vercel 根路径部署
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新增融资申请 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+  <style>
+    /* 底部固定操作栏 */
+    .footer-actions { position: fixed; bottom: 0; left: 0; right: 0; z-index: 40; background: #fff; border-top: 1px solid #e2e8f0; padding: 14px 0; box-shadow: 0 -2px 8px rgba(0,0,0,0.04); }
+    .footer-spacer { height: 80px; }
+  </style>
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.74 货主方【新增融资申请】- 从 financing.html 弹窗提取为子页面 ============
+  // 原 modal: 12 字段 + 质押物多选 + 金融产品联动 + 附件
+  // 当前页面: /customer/financing-create
+
+  // 当前登录货主方信息
+  const _role = Utils.getRole();
+  const _user = MockData.users[_role] || MockData.users.customer;
+  const _customerCompany = _user.company;
+
+  // 可质押货物：状态 inbound_completed / inbound，且 customerCode 匹配
+  const _pledgeableItems = MockData.inboundList.filter(i =>
+    i.customerCode === 'JMY' &&
+    ['inbound_completed', 'inbound'].includes(i.status) &&
+    ((i.availablePieces || i.products?.[0]?.pieces || 0) > 0)
+  );
+
+  // 货主方公户（按当前登录货主方过滤）
+  const _accounts = MockData.customerAccounts.filter(a => a.customer === _customerCompany);
+
+  function render() {
+    return `
+      <!-- 标题 + 取消按钮 -->
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <a href="${Utils.nav('/customer/financing')}" class="flex items-center gap-1 text-slate-600 hover:text-blue-600 text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            返回融资申请
+          </a>
+        </div>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl p-6 space-y-5">
+        <!-- 标题 -->
+        <div class="text-sm font-bold text-slate-800 border-l-4 border-blue-600 pl-3">融资信息</div>
+
+        <!-- 行 1：融资方 / 拟融资金额 / 金融产品 -->
+        <div class="grid grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs text-slate-600 mb-1">融资方 <span class="text-red-500">*</span></label>
+            <input type="text" value="${_customerCompany}" disabled class="w-full px-3 py-2 border border-slate-200 bg-slate-50 rounded text-sm text-slate-700">
+            <div class="text-xs text-slate-400 mt-1">不可修改</div>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-600 mb-1">拟融资金额（元）<span class="text-red-500">*</span></label>
+            <input id="finAmount" type="text" value="0.00" disabled class="w-full px-3 py-2 border border-slate-200 bg-blue-50 rounded text-sm font-bold text-blue-700 num-focus">
+            <div class="text-xs text-slate-400 mt-1">依据所选质押物价值自动计算</div>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-600 mb-1">金融产品 <span class="text-red-500">*</span></label>
+            <select id="finProduct" onchange="onFinanceProductChange()" class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+              <option value="">请选择</option>
+              ${MockData.financeProducts.filter(p => p.active).map(p => `<option value="${p.id}">${p.name}（${p.industry}）</option>`).join('')}
+            </select>
+          </div>
+        </div>
+
+        <!-- 行 2：监管方 / 担保方 / 融资利率 -->
+        <div class="grid grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs text-slate-600 mb-1">监管方 <span class="text-red-500">*</span></label>
+            <input id="finSupervisor" type="text" value="（选择金融产品后自动带入）" disabled class="w-full px-3 py-2 border border-slate-200 bg-slate-50 rounded text-sm text-slate-500">
+            <div class="text-xs text-slate-400 mt-1">由金融产品决定，不可修改</div>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-600 mb-1">担保方 <span class="text-red-500">*</span></label>
+            <input id="finGuarantor" type="text" value="（选择金融产品后自动带入）" disabled class="w-full px-3 py-2 border border-slate-200 bg-slate-50 rounded text-sm text-slate-500">
+            <div class="text-xs text-slate-400 mt-1">由金融产品决定，不可修改</div>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-600 mb-1">融资利率 <span class="text-red-500">*</span></label>
+            <div class="flex items-center">
+              <input id="finInterest" type="text" value="—" disabled class="flex-1 px-3 py-2 border border-slate-200 bg-slate-50 rounded-l text-sm font-bold text-amber-700">
+              <span class="px-3 py-2 border border-l-0 border-slate-200 bg-slate-50 rounded-r text-sm text-slate-500">%/ 年</span>
+            </div>
+            <div class="text-xs text-slate-400 mt-1">由金融产品决定，不可修改</div>
+          </div>
+        </div>
+
+        <!-- 行 3：质押率 / 融资期限 / 借款用途 -->
+        <div class="grid grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs text-slate-600 mb-1">质押率 <span class="text-red-500">*</span></label>
+            <div class="flex items-center">
+              <input id="finPledgeRatio" type="text" value="—" disabled class="flex-1 px-3 py-2 border border-slate-200 bg-slate-50 rounded-l text-sm font-bold text-amber-700">
+              <span class="px-3 py-2 border border-l-0 border-slate-200 bg-slate-50 rounded-r text-sm text-slate-500">%</span>
+            </div>
+            <div class="text-xs text-slate-400 mt-1">由金融产品决定，不可修改</div>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-600 mb-1">融资期限 <span class="text-red-500">*</span></label>
+            <div class="flex items-center">
+              <input id="finDuration" type="text" value="—" disabled class="flex-1 px-3 py-2 border border-slate-200 bg-slate-50 rounded-l text-sm font-bold text-amber-700">
+              <span class="px-3 py-2 border border-l-0 border-slate-200 bg-slate-50 rounded-r text-sm text-slate-500">天</span>
+            </div>
+            <div class="text-xs text-slate-400 mt-1">由金融产品决定，不可修改</div>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-600 mb-1">借款用途 <span class="text-red-500">*</span></label>
+            <select id="finPurpose" class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+              <option value="">请选择</option>
+              ${MockData.loanPurposes.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+
+        <!-- 行 4：还款方式 / 放款账户信息 / 还款账户信息 -->
+        <div class="grid grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs text-slate-600 mb-1">还款方式 <span class="text-red-500">*</span></label>
+            <select id="finRepayType" class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+              <option value="">请选择</option>
+              <option value="等额本息">等额本息</option>
+              <option value="等额本金">等额本金</option>
+              <option value="先息后本">先息后本</option>
+              <option value="一次性还本付息">一次性还本付息</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-600 mb-1">放款账户信息 <span class="text-red-500">*</span></label>
+            <select id="finLoanAccount" onchange="onLoanAccountChange()" class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+              <option value="">请选择</option>
+              ${_accounts.map(a => `<option value="${a.id}" data-bank="${a.bankName}" data-account="${a.accountNo}" data-alias="${a.accountAlias}">${a.bankName} | ${a.accountNo} | ${a.accountAlias}${a.isDefault ? '（默认）' : ''}</option>`).join('')}
+            </select>
+            <div class="text-xs text-slate-400 mt-1">从货主方企业信息中获取</div>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-600 mb-1">还款账户信息 <span class="text-red-500">*</span></label>
+            <select id="finRepayAccount" class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+              <option value="">默认与放款账户一致</option>
+              ${_accounts.map(a => `<option value="${a.id}">${a.bankName} | ${a.accountNo} | ${a.accountAlias}</option>`).join('')}
+            </select>
+            <div class="text-xs text-slate-400 mt-1">默认与放款账户一致</div>
+          </div>
+        </div>
+
+        <!-- 质押物信息 -->
+        <div class="border-t pt-5">
+          <div class="flex items-center justify-between mb-3">
+            <div class="text-sm font-bold text-slate-800 border-l-4 border-amber-500 pl-3">质押物信息</div>
+            <div class="text-xs">
+              <span class="text-slate-500">已选：</span>
+              <span id="pledgeCount" class="font-bold text-blue-700">0</span>
+              <span class="text-slate-500 mx-1">笔货物，</span>
+              <span class="text-slate-500">总质押数量：</span>
+              <span id="pledgeTotalPieces" class="font-bold text-blue-700">0</span>
+              <span class="text-slate-500 mx-1">箱/件，</span>
+              <span class="text-slate-500">总质押重量：</span>
+              <span id="pledgeTotalWeight" class="font-bold text-blue-700">0</span>
+              <span class="text-slate-500 ml-1">千克</span>
+            </div>
+          </div>
+
+          ${_pledgeableItems.length === 0 ? `
+            <div class="text-center py-8 text-slate-400 text-sm bg-slate-50 rounded">
+              🎉 当前没有可质押的货物（请先完成入库申请）
+            </div>
+          ` : `
+          <div class="border border-slate-200 rounded-lg overflow-hidden">
+            <div class="max-h-[280px] overflow-y-auto">
+              <table class="w-full text-xs">
+                <thead class="bg-slate-50 text-slate-600 sticky top-0">
+                  <tr>
+                    <th class="text-center px-2 py-2 w-10"><input type="checkbox" id="pledgeSelectAll" onchange="onSelectAllPledge(this)"></th>
+                    <th class="text-left px-2 py-2">库点</th>
+                    <th class="text-left px-2 py-2">仓房-货位</th>
+                    <th class="text-left px-2 py-2">入库单号</th>
+                    <th class="text-left px-2 py-2">入库时间</th>
+                    <th class="text-left px-2 py-2">货品名称</th>
+                    <th class="text-right px-2 py-2">入库数量</th>
+                    <th class="text-right px-2 py-2 bg-amber-50">可质押数量</th>
+                    <th class="text-left px-2 py-2">单位</th>
+                    <th class="text-right px-2 py-2">入库重量</th>
+                    <th class="text-right px-2 py-2 bg-amber-50">可质押重量</th>
+                    <th class="text-left px-2 py-2">重量单位</th>
+                    <th class="text-right px-2 py-2 bg-blue-50">本次质押数量</th>
+                    <th class="text-right px-2 py-2 bg-blue-50">本次质押重量</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${_pledgeableItems.map(it => {
+                    const availPieces = it.availablePieces || it.products[0].pieces;
+                    const availWeight = it.availableWeight || it.products[0].weight;
+                    const unitPrice = availPieces > 0 ? (it.totalValue / availPieces) : 0;
+                    return `
+                    <tr class="border-t border-slate-100 hover:bg-blue-50/30">
+                      <td class="text-center px-2 py-2"><input type="checkbox" class="pledge-check" data-id="${it.id}" data-value="${it.totalValue}" data-pieces="${availPieces}" data-weight="${availWeight}" data-unitprice="${unitPrice.toFixed(4)}" onchange="onPledgeItemChange()"></td>
+                      <td class="px-2 py-2">${it.warehouse}</td>
+                      <td class="px-2 py-2 text-slate-500">${it.storageLocation || '-'}</td>
+                      <td class="px-2 py-2 font-mono text-blue-600">${it.bizNo}</td>
+                      <td class="px-2 py-2 text-slate-500">${it.inboundDate}</td>
+                      <td class="px-2 py-2">
+                        <div class="font-medium text-slate-800">${it.products[0].name}</div>
+                        <div class="text-[10px] text-slate-400 font-mono">${it.products[0].id}</div>
+                      </td>
+                      <td class="px-2 py-2 text-right num-focus">${Utils.fmtNum(it.products[0].pieces)}</td>
+                      <td class="px-2 py-2 text-right num-focus font-bold text-amber-700 bg-amber-50/50">${Utils.fmtNum(availPieces)}</td>
+                      <td class="px-2 py-2 text-slate-500">箱</td>
+                      <td class="px-2 py-2 text-right num-focus">${Utils.fmtNum(it.products[0].weight)}</td>
+                      <td class="px-2 py-2 text-right num-focus font-bold text-amber-700 bg-amber-50/50">${Utils.fmtNum(availWeight)}</td>
+                      <td class="px-2 py-2 text-slate-500">千克</td>
+                      <td class="px-2 py-2 text-right bg-blue-50/30">
+                        <input type="number" class="pledge-qty w-20 px-1 py-0.5 border border-slate-300 rounded text-right text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-200 outline-none disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed" data-id="${it.id}" min="0" max="${availPieces}" step="1" value="" placeholder="0" disabled oninput="onPledgeQtyChange('${it.id}')">
+                      </td>
+                      <td class="px-2 py-2 text-right num-focus font-bold text-blue-700 bg-blue-50/50">
+                        <span class="pledge-weight-display" data-id="${it.id}">0</span>
+                      </td>
+                    </tr>
+                  `;}).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          `}
+
+          <div class="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+            💡 <span class="font-medium">可质押数量/重量</span>是扣除已质押部分后的剩余可质押量（系统值，不可修改）。勾选后<b class="text-blue-700">本次质押数量</b>默认填入可质押数量，可手动调整（≤可质押数量），<b class="text-blue-700">本次质押重量</b>系统自动计算（按单位重量折算）。同一笔入库货物只能被一笔融资申请质押一次。
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部固定操作栏 -->
+      <div class="footer-spacer"></div>
+      <div class="footer-actions">
+        <div class="max-w-[1280px] mx-auto px-6 flex items-center justify-end gap-2">
+          <a href="${Utils.nav('/customer/financing')}" class="px-6 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">取消</a>
+          <button onclick="submitFinancing()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-bold flex items-center gap-1">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+            提交申请
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  // ============ 行为函数（从 financing.html 复制） ============
+
+  // 选金融产品 → 自动填入 5 个联动字段
+  window.onFinanceProductChange = function() {
+    const productId = document.getElementById('finProduct').value;
+    if (!productId) {
+      ['finSupervisor', 'finGuarantor', 'finInterest', 'finPledgeRatio', 'finDuration'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.value = el.id === 'finSupervisor' || el.id === 'finGuarantor' ? '（选择金融产品后自动带入）' : '—'; }
+      });
+      return;
+    }
+    const p = MockData.financeProducts.find(x => x.id === productId);
+    if (!p) return;
+    document.getElementById('finSupervisor').value = p.supervisor;
+    document.getElementById('finGuarantor').value = p.guarantor;
+    document.getElementById('finInterest').value = (p.interestRate * 100).toFixed(2);
+    document.getElementById('finPledgeRatio').value = (p.pledgeRatio * 100).toFixed(0);
+    document.getElementById('finDuration').value = p.duration;
+    // 重算拟融资金额
+    onPledgeItemChange();
+  };
+
+  // 选质押物（checkbox 切换）→ 启用/禁用本次质押数量输入 + 重算统计
+  window.onPledgeItemChange = function() {
+    document.querySelectorAll('.pledge-check').forEach(c => {
+      const id = c.dataset.id;
+      const qtyInput = document.querySelector(`.pledge-qty[data-id="${id}"]`);
+      const weightDisplay = document.querySelector(`.pledge-weight-display[data-id="${id}"]`);
+      if (!qtyInput || !weightDisplay) return;
+      if (c.checked) {
+        // 启用并默认填入可质押数量
+        qtyInput.disabled = false;
+        if (!qtyInput.value || parseInt(qtyInput.value) === 0) {
+          qtyInput.value = c.dataset.pieces;
+        }
+        // 计算本次质押重量
+        onPledgeQtyChange(id, true);
+      } else {
+        // 取消勾选：清空 + 禁用
+        qtyInput.value = '';
+        qtyInput.disabled = true;
+        weightDisplay.textContent = '0';
+      }
+    });
+    recalcPledgeTotals();
+  };
+
+  // 本次质押数量变更 → 自动计算本次质押重量 + 校验 + 触发顶部统计更新
+  window.onPledgeQtyChange = function(id, skipDefault) {
+    const qtyInput = document.querySelector(`.pledge-qty[data-id="${id}"]`);
+    const weightDisplay = document.querySelector(`.pledge-weight-display[data-id="${id}"]`);
+    if (!qtyInput || !weightDisplay) return;
+    const check = document.querySelector(`.pledge-check[data-id="${id}"]`);
+    if (!check || !check.checked) {
+      weightDisplay.textContent = '0';
+      return;
+    }
+    const maxPieces = parseInt(check.dataset.pieces || 0);
+    const maxWeight = parseFloat(check.dataset.weight || 0);
+    let qty = parseInt(qtyInput.value || 0);
+    if (isNaN(qty) || qty < 0) qty = 0;
+    // 校验：不能超过可质押数量
+    if (!skipDefault && qty > maxPieces) {
+      qty = maxPieces;
+      qtyInput.value = maxPieces;
+      Utils.toast(`本次质押数量不能超过可质押数量 ${maxPieces}`, 'warning');
+    }
+    // 自动计算重量：单件重量 = 可质押重量 / 可质押数量
+    const perPieceWeight = maxPieces > 0 ? maxWeight / maxPieces : 0;
+    const weight = qty * perPieceWeight;
+    weightDisplay.textContent = Utils.fmtNum(weight);
+    recalcPledgeTotals();
+  };
+
+  // 重算顶部统计：总质押数量/重量 + 拟融资金额
+  function recalcPledgeTotals() {
+    const checks = document.querySelectorAll('.pledge-check:checked');
+    let totalPieces = 0, totalWeight = 0, totalValue = 0;
+    checks.forEach(c => {
+      const id = c.dataset.id;
+      const qtyInput = document.querySelector(`.pledge-qty[data-id="${id}"]`);
+      const weightDisplay = document.querySelector(`.pledge-weight-display[data-id="${id}"]`);
+      const qty = parseInt(qtyInput?.value || 0);
+      const w = parseFloat((weightDisplay?.textContent || '0').replace(/,/g, ''));
+      const unitPrice = parseFloat(c.dataset.unitprice || 0);
+      totalPieces += qty;
+      totalWeight += w;
+      totalValue += qty * unitPrice; // 本次质押价值 = 本次质押数量 × 单价
+    });
+    document.getElementById('pledgeCount').textContent = checks.length;
+    document.getElementById('pledgeTotalPieces').textContent = Utils.fmtNum(totalPieces);
+    document.getElementById('pledgeTotalWeight').textContent = Utils.fmtNum(totalWeight);
+    // 计算拟融资金额 = 本次质押总价值 × 质押率
+    const productId = document.getElementById('finProduct').value;
+    const product = MockData.financeProducts.find(x => x.id === productId);
+    const ratio = product ? product.pledgeRatio : 0.8;
+    const amount = totalValue * ratio;
+    document.getElementById('finAmount').value = Utils.fmtMoney(amount, false);
+  }
+
+  // 全选质押物
+  window.onSelectAllPledge = function(checkbox) {
+    document.querySelectorAll('.pledge-check').forEach(c => { c.checked = checkbox.checked; });
+    onPledgeItemChange();
+  };
+
+  // 选放款账户 → 还款账户默认 = 放款账户
+  window.onLoanAccountChange = function() {
+    const loanAcc = document.getElementById('finLoanAccount').value;
+    const repayAcc = document.getElementById('finRepayAccount');
+    if (loanAcc && (!repayAcc.value || repayAcc.value === '')) {
+      repayAcc.value = loanAcc;
+    }
+  };
+
+  // 提交融资申请
+  window.submitFinancing = function() {
+    // 校验
+    if (!document.getElementById('finProduct').value) { Utils.toast('请选择金融产品', 'warning'); return; }
+    if (!document.querySelectorAll('.pledge-check:checked').length) { Utils.toast('请至少选择一笔质押货物', 'warning'); return; }
+    if (!document.getElementById('finPurpose').value) { Utils.toast('请选择借款用途', 'warning'); return; }
+    if (!document.getElementById('finRepayType').value) { Utils.toast('请选择还款方式', 'warning'); return; }
+    if (!document.getElementById('finLoanAccount').value) { Utils.toast('请选择放款账户', 'warning'); return; }
+    if (!document.getElementById('finRepayAccount').value) { Utils.toast('请选择还款账户', 'warning'); return; }
+
+    const checkedCount = document.querySelectorAll('.pledge-check:checked').length;
+    if (!confirm(`确认提交融资申请？\n• 质押货物：${checkedCount} 笔\n• 拟融资金额：${document.getElementById('finAmount').value}\n提交后将进入 3 级审核流程（担保方 → 监管方 → 资金方），不可撤回。`)) return;
+
+    Utils.toast('融资申请已提交，系统自动生成质物清单', 'success');
+    setTimeout(() => window.location.href = Utils.nav('/customer/financing'), 800);
+  };
+
+  // ============ 初始化 ============
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '新增融资申请',
+    currentPath: '/customer/financing-create',
+    breadcrumb: [
+      { label: '融资管理', path: '/customer/financing' },
+      { label: '融资申请', path: '/customer/financing' },
+      { label: '新增融资申请', path: '/customer/financing-create' },
+    ],
+    extra: '',
+    content: render(),
+  });
+</script>
+</body>
+</html>
