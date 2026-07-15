@@ -423,7 +423,7 @@
   };
 
   function statusText(s) {
-    return ({ draft: '待提交', pending_supervisor: '待监管方确认', pending_supervisor_seal: '待监管方盖章', pending_guarantor: '待担保方确认', pending_guarantor_seal: '待担保方盖章', pending_funding: '待融资方盖章', pending_discharge: '待还款', completed: '已还款', rejected: '驳回', invalid: '作废' })[s] || '-';
+    return ({ draft: '待提交', pending_supervisor: '待监管方确认', pending_supervisor_seal: '待监管方盖章', pending_guarantor: '待担保方确认',pending_funding: '待融资方盖章', pending_discharge: '待还款', completed: '已还款', rejected: '驳回', invalid: '作废' })[s] || '-';
   }
 
   function refresh() {

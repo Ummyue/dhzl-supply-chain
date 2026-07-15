@@ -309,29 +309,8 @@
     return 'bg-slate-100 text-slate-600';
   }
 
-  function renderPagination(total, totalPages, isIn) {
-    if (total === 0) return '';
-    const start = (state.page - 1) * state.pageSize + 1;
-    const end = Math.min(state.page * state.pageSize, total);
-    const pages = [];
-    for (let i = 1; i <= totalPages && i <= 9; i++) pages.push(i);
-    return `
-      <div class="px-4 py-3 border-t border-slate-200 flex items-center justify-between">
-        <div class="text-sm text-slate-500">共 <span class="font-medium text-slate-800">${total}</span> 条记录 第 <span class="font-medium text-slate-800">${state.page}</span> / ${totalPages} 页</div>
-        <div class="flex items-center gap-2">
-          <button onclick="setPage(${state.page - 1})" ${state.page === 1 ? 'disabled' : ''} class="px-2 py-1 text-xs border border-slate-200 rounded ${state.page === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}">‹</button>
-          ${pages.map(p => `<button onclick="setPage(${p})" class="px-2.5 py-1 text-xs border rounded min-w-[28px] ${p === state.page ? 'bg-blue-600 text-white border-blue-600' : 'border-slate-200 hover:bg-slate-50'}">${p}</button>`).join('')}
-          ${totalPages > 9 ? `<span class="text-xs text-slate-400">...</span>` : ''}
-          <button onclick="setPage(${state.page + 1})" ${state.page === totalPages ? 'disabled' : ''} class="px-2 py-1 text-xs border border-slate-200 rounded ${state.page === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50'}">›</button>
-          <select onchange="setPageSize(parseInt(this.value))" class="px-2 py-1 text-xs border border-slate-200 rounded">
-            ${[10, 20, 50, 100].map(s => `<option value="${s}" ${state.pageSize === s ? 'selected' : ''}>${s}条/页</option>`).join('')}
-          </select>
-          <span class="text-xs text-slate-500">跳至</span>
-          <input type="number" min="1" max="${totalPages}" value="${state.page}" onchange="goToPage(parseInt(this.value))" class="w-12 px-2 py-1 text-xs border border-slate-200 rounded text-center">
-          <span class="text-xs text-slate-500">页</span>
-        </div>
-      </div>
-    `;
+  function renderPagination(total) {
+    return Components.pagination({ total: total || 0, page: 1, pageSize: 10, onChange: 'window.__noop', onPageSize: 'window.__noop', onJump: 'window.__noop' });
   }
 
   // ============ Refresh =============

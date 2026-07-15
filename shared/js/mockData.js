@@ -76,13 +76,14 @@ const STATUS_LABELS_EN = {
   processing: 'Processing', notifying: 'Notifying', failed: 'Failed',
 };
 
-// ========== v1.7.78 解押出库审批步骤条生成器（按列表 tab 状态机 8 步） ==========
-// 步骤顺序：提交 → 待监管方确认 → 待担保方确认 → 待融资方盖章 → 待监管方盖章 → 待担保方盖章 → 待还款 → 已还款
+// ========== v1.7.78 解押出库审批步骤条生成器（按列表 tab 状态机 7 步） ==========
+// v1.7.81 步骤顺序：提交 → 待监管方确认 → 待担保方确认 → 待融资方盖章 → 待监管方盖章 → 待还款 → 已还款
+// （v1.7.81 删掉"待担保方盖章"步骤：担保方只在"待担保方确认"节点出具意见，不参与盖章）
 // 终态：rejected（驳回）/ invalid（作废）— 外部按 statusTag 渲染终态提示
 function buildApprovalSteps(status) {
   const FLOW = [
     '提交', '待监管方确认', '待担保方确认', '待融资方盖章',
-    '待监管方盖章', '待担保方盖章', '待还款', '已还款',
+    '待监管方盖章', '待还款', '已还款',
   ];
   const STATUS_STEP = {
     draft: 0,
@@ -90,9 +91,8 @@ function buildApprovalSteps(status) {
     pending_guarantor: 2,
     pending_funding: 3,
     pending_supervisor_seal: 4,
-    pending_guarantor_seal: 5,
-    pending_discharge: 6,
-    completed: 7,
+    pending_discharge: 5,
+    completed: 6,
   };
   if (status === 'rejected' || status === 'invalid') return [];
   const cur = STATUS_STEP[status] ?? 0;
@@ -189,6 +189,50 @@ const MockData = {
       title: '客户经理',
       phone: '135 0000 6666',
       avatar: '刘',
+    },
+
+    // ========== v1.7.81 盖章员 sub-role（独立账号，可登录 + 单据盖章） ==========
+    // 监管方业务盖章员 sub-role：与 platform 区分（platform 走"确认"流程，platform_seal 走"盖章"流程）
+    platform_seal: {
+      id: 'u_plat_seal_001',
+      name: '张雪',
+      role: 'platform_seal',
+      userRole: 'sealUser',       // 盖章人身份
+      sealPermission: true,
+      sealScope: ['company_seal', 'supervisor_seal', 'business_seal'],
+      company: '大河智链物流股份有限公司',
+      department: '业务运营部',
+      title: '业务盖章员',
+      phone: '139 0000 3333',
+      avatar: '张',
+    },
+    // 担保方业务盖章员 sub-role：与 guarantor 区分（guarantor 走"确认"流程，guarantor_seal 走"盖章"流程）
+    guarantor_seal: {
+      id: 'u_guar_seal_001',
+      name: '赵琳',
+      role: 'guarantor_seal',
+      userRole: 'sealUser',
+      sealPermission: true,
+      sealScope: ['company_seal', 'guarantee_seal', 'finance_seal'],
+      company: '中原信用担保有限公司',
+      department: '风控合规部',
+      title: '担保盖章员',
+      phone: '136 0000 7777',
+      avatar: '赵',
+    },
+    // 资金方业务盖章员 sub-role：与 bank 区分（bank 走"见证/放款"流程，bank_seal 走"盖章"流程）
+    bank_seal: {
+      id: 'u_bank_seal_001',
+      name: '孙华',
+      role: 'bank_seal',
+      userRole: 'sealUser',
+      sealPermission: true,
+      sealScope: ['company_seal', 'bank_seal', 'loan_seal'],
+      company: '中国民生银行股份有限公司郑州分行',
+      department: '信贷审批部',
+      title: '银行业务盖章员',
+      phone: '135 0000 5555',
+      avatar: '孙',
     },
   },
 
@@ -409,6 +453,39 @@ const MockData = {
           { icon: 'list',  label: '质押货物台账', path: '/bank/pledge-ledger' },
           { icon: 'cash',  label: '放还款记录', path: '/bank/loan-records' },
           { icon: 'alert', label: '到期预警', path: '/bank/due-alerts' },
+          { icon: 'chart', label: '额度管理', path: '/bank/limit-management' },
+        ]},
+      ],
+
+      // v1.7.81：3 个盖章员 sub-role 菜单（复用主角色菜单 + 加【单据盖章】项）
+      platform_seal: [
+        { group: '解押出库管理', items: [
+          { icon: 'logistics', label: '解押/出库审批', path: '/platform/approval-outbound' },
+          { icon: 'edit', label: '单据盖章', path: '/platform/seal-document' },
+        ]},
+        { group: '授信管理', items: [
+          { icon: 'chart', label: '额度管理', path: '/platform/limit-management' },
+        ]},
+      ],
+      guarantor_seal: [
+        { group: '解押出库管理', items: [
+          { icon: 'logistics', label: '解押/出库审批', path: '/guarantor/approval-outbound' },
+          { icon: 'edit', label: '单据盖章', path: '/guarantor/seal-document' },
+        ]},
+        { group: '授信管理', items: [
+          { icon: 'chart', label: '额度管理', path: '/guarantor/limit-management' },
+        ]},
+      ],
+      bank_seal: [
+        { group: '解押出库管理', items: [
+          { icon: 'logistics', label: '解押/出库审批', path: '/bank/approval-outbound' },
+          { icon: 'edit', label: '单据盖章', path: '/bank/seal-document' },
+        ]},
+        { group: '授信与放款', items: [
+          { icon: 'shield-check', label: '授信录入', path: '/bank/approval-credit' },
+          { icon: 'cash', label: '放款审核', path: '/bank/approval-loan' },
+        ]},
+        { group: '贷后管理', items: [
           { icon: 'chart', label: '额度管理', path: '/bank/limit-management' },
         ]},
       ],

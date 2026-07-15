@@ -179,38 +179,8 @@
   }
 
   // ============ 渲染：分页 ============
-  function renderPagination() {
-    // 渲染 1..9 + 跳页
-    const pageNumbers = [];
-    for (let i = 1; i <= 9; i++) pageNumbers.push(i);
-    return `
-      <div class="flex items-center justify-between mt-2">
-        <div class="text-xs text-slate-500">共 ${STATUS_TOTAL} 条记录 第 ${currentPage} / ${STATUS_TOTAL_PAGES} 页</div>
-        <div class="flex items-center gap-2">
-          <button onclick="goPage(${currentPage - 1})" class="w-7 h-7 inline-flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded ${currentPage <= 1 ? 'opacity-40 cursor-not-allowed' : ''}">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-          </button>
-          ${pageNumbers.map(p => `
-            <button onclick="goPage(${p})" class="w-7 h-7 inline-flex items-center justify-center text-sm rounded ${
-              p === currentPage
-                ? 'bg-blue-600 text-white font-medium'
-                : 'text-slate-700 hover:bg-slate-100 border border-slate-200'
-            }">${p}</button>
-          `).join('')}
-          <button onclick="goPage(${currentPage + 1})" class="w-7 h-7 inline-flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded ${currentPage >= STATUS_TOTAL_PAGES ? 'opacity-40 cursor-not-allowed' : ''}">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-          </button>
-          <select class="ml-2 px-2 py-1 text-xs border border-slate-200 rounded text-slate-700">
-            <option>10条/页</option>
-            <option>20条/页</option>
-            <option>50条/页</option>
-          </select>
-          <span class="text-xs text-slate-500 ml-2">跳至</span>
-          <input id="jump-page" type="number" min="1" max="${STATUS_TOTAL_PAGES}" value="${currentPage}" class="w-12 px-2 py-1 text-xs text-center border border-slate-200 rounded" />
-          <span class="text-xs text-slate-500">页</span>
-        </div>
-      </div>
-    `;
+  function renderPagination(total) {
+    return Components.pagination({ total: total || 0, page: 1, pageSize: 10, onChange: 'window.__noop', onPageSize: 'window.__noop', onJump: 'window.__noop' });
   }
 
   // ============ 行为 ============
@@ -257,7 +227,7 @@
             </div>
             ${renderFilters()}
             ${renderTable()}
-            ${renderPagination()}
+            ${renderPagination(applyFilters().length)}
           </div>
         </main>
       </div>

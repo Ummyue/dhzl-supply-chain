@@ -349,7 +349,45 @@ const Components = {
   },
 
   // 全局点击关闭弹层
-  bindGlobalClose() {
+// ============ 通用分页控件（v1.7.81）============
+  // 调用：Components.pagination({ total, page, pageSize, onChange, onPageSize, onJump })
+  // 返回：HTML 字符串（需调用方 innerHTML 插入）
+  pagination({ total = 0, page = 1, pageSize = 10, onChange = 'window.__noop', onPageSize = 'window.__noop', onJump = 'window.__noop' } = {}) {
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const cur = Math.min(Math.max(1, page), totalPages);
+    // 页码按钮（当前页 ± 2）
+    const start = Math.max(1, cur - 2);
+    const end = Math.min(totalPages, cur + 2);
+    const pageNums = [];
+    for (let i = start; i <= end; i++) pageNums.push(i);
+    // 总条数（按当前 tab 过滤后）
+    return `
+      <div class="px-4 py-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+        <span>共 <b class="text-slate-800">${total}</b> 条记录，第 ${cur} / ${totalPages} 页</span>
+        <div class="flex items-center gap-1">
+          <button onclick="${onChange}(${cur - 1})" class="px-2 py-1 border border-slate-200 rounded hover:bg-slate-50 ${cur === 1 ? 'opacity-50 cursor-not-allowed' : ''}" ${cur === 1 ? 'disabled' : ''}>
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          ${cur - 2 > 1 ? `<button onclick="${onChange}(1)" class="px-2 py-1 border border-slate-200 rounded hover:bg-slate-50">1</button>${cur - 2 > 2 ? '<span class="px-1">…</span>' : ''}` : ''}
+          ${pageNums.map(n => `<button onclick="${onChange}(${n})" class="px-2 py-1 border ${n === cur ? 'bg-blue-600 text-white border-blue-600' : 'border-slate-200 hover:bg-slate-50'} rounded">${n}</button>`).join('')}
+          ${cur + 2 < totalPages ? `${cur + 2 < totalPages - 1 ? '<span class="px-1">…</span>' : ''}<button onclick="${onChange}(${totalPages})" class="px-2 py-1 border border-slate-200 rounded hover:bg-slate-50">${totalPages}</button>` : ''}
+          <button onclick="${onChange}(${cur + 1})" class="px-2 py-1 border border-slate-200 rounded hover:bg-slate-50 ${cur === totalPages ? 'opacity-50 cursor-not-allowed' : ''}" ${cur === totalPages ? 'disabled' : ''}>
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+          <select onchange="${onPageSize}(this.value)" class="ml-3 px-2 py-1 border border-slate-200 rounded text-xs">
+            <option ${pageSize == 5 ? 'selected' : ''}>5</option>
+            <option ${pageSize == 10 ? 'selected' : ''}>10</option>
+            <option ${pageSize == 20 ? 'selected' : ''}>20</option>
+            <option ${pageSize == 50 ? 'selected' : ''}>50</option>
+          </select>
+          <span class="ml-2">跳至</span>
+          <input type="number" min="1" max="${totalPages}" value="${cur}" onkeydown="if(event.key==='Enter'){ ${onJump}(this.value) }" class="w-12 px-2 py-1 border border-slate-200 rounded text-xs text-center">
+          <span>页</span>
+        </div>
+      </div>
+    `;
+  },
+    bindGlobalClose() {
     document.addEventListener('click', (e) => {
       if (!e.target.closest('#roleSwitcher')) document.getElementById('roleMenu')?.classList.add('hidden');
       if (!e.target.closest('#userMenu')) document.getElementById('userDropdown')?.classList.add('hidden');

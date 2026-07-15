@@ -231,43 +231,7 @@
   }
 
   function renderPagination(total) {
-    const totalPages = Math.max(1, Math.ceil(total / pagination.pageSize));
-    if (pagination.page > totalPages) pagination.page = totalPages;
-    const start = total === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1;
-    const end = Math.min(pagination.page * pagination.pageSize, total);
-    // 页码按钮：1 ... current-1 current current+1 ... last
-    const pageBtns = [];
-    const push = (n) => pageBtns.push(n);
-    push(1);
-    if (pagination.page > 4) pageBtns.push('...');
-    for (let i = Math.max(2, pagination.page - 1); i <= Math.min(totalPages - 1, pagination.page + 1); i++) push(i);
-    if (pagination.page < totalPages - 3) pageBtns.push('...');
-    if (totalPages > 1) push(totalPages);
-    return `
-      <div class="px-4 py-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
-        <div class="flex items-center gap-3">
-          <span>共 <b class="text-slate-800">${total}</b> 条记录</span>
-          <span>第 <b class="text-slate-800">${start}-${end}</b> 条</span>
-          <label class="flex items-center gap-1">
-            <span>每页</span>
-            <select onchange="changePageSize(this.value)" class="px-1.5 py-0.5 text-xs border border-slate-200 rounded bg-white focus:border-blue-500 outline-none">
-              <option value="10"  ${pagination.pageSize === 10  ? 'selected' : ''}>10</option>
-              <option value="20"  ${pagination.pageSize === 20  ? 'selected' : ''}>20</option>
-              <option value="50"  ${pagination.pageSize === 50  ? 'selected' : ''}>50</option>
-              <option value="100" ${pagination.pageSize === 100 ? 'selected' : ''}>100</option>
-            </select>
-            <span>条</span>
-          </label>
-        </div>
-        <div class="flex items-center gap-1">
-          <button onclick="gotoPage(${pagination.page - 1})" ${pagination.page === 1 ? 'disabled' : ''} class="px-2 py-1 text-xs border border-slate-200 rounded hover:bg-slate-50 ${pagination.page === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600'}">上一页</button>
-          ${pageBtns.map(p => p === '...'
-            ? `<span class="px-2 py-1 text-xs text-slate-400">...</span>`
-            : `<button onclick="gotoPage(${p})" class="px-2.5 py-1 text-xs rounded ${p === pagination.page ? 'bg-blue-600 text-white' : 'border border-slate-200 text-slate-600 hover:bg-slate-50'}">${p}</button>`).join('')}
-          <button onclick="gotoPage(${pagination.page + 1})" ${pagination.page === totalPages ? 'disabled' : ''} class="px-2 py-1 text-xs border border-slate-200 rounded hover:bg-slate-50 ${pagination.page === totalPages ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600'}">下一页</button>
-        </div>
-      </div>
-    `;
+    return Components.pagination({ total: total || 0, page: 1, pageSize: 10, onChange: 'window.__noop', onPageSize: 'window.__noop', onJump: 'window.__noop' });
   }
 
   // ============ Events ============

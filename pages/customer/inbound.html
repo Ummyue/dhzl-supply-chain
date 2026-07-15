@@ -299,15 +299,7 @@
   }
 
   function renderPagination(total) {
-    if (total === 0) return '';
-    return `
-      <div class="px-4 py-3 border-t border-slate-200 flex items-center justify-between">
-        <div class="text-sm text-slate-500">共 <span class="font-medium text-slate-800">${total}</span> 条记录</div>
-        <div class="flex items-center gap-2 text-xs text-slate-400">
-          <span>点击表格行可进入详情页</span>
-        </div>
-      </div>
-    `;
+    return Components.pagination({ total: total || 0, page: 1, pageSize: 10, onChange: 'window.__noop', onPageSize: 'window.__noop', onJump: 'window.__noop' });
   }
 
   // ============ 筛选 tag 区 ============
