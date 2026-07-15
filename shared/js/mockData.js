@@ -76,6 +76,31 @@ const STATUS_LABELS_EN = {
   processing: 'Processing', notifying: 'Notifying', failed: 'Failed',
 };
 
+// ========== v1.7.78 解押出库审批步骤条生成器（按列表 tab 状态机 8 步） ==========
+// 步骤顺序：提交 → 待监管方确认 → 待担保方确认 → 待融资方盖章 → 待监管方盖章 → 待担保方盖章 → 待还款 → 已还款
+// 终态：rejected（驳回）/ invalid（作废）— 外部按 statusTag 渲染终态提示
+function buildApprovalSteps(status) {
+  const FLOW = [
+    '提交', '待监管方确认', '待担保方确认', '待融资方盖章',
+    '待监管方盖章', '待担保方盖章', '待还款', '已还款',
+  ];
+  const STATUS_STEP = {
+    draft: 0,
+    pending_supervisor: 1,
+    pending_guarantor: 2,
+    pending_funding: 3,
+    pending_supervisor_seal: 4,
+    pending_guarantor_seal: 5,
+    pending_discharge: 6,
+    completed: 7,
+  };
+  if (status === 'rejected' || status === 'invalid') return [];
+  const cur = STATUS_STEP[status] ?? 0;
+  return FLOW.map((label, i) => ({
+    idx: i + 1, label, done: i < cur, active: i === cur,
+  }));
+}
+
 const MockData = {
   // ========== 当前登录用户（按角色切换） ==========
   users: {
@@ -2582,14 +2607,7 @@ const MockData = {
       creator: '张三',
       createdAt: '2022-08-12 12:22:32',
       statusTag: 'pending_supervisor',     // 当前 tab = 待监管方确认
-      approvalSteps: [                      // 6 步步骤条
-        { idx: 1, label: '提交',     done: true,  active: false },
-        { idx: 2, label: '待融资方盖章', done: true,  active: false },
-        { idx: 3, label: '待监管方确认', done: false, active: true  },
-        { idx: 4, label: '待监管方盖章', done: false, active: false },
-        { idx: 5, label: '待担保方确认', done: false, active: false },
-        { idx: 6, label: '待担保方盖章', done: false, active: false },
-      ],
+      approvalSteps: buildApprovalSteps('pending_supervisor'),  // v1.7.78：8 步新顺序（步骤 2 active）
       financingInfo: {
         financingNo: 'RZ202411280002',
         pledgor: '郑州某冷链贸易有限公司',
@@ -2638,6 +2656,95 @@ const MockData = {
       attachments: [
         // 图 3 详情页的附件可空（demo 数据）
       ],
+    },
+
+    // v1.7.78：5 条新样例覆盖 8 步流程 + 3 终态
+    jy_010: {  // pending_supervisor_seal（待监管方盖章 — v1.7.78 新状态）
+      applyNo: 'JY4910955281410',
+      pledgeAssetNo: 'MPCB_14910955281410',
+      creator: '王五',
+      createdAt: '2026-04-22 09:15:00',
+      statusTag: 'pending_supervisor_seal',
+      approvalSteps: buildApprovalSteps('pending_supervisor_seal'),  // 步骤 5 active
+      financingInfo: { financingNo: 'RZ202504150008', pledgor: '河南双汇投资发展股份有限公司', product: '民生e货', bank: '中国民生银行郑州分行', interestRate: '2.5%', loanDate: '2025-04-15', dueDate: '2026-04-10', loanNote: 'sn0029192', counterNo: 'sn0029192', loanAmount: 580000.00, repaidAmount: 380000.00, remainingAmount: 200000.00 },
+      pledgeAssetInfo: { pledgeNo: 'MPCB_14910955281410', pledgor: '河南双汇投资发展股份有限公司', pledgee: '郑州农业融担保股份有限公司', pledgeQty: 420, pledgeWeight: 6800, pledgeValue: 12000.00 },
+      releaseSummary: { count: 2, totalQty: '180 箱/件', totalWeight: '9000 千克', totalValue: '8,400,000.00 元' },
+      releaseItems: [
+        { warehouse: '郑州酷万冷库', position: '冷藏-1号仓-1层', inboundNo: 'IN-20240418-00001', productName: '猪肉-五花', pledgeQty: 90, qtyUnit: '箱', pledgeWeight: 4500, weightUnit: '千克', unitPrice: 78, releaseQty: 90, releaseWeight: 4500, releaseValue: 4200000.00 },
+        { warehouse: '郑州酷万冷库', position: '冷藏-1号仓-2层', inboundNo: 'IN-20240418-00002', productName: '猪肉-前腿', pledgeQty: 90, qtyUnit: '箱', pledgeWeight: 4500, weightUnit: '千克', unitPrice: 78, releaseQty: 90, releaseWeight: 4500, releaseValue: 4200000.00 },
+      ],
+      repaymentInfo: { planDate: '2026-04-20', interestDays: 95, overdueDays: 0, principal: 200000.00, interest: 5800.00, penalty: 0, totalAmount: 205800.00, repayAccount: '中国民生银行郑州分行营业部 6228 4801 0099 9921' },
+      attachments: [],
+    },
+    jy_012: {  // pending_discharge（待还款）
+      applyNo: 'JY4910955281412',
+      pledgeAssetNo: 'MPCB_14910955281412',
+      creator: '赵六',
+      createdAt: '2026-03-08 14:22:10',
+      statusTag: 'pending_discharge',
+      approvalSteps: buildApprovalSteps('pending_discharge'),  // 步骤 7 active
+      financingInfo: { financingNo: 'RZ202503010003', pledgor: '牧原食品股份有限公司', product: '冷链现货质押融资（90天）', bank: '郑州农业融担保联合体', interestRate: '2.8%', loanDate: '2025-03-01', dueDate: '2025-05-30', loanNote: 'sn0030115', counterNo: 'sn0030115', loanAmount: 850000.00, repaidAmount: 0, remainingAmount: 850000.00 },
+      pledgeAssetInfo: { pledgeNo: 'MPCB_14910955281412', pledgor: '牧原食品股份有限公司', pledgee: '郑州农业融担保股份有限公司', pledgeQty: 1200, pledgeWeight: 24000, pledgeValue: 15000.00 },
+      releaseSummary: { count: 1, totalQty: '600 箱/件', totalWeight: '12000 千克', totalValue: '12,000,000.00 元' },
+      releaseItems: [
+        { warehouse: '大河物流园二期冻库', position: '冻品-3号位', inboundNo: 'IN-20250225-00008', productName: '猪肉-肋排', pledgeQty: 600, qtyUnit: '箱', pledgeWeight: 12000, weightUnit: '千克', unitPrice: 85, releaseQty: 600, releaseWeight: 12000, releaseValue: 12000000.00 },
+      ],
+      repaymentInfo: { planDate: '2026-07-15', interestDays: 75, overdueDays: 0, principal: 850000.00, interest: 35000.00, penalty: 0, totalAmount: 885000.00, repayAccount: '郑州农业融担保联合体 6228 4801 7788 0011' },
+      attachments: [],
+    },
+    jy_013: {  // completed（已还款 — 终态）
+      applyNo: 'JY4910955281413',
+      pledgeAssetNo: 'MPCB_14910955281413',
+      creator: '孙七',
+      createdAt: '2025-12-15 10:00:00',
+      statusTag: 'completed',
+      approvalSteps: buildApprovalSteps('completed'),  // 全部 8 步 done
+      financingInfo: { financingNo: 'RZ202412010001', pledgor: '郑州思念食品有限公司', product: 'e仓融', bank: '中原银行股份有限公司', interestRate: '2.3%', loanDate: '2024-12-01', dueDate: '2025-11-25', loanNote: 'sn0031201', counterNo: 'sn0031201', loanAmount: 450000.00, repaidAmount: 450000.00, remainingAmount: 0 },
+      pledgeAssetInfo: { pledgeNo: 'MPCB_14910955281413', pledgor: '郑州思念食品有限公司', pledgee: '郑州农业融担保股份有限公司', pledgeQty: 500, pledgeWeight: 8000, pledgeValue: 8500.00 },
+      releaseSummary: { count: 2, totalQty: '300 箱/件', totalWeight: '6000 千克', totalValue: '6,000,000.00 元' },
+      releaseItems: [
+        { warehouse: '郑州融万冷库', position: '智链监管仓-2号位', inboundNo: 'IN-20241128-00015', productName: '速冻汤圆-黑芝麻', pledgeQty: 150, qtyUnit: '箱', pledgeWeight: 3000, weightUnit: '千克', unitPrice: 56, releaseQty: 150, releaseWeight: 3000, releaseValue: 3000000.00 },
+        { warehouse: '郑州融万冷库', position: '智链监管仓-2号位', inboundNo: 'IN-20241128-00016', productName: '速冻水饺-猪肉白菜', pledgeQty: 150, qtyUnit: '箱', pledgeWeight: 3000, weightUnit: '千克', unitPrice: 56, releaseQty: 150, releaseWeight: 3000, releaseValue: 3000000.00 },
+      ],
+      repaymentInfo: { planDate: '2025-11-20', interestDays: 110, overdueDays: 0, principal: 450000.00, interest: 12000.00, penalty: 0, totalAmount: 462000.00, repayAccount: '中原银行郑州花园路支行 6228 4801 6677 8801' },
+      attachments: [],
+    },
+    jy_014: {  // rejected（驳回 — 终态）
+      applyNo: 'JY4910955281414',
+      pledgeAssetNo: 'MPCB_14910955281414',
+      creator: '周八',
+      createdAt: '2026-05-10 16:30:00',
+      statusTag: 'rejected',
+      approvalSteps: buildApprovalSteps('rejected'),  // 空数组（终态）
+      rejectedAtStep: 'pending_guarantor',  // 驳回节点
+      rejectedBy: '担保方',
+      rejectReason: '反担保措施不足，建议追加企业实际控制人连带责任担保',
+      financingInfo: { financingNo: 'RZ202505050005', pledgor: '洛阳栾川钼业集团股份有限公司', product: '中原e货', bank: '中原银行股份有限公司', interestRate: '2.3%', loanDate: '2025-05-05', dueDate: '2026-05-01', loanNote: 'sn0045188', counterNo: 'sn0045188', loanAmount: 1200000.00, repaidAmount: 0, remainingAmount: 1200000.00 },
+      pledgeAssetInfo: { pledgeNo: 'MPCB_14910955281414', pledgor: '洛阳栾川钼业集团股份有限公司', pledgee: '郑州农业融担保股份有限公司', pledgeQty: 800, pledgeWeight: 12000, pledgeValue: 18000.00 },
+      releaseSummary: { count: 1, totalQty: '100 箱/件', totalWeight: '2000 千克', totalValue: '1,800,000.00 元' },
+      releaseItems: [
+        { warehouse: '郑州融万冷库', position: '冷藏-1号仓-3层', inboundNo: 'IN-20250501-00020', productName: '钼精矿-AO2', pledgeQty: 100, qtyUnit: '箱', pledgeWeight: 2000, weightUnit: '千克', unitPrice: 96, releaseQty: 100, releaseWeight: 2000, releaseValue: 1800000.00 },
+      ],
+      repaymentInfo: { planDate: '2026-05-15', interestDays: 90, overdueDays: 0, principal: 1200000.00, interest: 36000.00, penalty: 0, totalAmount: 1236000.00, repayAccount: '中原银行郑州花园路支行 6228 4801 5500 1100' },
+      attachments: [],
+    },
+    jy_015: {  // invalid（作废 — 终态）
+      applyNo: 'JY4910955281415',
+      pledgeAssetNo: 'MPCB_14910955281415',
+      creator: '吴九',
+      createdAt: '2026-06-01 11:00:00',
+      statusTag: 'invalid',
+      approvalSteps: buildApprovalSteps('invalid'),  // 空数组（终态）
+      invalidReason: '客户主动撤回，本次解押申请作废',
+      invalidAt: '2026-06-03 14:30:00',
+      financingInfo: { financingNo: 'RZ202506010007', pledgor: '三全食品股份有限公司', product: '民生e货', bank: '中国民生银行郑州分行', interestRate: '2.5%', loanDate: '2025-06-01', dueDate: '2026-05-28', loanNote: 'sn0050205', counterNo: 'sn0050205', loanAmount: 320000.00, repaidAmount: 0, remainingAmount: 320000.00 },
+      pledgeAssetInfo: { pledgeNo: 'MPCB_14910955281415', pledgor: '三全食品股份有限公司', pledgee: '郑州农业融担保股份有限公司', pledgeQty: 280, pledgeWeight: 5600, pledgeValue: 9200.00 },
+      releaseSummary: { count: 1, totalQty: '60 箱/件', totalWeight: '1200 千克', totalValue: '1,200,000.00 元' },
+      releaseItems: [
+        { warehouse: '郑州融万冷库', position: '冷藏-2号仓-1层', inboundNo: 'IN-20250525-00030', productName: '速冻粽子-蛋黄肉', pledgeQty: 60, qtyUnit: '箱', pledgeWeight: 1200, weightUnit: '千克', unitPrice: 82, releaseQty: 60, releaseWeight: 1200, releaseValue: 1200000.00 },
+      ],
+      repaymentInfo: { planDate: '2026-06-05', interestDays: 60, overdueDays: 0, principal: 320000.00, interest: 8000.00, penalty: 0, totalAmount: 328000.00, repayAccount: '中国民生银行郑州分行营业部 6228 4801 8800 7700' },
+      attachments: [],
     },
   },
 

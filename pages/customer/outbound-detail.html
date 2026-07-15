@@ -130,7 +130,7 @@
       <!-- 步骤条 -->
       <div class="bg-white border border-slate-200 rounded-xl px-6 py-5 mb-4 overflow-x-auto">
         <div class="stp">
-          ${renderSteps(detail.approvalSteps)}
+          ${renderSteps(detail)}
         </div>
       </div>
 
@@ -202,7 +202,34 @@
     `;
   }
 
-  function renderSteps(steps = []) {
+  function renderSteps(detailObj) {
+    const status = detailObj.statusTag;
+    // v1.7.78：终态（驳回/作废）显示状态横幅，不展开步骤条
+    if (status === 'rejected') {
+      return `
+        <div class="mb-4 px-4 py-3 bg-rose-50 border border-rose-200 rounded-lg text-sm">
+          <span class="font-bold text-rose-700">⛔ 流程已结束：已驳回</span>
+          <span class="text-rose-600 ml-2">· 驳回方：${detailObj.rejectedBy || '-'}</span>
+          <span class="text-rose-600 ml-2">· 驳回节点：${detailObj.rejectedAtStep || '-'}</span>
+          <div class="mt-1 text-rose-700">驳回原因：${detailObj.rejectReason || '-'}</div>
+        </div>
+        <div class="text-center text-slate-400 text-xs py-4">已驳回，步骤条不展开</div>
+      `;
+    }
+    if (status === 'invalid') {
+      return `
+        <div class="mb-4 px-4 py-3 bg-slate-100 border border-slate-300 rounded-lg text-sm">
+          <span class="font-bold text-slate-700">🚫 流程已结束：已作废</span>
+          <span class="text-slate-500 ml-2">· 作废时间：${detailObj.invalidAt || '-'}</span>
+          <div class="mt-1 text-slate-600">作废原因：${detailObj.invalidReason || '-'}</div>
+        </div>
+        <div class="text-center text-slate-400 text-xs py-4">已作废，步骤条不展开</div>
+      `;
+    }
+    // 正常状态：按 statusTag 动态生成 8 步步骤条
+    const steps = (typeof buildApprovalSteps === 'function')
+      ? buildApprovalSteps(status)
+      : (detailObj.approvalSteps || []);
     return steps.map((s, i) => {
       const cls = s.done ? 'done' : (s.active ? 'active' : 'future');
       const circleContent = s.done
@@ -217,7 +244,6 @@
       `;
     }).join('');
   }
-
   function finRow(label, val) {
     return `
       <div class="grid grid-cols-12 border-b border-slate-200 last:border-b-0">
@@ -270,7 +296,7 @@
   };
 
   function statusText(s) {
-    return ({ draft: '待提交', pending_supervisor: '待监管方确认', pending_supervisor_seal: '待监管方盖章', pending_guarantor: '待担保方确认', pending_guarantor_seal: '待担保方盖章', pending_funding: '待融资方盖章', pending_discharge: '待还款', completed: '已还款', rejected: '驳回', invalid: '无效' })[s] || '-';
+    return ({ draft: '待提交', pending_supervisor: '待监管方确认', pending_supervisor_seal: '待监管方盖章', pending_guarantor: '待担保方确认', pending_guarantor_seal: '待担保方盖章', pending_funding: '待融资方盖章', pending_discharge: '待还款', completed: '已还款', rejected: '驳回', invalid: '作废' })[s] || '-';
   }
 
   function refresh() {
