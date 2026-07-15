@@ -44,7 +44,7 @@
           const showIssue = rec.status === 'pending_guarantor';
           const showDetail = true;
           return `
-            ${showDetail ? `<button onclick="alert('查看 ${rec.bizNo} 详情（待完善审批内容）')" class="text-blue-600 hover:underline text-xs font-medium">详情</button>` : ''}
+            ${showDetail ? `<button onclick="alert('查看 ${rec.bizNo} 详情（担保方详情页 v1.7.76+ 待开发）')" class="text-blue-600 hover:underline text-xs font-medium">详情</button>` : ''}
             ${showIssue ? `<button onclick="issueGuarantee('${rec.id}')" class="text-amber-600 hover:underline text-xs font-medium">出具担保函</button>` : ''}
           `;
         },

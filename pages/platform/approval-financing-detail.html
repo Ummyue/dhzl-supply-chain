@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>评估融资货值 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } </script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+  <style>
+    /* 必填红星 */
+    .req::before { content: '*'; color: #ef4444; margin-right: 2px; font-weight: 600; }
+    /* 绿色背景可编辑单元格（截图样式：本次质押数量/重量/单价/货值） */
+    .editable-cell { background: #dcfce7; border: 1px solid #86efac; }
+    .editable-cell input { background: transparent; }
+    .editable-cell input:focus { outline: 2px solid #22c55e; outline-offset: -2px; }
+    /* 紫色虚线框（基础信息 12 列） */
+    .pledge-base { border: 1.5px dashed #a78bfa; }
+    /* 底部固定操作栏 */
+    .footer-actions { position: fixed; bottom: 0; left: 0; right: 0; z-index: 40; background: #fff; border-top: 1px solid #e2e8f0; padding: 14px 0; box-shadow: 0 -2px 8px rgba(0,0,0,0.04); }
+    .footer-spacer { height: 80px; }
+  </style>
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+
+<!-- v1.7.75 监管方【评估融资货值】- 按甲方截图实现 -->
+<!-- 4 行基本信息 + 16 列质押物表（前 12 列紫虚线 + 后 4 列绿底可编辑） + 紫色附件 + 通过/驳回 + 驳回说明 -->
+
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlId = urlParams.get('id') || 'fn_001';
+  const f = MockData.financingList.find(x => x.id === urlId) || MockData.financingList[0];
+
+  // 状态机判断：只有 pending_supervisor_eval 才能编辑/提交；其他状态显示"只读"
+  const isMyTurn = f.status === 'pending_supervisor_eval';
+  const isFinal = ['released', 'rejected', 'voided'].includes(f.status);
+
+  // 评估货值 form 状态
+  const evalForm = {
+    confirm: isMyTurn ? '' : (f.status === 'rejected' ? 'reject' : 'pass'),
+    rejectReason: '',
+    rows: (f.products || []).map((p, i) => ({
+      no: i + 1,
+      warehouse: '大河物流园二期',
+      position: '冻品-监管位',
+      inboundNo: f.inboundBizNo || `IN_20231010-0000${i+1}`,
+      inboundDate: '2026-05-10 12:33:34',
+      productName: p.name,
+      productId: '',
+      inboundQty: p.pieces,
+      pledgeQty: p.pieces,             // 可质押数量（系统）
+      qtyUnit: f.qtyUnit || '箱',
+      inboundWeight: p.weight,
+      pledgeWeight: p.weight,            // 可质押重量（系统）
+      weightUnit: f.weightUnit || '千克',
+      thisPledgeQty: p.pieces,           // 本次质押数量（可编辑）
+      thisPledgeWeight: p.weight,        // 本次质押重量（系统计算）
+      unitPrice: p.evaluatePrice,        // 质押单价（可编辑）
+      pledgeValue: p.evaluateValue,      // 质押货值（系统计算 = 数量×单价）
+    })),
+  };
+
+  // ============ 工具函数 ============
+  function fmtPledgeCount() {
+    const n = evalForm.rows.reduce((s, r) => s + r.thisPledgeQty, 0);
+    return Utils.fmtNum(n);
+  }
+  function fmtPledgeWeight() {
+    const n = evalForm.rows.reduce((s, r) => s + r.thisPledgeWeight, 0);
+    return Utils.fmtNum(n);
+  }
+  function fmtPledgeValue() {
+    const n = evalForm.rows.reduce((s, r) => s + r.pledgeValue, 0);
+    return Utils.fmtMoney(n, false);
+  }
+  // 修改单价 → 自动重算该行质押货值 + 总质押货值 + 整体统计
+  function onUnitPriceChange(idx, value) {
+    const v = parseFloat(value) || 0;
+    evalForm.rows[idx].unitPrice = v;
+    evalForm.rows[idx].pledgeValue = v * evalForm.rows[idx].thisPledgeQty;
+    refresh();
+  }
+  // 修改本次质押数量 → 自动重算本次质押重量（按入库数量/入库重量比例）+ 该行质押货值
+  function onThisPledgeQtyChange(idx, value) {
+    const v = parseInt(value) || 0;
+    const row = evalForm.rows[idx];
+    row.thisPledgeQty = v;
+    // 本次质押重量 = 本次质押数量 × (入库重量 / 入库数量)
+    const perPieceWeight = row.inboundQty > 0 ? row.inboundWeight / row.inboundQty : 0;
+    row.thisPledgeWeight = v * perPieceWeight;
+    row.pledgeValue = row.unitPrice * v;
+    refresh();
+  }
+
+  // ============ 渲染 ============
+  function render() {
+    return `
+      <!-- 返回链接 -->
+      <div class="flex items-center gap-2 mb-3 text-sm">
+        <a href="${Utils.nav('/platform/approval-financing')}" class="flex items-center gap-1 text-slate-600 hover:text-blue-600">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          返回融资审核
+        </a>
+      </div>
+
+      <!-- ============ 基本信息 ============ -->
+      <div class="bg-white border border-slate-200 rounded-xl p-5 mb-4">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="w-1 h-4 bg-blue-500 rounded"></span>
+          <h3 class="text-base font-bold text-slate-800">基本信息</h3>
+        </div>
+        <div class="border border-slate-200 rounded overflow-hidden">
+          <!-- Row 1: 融资方 / 拟融资金额 / 金融产品 -->
+          <div class="grid grid-cols-12 border-b border-slate-200">
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-500 bg-slate-50">融资方</div>
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-800">${f.applicant}</div>
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-500 bg-slate-50">拟融资金额（元）</div>
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-800 num-focus">${Utils.fmtMoney(f.applyAmount)}</div>
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-500 bg-slate-50">金融产品</div>
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-800">${f.productName || '中原e货'}</div>
+          </div>
+          <!-- Row 2: 监管企业 / 质权方 / 融资利率 -->
+          <div class="grid grid-cols-12 border-b border-slate-200">
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-500 bg-slate-50">监管企业</div>
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-800">${f.supervisor || '大河智链物流（郑州）有限公司'}</div>
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-500 bg-slate-50">质权方</div>
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-800 num-focus">${Utils.fmtMoney(f.pledgeValue)}</div>
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-500 bg-slate-50">融资利率</div>
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-800 num-focus">${f.interestRate ? (f.interestRate * 100).toFixed(1) : '2.3'}%</div>
+          </div>
+          <!-- Row 3: 质押率 / 融资期限 / 借款用途 -->
+          <div class="grid grid-cols-12 border-b border-slate-200">
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-500 bg-slate-50">质押率</div>
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-800">默认 70%，可改</div>
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-500 bg-slate-50">融资期限</div>
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-800">${f.duration || 180} 天</div>
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-500 bg-slate-50">借款用途</div>
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-800">经营</div>
+          </div>
+          <!-- Row 4: 还款方式 / 放款账户 / 还款账户 -->
+          <div class="grid grid-cols-12">
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-500 bg-slate-50">还款方式</div>
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-800">一次性还本付息</div>
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-500 bg-slate-50">放款账户</div>
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-800 font-mono text-xs">中国建设银行北京市分行大兴支行营业部 6217000010033331648</div>
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-500 bg-slate-50">还款账户</div>
+            <div class="col-span-2 px-4 py-3 text-sm text-slate-800 font-mono text-xs">中国建设银行北京市分行大兴支行营业部 6217000010033331648</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 质押物信息 ============ -->
+      <div class="bg-white border border-slate-200 rounded-xl p-5 mb-4">
+        <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="w-1 h-4 bg-blue-500 rounded"></span>
+            <h3 class="text-base font-bold text-slate-800">质押物信息</h3>
+            <span class="text-xs text-slate-500 ml-2">已选：<b class="text-blue-700">${evalForm.rows.length}</b> 笔货物，
+              <span>总质押数量：<b class="text-blue-700">${fmtPledgeCount()}</b> ${f.qtyUnit || '箱/件'}，
+              <span>总质押重量：<b class="text-blue-700">${fmtPledgeWeight()}</b> ${f.weightUnit || '千克'}，
+              <span>总质押货值：<b class="text-blue-700">${fmtPledgeValue()}</b> 元
+            </span>
+          </div>
+          <button onclick="alert('跳转盯市数据页面（待开发）')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+            关联盯市数据
+          </button>
+        </div>
+
+        <div class="pledge-base rounded overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+              <thead class="bg-slate-50 text-slate-600">
+                <tr>
+                  <th class="text-left px-3 py-2.5 whitespace-nowrap">库点</th>
+                  <th class="text-left px-3 py-2.5 whitespace-nowrap">仓房-货位</th>
+                  <th class="text-left px-3 py-2.5 whitespace-nowrap">入库单号</th>
+                  <th class="text-left px-3 py-2.5 whitespace-nowrap">入库时间</th>
+                  <th class="text-left px-3 py-2.5 whitespace-nowrap">货品名称</th>
+                  <th class="text-right px-3 py-2.5 whitespace-nowrap">入库数量</th>
+                  <th class="text-right px-3 py-2.5 whitespace-nowrap">可质押数量</th>
+                  <th class="text-left px-3 py-2.5 whitespace-nowrap">数量单位</th>
+                  <th class="text-right px-3 py-2.5 whitespace-nowrap">入库重量</th>
+                  <th class="text-right px-3 py-2.5 whitespace-nowrap">可质押重量</th>
+                  <th class="text-left px-3 py-2.5 whitespace-nowrap">重量单位</th>
+                  <th class="text-right px-3 py-2.5 whitespace-nowrap bg-emerald-50 text-emerald-700">本次质押数量</th>
+                  <th class="text-right px-3 py-2.5 whitespace-nowrap bg-emerald-50 text-emerald-700">本次质押重量</th>
+                  <th class="text-right px-3 py-2.5 whitespace-nowrap bg-emerald-50 text-emerald-700">质押单价<br><span class="font-normal text-[10px]">（元/千克）</span></th>
+                  <th class="text-right px-3 py-2.5 whitespace-nowrap bg-emerald-50 text-emerald-700">质押货值<br><span class="font-normal text-[10px]">（元）</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                ${evalForm.rows.map((r, i) => `
+                  <tr class="border-t border-slate-100">
+                    <td class="px-3 py-3 text-slate-800 whitespace-nowrap">${r.warehouse}</td>
+                    <td class="px-3 py-3 text-slate-700 whitespace-nowrap">${r.position}</td>
+                    <td class="px-3 py-3 text-blue-600 font-mono whitespace-nowrap">${r.inboundNo}</td>
+                    <td class="px-3 py-3 text-slate-500 whitespace-nowrap">${r.inboundDate}</td>
+                    <td class="px-3 py-3 text-slate-800">
+                      <div class="font-medium">${r.productName}</div>
+                      ${r.productId ? `<div class="text-[10px] text-slate-400 font-mono">${r.productId}</div>` : ''}
+                    </td>
+                    <td class="px-3 py-3 text-right num-focus">${Utils.fmtNum(r.inboundQty)}</td>
+                    <td class="px-3 py-3 text-right num-focus">${Utils.fmtNum(r.pledgeQty)}</td>
+                    <td class="px-3 py-3 text-slate-500">${r.qtyUnit}</td>
+                    <td class="px-3 py-3 text-right num-focus">${Utils.fmtNum(r.inboundWeight)}</td>
+                    <td class="px-3 py-3 text-right num-focus">${Utils.fmtNum(r.pledgeWeight)}</td>
+                    <td class="px-3 py-3 text-slate-500">${r.weightUnit}</td>
+                    <td class="px-3 py-2 text-right editable-cell">
+                      <input type="number" min="0" max="${r.pledgeQty}" value="${r.thisPledgeQty}" ${isMyTurn ? '' : 'disabled'} oninput="onThisPledgeQtyChange(${i}, this.value)" class="w-24 px-1 py-0.5 text-right num-focus text-slate-800 ${isMyTurn ? '' : 'cursor-not-allowed text-slate-400'}">
+                    </td>
+                    <td class="px-3 py-3 text-right num-focus font-bold text-blue-700">${Utils.fmtNum(r.thisPledgeWeight)}</td>
+                    <td class="px-3 py-2 text-right editable-cell">
+                      <input type="number" min="0" step="0.01" value="${r.unitPrice}" ${isMyTurn ? '' : 'disabled'} oninput="onUnitPriceChange(${i}, this.value)" class="w-20 px-1 py-0.5 text-right num-focus text-slate-800 ${isMyTurn ? '' : 'cursor-not-allowed text-slate-400'}">
+                    </td>
+                    <td class="px-3 py-3 text-right num-focus font-bold text-blue-700">${Utils.fmtMoney(r.pledgeValue, false)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 附件（紫色背景） ============ -->
+      <div class="bg-violet-50 border border-violet-200 rounded-xl p-5 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-1 h-4 bg-violet-500 rounded"></span>
+          <h3 class="text-base font-bold text-slate-800">附件</h3>
+        </div>
+        <div class="text-xs text-violet-700 bg-violet-100 border border-violet-200 rounded p-2 mb-3">
+          可支持格式为 jpg、jpeg、png、pdf 的附件，支持多张，单个附件大小不得超过 100M 的文件。
+        </div>
+        <div class="bg-white border border-violet-200 rounded overflow-hidden">
+          <table class="w-full text-sm">
+            <thead class="bg-violet-50 text-slate-600 text-xs">
+              <tr>
+                <th class="text-left px-4 py-2.5 w-1/6"><span class="req">单据类型</span></th>
+                <th class="text-left px-4 py-2.5 w-1/6">操作</th>
+                <th class="text-left px-4 py-2.5">文件名</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-t border-violet-100">
+                <td class="px-4 py-3 text-slate-700"><span class="req">定价参考</span></td>
+                <td class="px-4 py-3">
+                  <label class="${isMyTurn ? 'cursor-pointer' : 'cursor-not-allowed'} px-3 py-1 border border-blue-400 text-blue-600 rounded text-sm font-medium flex items-center gap-1 w-fit ${isMyTurn ? 'hover:bg-blue-50' : 'opacity-50'}">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+                    +上传
+                    <input type="file" class="hidden" ${isMyTurn ? '' : 'disabled'} onchange="onAttachmentUpload(this, 'pricing')">
+                  </label>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-2">
+                    <svg class="w-3.5 h-3.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a3 3 0 00-3 3v4a5 5 0 0010 0V7a1 1 0 112 0v4a7 7 0 11-14 0V7a5 5 0 0110 0v4a3 3 0 11-6 0V7a1 1 0 012 0v4a1 1 0 102 0V7a3 3 0 00-3-3z" clip-rule="evenodd"/></svg>
+                    <span class="text-blue-600 hover:underline text-sm" onclick="alert('下载文件：牧乐肩-巴...4490 价格截图.pdf')">牧乐肩-巴...4490 价格截图.pdf</span>
+                    <span class="px-1.5 py-0.5 text-[10px] bg-violet-100 text-violet-700 rounded">上传时间：2023-12-12 12:23:32</span>
+                    ${isMyTurn ? '<button onclick="alert(\'删除定价参考附件\')" class="text-slate-400 hover:text-rose-600 text-xs ml-1">×</button>' : ''}
+                  </div>
+                </td>
+              </tr>
+              <tr class="border-t border-violet-100">
+                <td class="px-4 py-3 text-slate-700">其他</td>
+                <td class="px-4 py-3">
+                  <label class="${isMyTurn ? 'cursor-pointer' : 'cursor-not-allowed'} px-3 py-1 border border-blue-400 text-blue-600 rounded text-sm font-medium flex items-center gap-1 w-fit ${isMyTurn ? 'hover:bg-blue-50' : 'opacity-50'}">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+                    +上传
+                    <input type="file" class="hidden" ${isMyTurn ? '' : 'disabled'} onchange="onAttachmentUpload(this, 'other')">
+                  </label>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-2">
+                    <svg class="w-3.5 h-3.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a3 3 0 00-3 3v4a5 5 0 0010 0V7a1 1 0 112 0v4a7 7 0 11-14 0V7a5 5 0 0110 0v4a3 3 0 11-6 0V7a1 1 0 012 0v4a1 1 0 102 0V7a3 3 0 00-3-3z" clip-rule="evenodd"/></svg>
+                    <span class="text-blue-600 hover:underline text-sm" onclick="alert('下载文件：明细1.pdf')">明细1.pdf</span>
+                    ${isMyTurn ? '<button onclick="alert(\'删除其他附件\')" class="text-slate-400 hover:text-rose-600 text-xs ml-1">×</button>' : ''}
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ============ 确认情况 + 驳回说明（紫色背景） ============ -->
+      <div class="bg-violet-50 border border-violet-200 rounded-xl p-5 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-1 h-4 bg-violet-500 rounded"></span>
+          <h3 class="text-base font-bold text-slate-800">确认情况</h3>
+        </div>
+        <div class="bg-white border border-violet-200 rounded p-4 mb-3">
+          <div class="flex items-center gap-6 text-sm">
+            <span class="req text-slate-700 whitespace-nowrap">通过/驳回</span>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="radio" name="eval-result" value="pass" ${evalForm.confirm === 'pass' ? 'checked' : ''} onchange="evalForm.confirm='pass'; evalForm.rejectReason=''; refresh()" ${isMyTurn ? '' : 'disabled'}>
+              <span class="text-slate-700">通过</span>
+              <span class="help-icon">?</span>
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="radio" name="eval-result" value="reject" ${evalForm.confirm === 'reject' ? 'checked' : ''} onchange="evalForm.confirm='reject'; refresh()" ${isMyTurn ? '' : 'disabled'}>
+              <span class="text-slate-700">驳回</span>
+              <span class="help-icon">?</span>
+            </label>
+            ${!isMyTurn ? `<span class="text-xs text-slate-400 ml-2">（当前状态：${statusText(f.status)}，只读）</span>` : ''}
+          </div>
+        </div>
+        ${evalForm.confirm === 'reject' ? `
+          <div class="bg-white border border-violet-200 rounded p-4">
+            <div class="text-rose-500 font-medium text-sm mb-2">驳回说明 <span class="text-rose-500">*</span></div>
+            <textarea id="reject-reason" maxlength="100" ${isMyTurn ? '' : 'disabled'} oninput="evalForm.rejectReason = this.value" placeholder="输入内容" class="w-full px-3 py-2 border border-slate-200 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none resize-none" rows="3">${evalForm.rejectReason}</textarea>
+            <div class="text-right text-xs text-slate-400 mt-1">已输入 <span id="reject-count">${evalForm.rejectReason.length}</span>/100</div>
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- 底部固定操作栏 -->
+      <div class="footer-spacer"></div>
+      <div class="footer-actions">
+        <div class="max-w-[1280px] mx-auto px-6 flex items-center justify-center gap-3">
+          <a href="${Utils.nav('/platform/approval-financing')}" class="px-6 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">取消</a>
+          <button onclick="submitEval()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-bold flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+            提交
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  function statusText(s) {
+    return ({ draft: '未提交', pending_supervisor_eval: '⏳ 待评估货值', pending_owner_confirm: '⏳ 待融资方确认',
+      pending_supervisor: '⏳ 待监管方盖章', pending_guarantor: '⏳ 待担保方审核', pending_funding: '⏳ 待资金方审核',
+      released: '✓ 已放款', rejected: '🔴 驳回', voided: '⚫ 作废' })[s] || s;
+  }
+
+  // ============ 行为 ============
+  window.onAttachmentUpload = function(input, kind) {
+    if (input.files && input.files[0]) {
+      Utils.toast(`已上传 ${kind === 'pricing' ? '定价参考' : '其他'}：${input.files[0].name}`, 'success');
+    }
+  };
+  window.onThisPledgeQtyChange = onThisPledgeQtyChange;
+  window.onUnitPriceChange = onUnitPriceChange;
+
+  window.submitEval = function() {
+    if (!isMyTurn) {
+      Utils.toast(`当前状态：${statusText(f.status)}，不可操作`, 'warning');
+      return;
+    }
+    if (!evalForm.confirm) { Utils.toast('请选择通过/驳回', 'warning'); return; }
+    if (evalForm.confirm === 'reject' && !evalForm.rejectReason.trim()) { Utils.toast('驳回说明为必填项', 'warning'); return; }
+    const passText = evalForm.confirm === 'pass' ? '已通过评估：' : '已驳回评估：';
+    Utils.toast(`${passText}${f.bizNo}（mock）`, evalForm.confirm === 'pass' ? 'success' : 'warning', 1800);
+    setTimeout(() => window.location.href = Utils.nav('/platform/approval-financing'), 1200);
+  };
+
+  function refresh() {
+    document.getElementById('app').innerHTML = Components.pageShell({
+      title: '评估融资货值',
+      currentPath: '/platform/approval-financing',
+      breadcrumb: [
+        { label: '工作台', path: '/dashboard' },
+        { label: '融资管理', path: '/platform/approval-financing' },
+        { label: '待监管方评估货值', path: '/platform/approval-financing' },
+        { label: '评估融资货值', path: '/platform/approval-financing-detail' },
+      ],
+      extra: '',
+      content: render(),
+    });
+  }
+
+  refresh();
+</script>
+</body>
+</html>

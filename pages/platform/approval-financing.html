@@ -45,8 +45,8 @@
           const showAudit = rec.status === 'pending_supervisor';
           const showDetail = true;
           return `
-            ${showDetail ? `<button onclick="alert('查看 ${rec.bizNo} 详情（待完善审批内容）')" class="text-blue-600 hover:underline text-xs font-medium">详情</button>` : ''}
-            ${showEvaluate ? `<button onclick="alert('即将对 ${rec.bizNo} 进行待监管方评估货值（待完善审批内容）')" class="text-amber-600 hover:underline text-xs font-medium">待监管方评估货值</button>` : ''}
+            ${showDetail ? `<button onclick="Utils.nav('/platform/approval-financing-detail?id=' + '${rec.id}')" class="text-blue-600 hover:underline text-xs font-medium">详情</button>` : ''}
+            ${showEvaluate ? `<button onclick="Utils.nav('/platform/approval-financing-detail?id=' + '${rec.id}')" class="text-amber-600 hover:underline text-xs font-medium">待监管方评估货值</button>` : ''}
             ${showAudit ? `<button onclick="alert('即将对 ${rec.bizNo} 进行待监管方盖章（待完善审批内容）')" class="text-blue-600 hover:underline text-xs font-medium">待监管方盖章</button>` : ''}
           `;
         },

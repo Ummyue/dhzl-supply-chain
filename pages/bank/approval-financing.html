@@ -51,7 +51,7 @@
           const showApprove = rec.status === 'pending_funding';
           const showDetail = true;
           return `
-            ${showDetail ? `<button onclick="alert('查看 ${rec.bizNo} 详情（待完善审批内容）')" class="text-blue-600 hover:underline text-xs font-medium">详情</button>` : ''}
+            ${showDetail ? `<button onclick="alert('查看 ${rec.bizNo} 详情（资金方详情页 v1.7.76+ 待开发）')" class="text-blue-600 hover:underline text-xs font-medium">详情</button>` : ''}
             ${showApprove ? `<button onclick="alert('即将对 ${rec.bizNo} 进行资方审核（待完善审批内容）')" class="text-violet-600 hover:underline text-xs font-medium">资方审核</button>` : ''}
           `;
         },

@@ -35,6 +35,18 @@
     { id: 'voided', label: '作废' },
   ];
 
+  // v1.7.75：角色 → 默认 tab 映射（演示时进入列表页自动切到该角色该处理的节点）
+  const ROLE_DEFAULT_TAB = {
+    platform:   'pending_supervisor_eval',  // 监管方：待评估货值
+    guarantor:  'pending_guarantor',        // 担保方：待核保
+    bank:       'pending_funding',          // 资金方：待审核
+    customer:   'pending_supervisor_eval',  // 货主方：自己的申请处于"待监管方评估货值"（与列表汇总口径一致）
+  };
+  function _getDefaultTab() {
+    const role = (typeof Utils !== 'undefined' && Utils.getRole) ? Utils.getRole() : 'platform';
+    return ROLE_DEFAULT_TAB[role] || 'all';
+  }
+
   // 公共筛选器结构（金融从业者使用习惯）
   const DEFAULT_FILTER_FIELDS = [
     { key: 'bizNo', label: '融资申请编号', type: 'search' },
@@ -283,7 +295,8 @@
     //   onAction: 可选（点击 row 时回调，例：跳转详情）
     // }
     const state = {
-      currentTab: 'all',
+      // v1.7.75：根据登录角色自动切到该角色该处理的 tab（演示时少点一下）
+      currentTab: _getDefaultTab(),
       bizNo: '', applicant: '', bank: '', productName: '',
       guarantor: '', supervisor: '', pledgeAssetNo: '',
       startDate: '', endDate: '',
