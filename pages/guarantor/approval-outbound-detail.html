@@ -115,7 +115,10 @@
   // 6 步步骤条 + 8 字段信息 + 12 列拟解押 sticky 表 + 出库/还款信息
 
   const urlId = new URLSearchParams(window.location.search).get('id') || 'jy_001';
+  // v1.7.80：列表行 status 与 detail 同步（避免列表显示"待监管方确认"但详情显示"已还款"）
+  const _listItem = (MockData.dischargeList || []).find(p => p.id === urlId);
   const detail = (MockData.dischargeDetail && MockData.dischargeDetail[urlId]) || (MockData.dischargeDetail && MockData.dischargeDetail.jy_001) || null;
+  if (detail && _listItem) detail.statusTag = _listItem.status;  // 列表 status 优先（保持演示一致）
   const financing = detail.financingInfo || {};
   const pledge    = detail.pledgeAssetInfo || {};
   const repay     = detail.repaymentInfo || {};

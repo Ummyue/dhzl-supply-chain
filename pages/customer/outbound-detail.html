@@ -66,6 +66,9 @@
 
     /* title bar */
     .pd-title-bar { display: inline-block; width: 4px; height: 18px; background: #2563eb; border-radius: 1px; margin-right: 8px; vertical-align: middle; }
+    /* v1.7.80 底部固定操作栏 */
+    .footer-actions { position: fixed; bottom: 0; left: 0; right: 0; z-index: 40; background: #fff; border-top: 1px solid #e2e8f0; padding: 14px 0; box-shadow: 0 -2px 8px rgba(0,0,0,0.04); }
+    .footer-spacer { height: 80px; }
   </style>
 </head>
 <body class="bg-slate-50">
@@ -80,7 +83,10 @@
   // 6 步步骤条 + 8 字段信息 + 12 列拟解押 sticky 表 + 出库/还款信息
 
   const urlId = new URLSearchParams(window.location.search).get('id') || 'jy_001';
+  // v1.7.80：列表行 status 与 detail 同步（避免列表显示"待监管方确认"但详情显示"已还款"）
+  const _listItem = (MockData.dischargeList || []).find(p => p.id === urlId);
   const detail = (MockData.dischargeDetail && MockData.dischargeDetail[urlId]) || (MockData.dischargeDetail && MockData.dischargeDetail.jy_001) || null;
+  if (detail && _listItem) detail.statusTag = _listItem.status;  // 列表 status 优先（保持演示一致）
   const financing = detail.financingInfo || {};
   const pledge    = detail.pledgeAssetInfo || {};
   const repay     = detail.repaymentInfo || {};
@@ -199,8 +205,48 @@
           ${finRow('还款账户', `<span class="num-focus text-blue-700">${repay.repayAccount || '中国银行西安华陆大厦支行 102084339010'}</span>`)}
         </div>
       </div>
+      ${renderFooterActions(detail.statusTag || 'pending_supervisor')}
     `;
   }
+
+  // v1.7.80 底部固定操作栏：盖章态（pending_funding 货主方）显示【单据盖章】+【返回】
+  // 终态/其他节点：保持原状（货主方此前无操作按钮，仅 spacer 占位）
+  function renderFooterActions(status) {
+    const isSealingNode = status === 'pending_funding';
+    const isFinal = ['completed', 'rejected', 'invalid'].includes(status);
+    if (isSealingNode) {
+      return `
+        <div class="footer-spacer"></div>
+        <div class="footer-actions">
+          <div class="max-w-[1280px] mx-auto px-6 flex items-center justify-center gap-4">
+            <button onclick="goSealDocument()" class="px-10 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm font-medium flex items-center gap-1.5">
+              <span class="inline-flex w-4 h-4 bg-yellow-300 rounded items-center justify-center text-[10px]">📄</span>
+              单据盖章
+            </button>
+            <button onclick="goBackToList()" class="px-10 py-2.5 border border-slate-300 text-slate-700 hover:bg-slate-50 rounded text-sm font-medium">返回</button>
+          </div>
+        </div>
+      `;
+    }
+    if (isFinal) {
+      return `
+        <div class="footer-spacer"></div>
+        <div class="footer-actions">
+          <div class="max-w-[1280px] mx-auto px-6 flex items-center justify-center gap-2 text-sm text-slate-500">
+            <span>流程已结束：<b class="text-slate-700">${statusText(status)}</b>，当前状态不可操作。请通过面包屑返回列表。</span>
+          </div>
+        </div>
+      `;
+    }
+    return '<div class="footer-spacer"></div>';
+  }
+
+  window.goSealDocument = () => {
+    window.location.href = `${Utils.nav('/customer/seal-document')}?financingNo=${encodeURIComponent(financing.financingNo || 'RZ202411280002')}`;
+  };
+  window.goBackToList = () => {
+    window.location.href = Utils.nav('/customer/outbound');
+  };
 
   function renderSteps(detailObj) {
     const status = detailObj.statusTag;

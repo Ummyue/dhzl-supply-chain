@@ -2748,6 +2748,21 @@ const MockData = {
     },
   },
 
+  // ========== v1.7.80 解押出库盖章单据（6 张占位单据） ==========
+  // 状态机：每张单据独立盖章 + 清除 — financingNo → 6 张单据
+  // 单据类型：解押出库申请表/质物清单/质押反担保合同/担保函/出质方承诺书/监管方确认函
+  // sealed: false（未盖章）/ true（已盖章）+ sealedBy + sealedAt
+  sealDocumentsByFinancing: {
+    'default': [
+      { id: 'doc_001', type: '解押出库申请表', title: '冻品解押出库申请表',       name: '01-解押出库申请表.pdf',     sealed: false, sealedBy: '', sealedAt: '' },
+      { id: 'doc_002', type: '质物清单',       title: '质物清单（解押部分）',     name: '02-质物清单.pdf',           sealed: false, sealedBy: '', sealedAt: '' },
+      { id: 'doc_003', type: '质押反担保合同', title: '质押反担保合同（解押条款）', name: '03-质押反担保合同.pdf',     sealed: false, sealedBy: '', sealedAt: '' },
+      { id: 'doc_004', type: '担保函',         title: '担保函（解押相关）',       name: '04-担保函.pdf',             sealed: false, sealedBy: '', sealedAt: '' },
+      { id: 'doc_005', type: '出质方承诺书',   title: '出质方承诺书',             name: '05-出质方承诺书.pdf',       sealed: false, sealedBy: '', sealedAt: '' },
+      { id: 'doc_006', type: '监管方确认函',   title: '监管方确认函',             name: '06-监管方确认函.pdf',       sealed: false, sealedBy: '', sealedAt: '' },
+    ],
+  },
+
   // ========== v1.7.24 放还款详情（资金↔客户看的视角） ==========
   // 状态机：disbursed（已放款）/ partial（部分还款）/ cleared（已结清）/ overdue（逾期）
   // 每行关联一笔"存贷资产编号"（即质押清单 MPCB_），查看跳转质押详情

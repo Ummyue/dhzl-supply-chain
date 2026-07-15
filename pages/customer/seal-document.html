@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>单据盖章 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+  <style>
+    /* 底部固定操作栏 */
+    .footer-actions { position: fixed; bottom: 0; left: 0; right: 0; z-index: 40; background: #fff; border-top: 1px solid #e2e8f0; padding: 14px 0; box-shadow: 0 -2px 8px rgba(0,0,0,0.04); }
+    .footer-spacer { height: 96px; }
+    /* 缩放控件浮动 */
+    .zoom-controls { position: absolute; left: 16px; bottom: 16px; z-index: 5; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 4px 6px; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .zoom-btn { padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; user-select: none; }
+    .zoom-btn:hover { background: #f1f5f9; }
+    .zoom-pct { padding: 0 8px; font-size: 13px; color: #475569; min-width: 64px; text-align: center; }
+    /* 单据纸张 */
+    .doc-paper { background: #fff; border: 1px solid #cbd5e1; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 48px 56px; min-height: 760px; position: relative; transform-origin: top center; transition: transform 0.15s ease; }
+    .doc-paper::before, .doc-paper::after { content: ''; position: absolute; width: 18px; height: 18px; border: 2px solid #94a3b8; }
+    .doc-paper::before { top: 8px; left: 8px; border-right: none; border-bottom: none; }
+    .doc-paper::after  { top: 8px; right: 8px; border-left: none; border-bottom: none; }
+    .doc-corners-bl, .doc-corners-br { position: absolute; width: 18px; height: 18px; border: 2px solid #94a3b8; bottom: 8px; }
+    .doc-corners-bl { left: 8px; border-right: none; border-top: none; }
+    .doc-corners-br { right: 8px; border-left: none; border-top: none; }
+    .doc-title { text-align: center; font-size: 20px; font-weight: 700; color: #1e293b; margin-bottom: 18px; letter-spacing: 4px; }
+    .doc-section-title { font-size: 14px; font-weight: 600; color: #1e293b; margin: 18px 0 8px; border-left: 3px solid #475569; padding-left: 8px; }
+    .doc-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .doc-table th, .doc-table td { border: 1px solid #475569; padding: 6px 8px; text-align: center; color: #1e293b; }
+    .doc-table th { background: #f1f5f9; font-weight: 600; }
+    .doc-p { font-size: 12px; color: #1e293b; line-height: 1.9; text-indent: 2em; margin: 6px 0; }
+    .doc-row { display: flex; font-size: 12px; margin: 4px 0; }
+    .doc-row .lbl { color: #475569; min-width: 100px; }
+    .doc-row .val { color: #1e293b; flex: 1; border-bottom: 1px dotted #cbd5e1; }
+    .doc-sign { display: flex; justify-content: space-between; margin-top: 64px; font-size: 12px; color: #1e293b; }
+    /* 印章 */
+    .seal-stamp { position: absolute; width: 88px; height: 88px; border: 3px solid #dc2626; border-radius: 50%; color: #dc2626; display: flex; align-items: center; justify-content: center; flex-direction: column; font-weight: 700; font-size: 12px; line-height: 1.2; transform: rotate(-12deg); opacity: 0.85; pointer-events: none; }
+    .seal-stamp .seal-name { font-size: 9px; letter-spacing: 1px; margin-top: 2px; }
+    /* 缩略图 */
+    .thumb-item { border: 2px solid #e2e8f0; border-radius: 6px; padding: 6px; background: #fff; cursor: pointer; transition: all 0.15s; position: relative; }
+    .thumb-item:hover { border-color: #93c5fd; }
+    .thumb-item.active { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,0.15); }
+    .thumb-item.sealed { border-color: #10b981; }
+    .thumb-preview { aspect-ratio: 1/1.414; background: #f8fafc; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #94a3b8; margin-bottom: 4px; position: relative; overflow: hidden; }
+    .thumb-preview .mock { padding: 8px; font-size: 8px; line-height: 1.3; color: #94a3b8; text-align: center; }
+    .thumb-name { font-size: 11px; color: #475569; text-align: center; line-height: 1.3; word-break: break-all; }
+    .thumb-badge { position: absolute; top: -6px; right: -6px; background: #10b981; color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+    .thumb-actions { display: flex; gap: 4px; margin-top: 6px; }
+    .thumb-btn { flex: 1; padding: 3px 0; font-size: 10px; border-radius: 3px; cursor: pointer; border: 1px solid; }
+    .thumb-btn-seal { border-color: #2563eb; color: #2563eb; background: #fff; }
+    .thumb-btn-seal:hover { background: #eff6ff; }
+    .thumb-btn-clear { border-color: #fca5a5; color: #dc2626; background: #fff; }
+    .thumb-btn-clear:hover { background: #fef2f2; }
+    .thumb-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    /* 缩放模式光标 */
+    body.zoom-in-mode { cursor: zoom-in; }
+    body.zoom-out-mode { cursor: zoom-out; }
+    .doc-paper.zoomable { cursor: zoom-in; }
+  </style>
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.80 货主方【单据盖章】- 待融资方盖章节点 ============
+  // 6 张占位单据（解押出库申请表/质物清单/质押反担保合同/担保函/出质方承诺书/监管方确认函）
+  // 交互：右侧缩略图切换/盖章/清除 + 底部一键盖章/作废 + 左下放大缩小
+
+  const _role = Utils.getRole();
+  const _user = MockData.users[_role] || MockData.users.customer;
+  const _sealer = _user.name || '陈志强';        // 当前盖章员
+  const _sealerCompany = _user.company || '郑州某冷链贸易有限公司';
+
+  // URL 参数
+  const urlParams = new URLSearchParams(window.location.search);
+  const financingNo = urlParams.get('financingNo') || 'RZ202411280002';
+  // 调试用：预设某些单据已盖章（URL ?preSealed=0,2,4 表示 0/2/4 已盖章）
+  const preSealedParam = urlParams.get('preSealed') || localStorage.getItem('preSealed') || '';
+  if (preSealedParam) localStorage.removeItem('preSealed');
+
+  // 当前单据（数据源 fallback 到 default）
+  const _docsSource = (MockData.sealDocumentsByFinancing && (MockData.sealDocumentsByFinancing[financingNo] || MockData.sealDocumentsByFinancing['default'])) || [];
+  // 内存中可变（盖章/清除会更新）
+  let _docs = _docsSource.map(d => ({ ...d }));
+  // 预设盖章状态（用于演示）
+  if (preSealedParam) {
+    const sealedIdxs = preSealedParam.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+    sealedIdxs.forEach(i => {
+      if (_docs[i]) {
+        _docs[i].sealed = true;
+        _docs[i].sealedBy = _sealer;
+        const now = new Date();
+        _docs[i].sealedAt = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+      }
+    });
+  }
+  let _currentIdx = 0;
+  let _zoom = 1.0;
+  let _zoomMode = ''; // 'in' / 'out' / ''
+
+  function render() {
+    return `
+      ${renderHeader()}
+      ${renderMain()}
+      ${renderFooterActions()}
+    `;
+  }
+
+  function renderHeader() {
+    const cur = _docs[_currentIdx];
+    return `
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3 text-sm">
+          <a href="${Utils.nav('/customer/outbound')}" class="flex items-center gap-1 text-slate-600 hover:text-blue-600">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            返回解押出库申请
+          </a>
+          <span class="text-slate-300">|</span>
+          <span class="text-slate-700">融资编号：<span class="font-mono text-blue-600">${financingNo}</span></span>
+          <span class="text-slate-300">|</span>
+          <span class="text-slate-700">当前盖章员：<b class="text-purple-700">${_sealer}</b>（${_sealerCompany}）</span>
+        </div>
+        <div class="text-sm text-slate-600">
+          已盖章 <b class="text-emerald-600">${_docs.filter(d => d.sealed).length}</b> / ${_docs.length} 张
+        </div>
+      </div>
+    `;
+  }
+
+  function renderMain() {
+    return `
+      <div class="grid grid-cols-12 gap-4 mb-4">
+        <!-- 左侧：单据显示区（8 列）-->
+        <div class="col-span-8">
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 relative" style="min-height: 820px;">
+            <!-- 顶部：单据序号 -->
+            <div class="text-center text-sm text-slate-500 mb-4">
+              <b class="text-slate-800">${_currentIdx + 1}</b> / ${_docs.length}
+            </div>
+            <!-- 单据纸张 -->
+            <div class="flex items-start justify-center">
+              ${renderDocPaper(_docs[_currentIdx])}
+            </div>
+            <!-- 缩放控件 -->
+            <div class="zoom-controls">
+              <span class="zoom-btn" onclick="zoomIn()" title="放大">放大</span>
+              <span class="zoom-btn" onclick="zoomOut()" title="缩小">缩小</span>
+              <span class="zoom-pct">缩放比例：${Math.round(_zoom * 100)}%</span>
+            </div>
+          </div>
+        </div>
+        <!-- 右侧：缩略图列表（4 列）-->
+        <div class="col-span-4">
+          <div class="bg-white border border-slate-200 rounded-xl p-4 sticky top-4">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-bold text-slate-800">📂 单据目录（${_docs.length}）</h3>
+              <span class="text-xs text-emerald-600">已盖章 ${_docs.filter(d => d.sealed).length}/${_docs.length}</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 max-h-[1400px] overflow-y-auto pr-1">
+              ${_docs.map((d, i) => renderThumb(d, i)).join('')}
+            </div>
+            <!-- 操作提示 -->
+            <div class="mt-4 px-3 py-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800">
+              💡 提示：点击缩略图可查看单据，每张单据可独立盖章/清除。底部【一键盖章】可批量盖章。
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderDocPaper(d) {
+    const sealed = d.sealed;
+    return `
+      <div class="doc-paper" style="transform: scale(${_zoom}); width: 760px; transform-origin: top center;">
+        <span class="doc-corners-bl"></span><span class="doc-corners-br"></span>
+        ${sealed ? renderSealStamp() : ''}
+        ${renderDocBody(d)}
+        ${sealed ? `
+          <div class="text-right text-xs text-slate-500 mt-6">
+            <div>盖章人：${d.sealedBy}</div>
+            <div>盖章时间：${d.sealedAt}</div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  function renderSealStamp() {
+    return `
+      <div class="seal-stamp" style="right: 80px; bottom: 80px;">
+        <div>融资方</div>
+        <div class="seal-name">${_sealerCompany.slice(0, 4)}</div>
+      </div>
+    `;
+  }
+
+  function renderDocBody(d) {
+    if (d.type === '解押出库申请表') {
+      return `
+        <div class="doc-title">${d.title}</div>
+        <div class="doc-section-title">一、出质方申请</div>
+        <table class="doc-table">
+          <tr><th>出质方</th><td colspan="3" style="text-align:left; padding-left:16px;">${_sealerCompany}</td><th>联系人</th><td>雷珊珊</td></tr>
+          <tr><th>联系电话</th><td colspan="3" style="text-align:left; padding-left:16px;">18528305859</td><th>质权方</th><td>郑州农业融担保股份有限公司</td></tr>
+          <tr><th>监管方</th><td colspan="5" style="text-align:left; padding-left:16px;">大河智链物流（郑州）有限公司</td></tr>
+        </table>
+        <div class="doc-section-title">二、拟解押出库的质物清单</div>
+        <table class="doc-table" style="table-layout: fixed; word-break: break-all;">
+          <colgroup>
+            <col style="width:20%"><col style="width:18%"><col style="width:11%"><col style="width:13%"><col style="width:8%"><col style="width:11%"><col style="width:9%"><col style="width:10%">
+          </colgroup>
+          <tr><th>对应入库时质物清单编号</th><th>借据号</th><th>货物名称</th><th>厂号</th><th>拟出库件数</th><th>拟出库重量(kg)</th><th>拟出库时间</th><th>备注</th></tr>
+          <tr><td>DHZL_JMY_2025122201</td><td>LN3019202590652601</td><td>水煮牛肉 Qh</td><td>3191397 蒙古百万山</td><td>100</td><td>2000</td><td>2026.1.8</td><td>ZXT20251112004</td></tr>
+          <tr><td colspan="6" style="text-align:right; font-weight:600;">合计</td><td>2000</td><td>—</td></tr>
+        </table>
+        <p class="doc-p">本人/本公司声明：本次解押操作符合相关质押合同及协议约定，申请解押的货物信息准确无误，同意监管方按质权人指令办理出库手续，遵守出库相关流程。</p>
+        <div class="doc-sign">
+          <span>出质方（盖章）：</span>
+          <span>日期：<u>2025 年 1 月 8 日</u></span>
+        </div>
+      `;
+    }
+    if (d.type === '质物清单') {
+      return `
+        <div class="doc-title">${d.title}</div>
+        <div class="doc-section-title">一、基本信息</div>
+        <table class="doc-table">
+          <tr><th>质物清单编号</th><td>MPCB_14910955281409</td><th>对应融资编号</th><td style="font-family:monospace; color:#2563eb;">${financingNo}</td></tr>
+          <tr><th>出质方</th><td>${_sealerCompany}</td><th>质权方</th><td>郑州农业融担保股份有限公司</td></tr>
+          <tr><th>监管方</th><td>大河智链物流（郑州）有限公司</td><th>出具日期</th><td>2025-01-08</td></tr>
+        </table>
+        <div class="doc-section-title">二、拟解押货物明细</div>
+        <table class="doc-table">
+          <tr><th>序号</th><th>货物名称</th><th>规格</th><th>件数</th><th>重量(kg)</th><th>单价(元/kg)</th><th>货值(元)</th><th>拟解押数量</th></tr>
+          <tr><td>1</td><td>水煮牛肉 Qh</td><td>500g/袋</td><td>100</td><td>2000</td><td>76</td><td>152,000.00</td><td>100 件</td></tr>
+          <tr><td>2</td><td>牛肉-胸肉</td><td>2kg/块</td><td>140</td><td>3000</td><td>76</td><td>228,000.00</td><td>0 件</td></tr>
+        </table>
+        <p class="doc-p">本清单作为本次解押出库的凭证，经出质方与监管方共同确认无误。</p>
+        <div class="doc-sign">
+          <span>出质方（盖章）：</span>
+          <span>监管方（签字）：</span>
+        </div>
+      `;
+    }
+    if (d.type === '质押反担保合同') {
+      return `
+        <div class="doc-title">${d.title}</div>
+        <div class="doc-section-title">合同编号：ZY-FDB-2025-011208</div>
+        <p class="doc-p">甲方（出质方）：${_sealerCompany}</p>
+        <p class="doc-p">乙方（质权方）：郑州农业融担保股份有限公司</p>
+        <p class="doc-p">丙方（监管方）：大河智链物流（郑州）有限公司</p>
+        <p class="doc-p">鉴于甲方与乙方签订了编号为 ${financingNo} 的《融资合同》，甲方以其合法所有的冻品货物向乙方提供质押反担保，并由丙方对质物进行监管。现就本次解押出库相关事宜，三方达成如下协议：</p>
+        <p class="doc-p"><b>一、解押货物范围：</b>本次拟解押出库的质物清单详见附件 1（质物清单编号：MPCB_14910955281409）。</p>
+        <p class="doc-p"><b>二、各方义务：</b>甲方应保证解押货物的真实性、合法性；乙方应在收到还款后及时出具解押确认；丙方应按乙方指令办理出库手续。</p>
+        <p class="doc-p"><b>三、违约责任：</b>任何一方违反本合同约定，应赔偿守约方因此遭受的全部损失。</p>
+        <div class="doc-sign">
+          <span>甲方（盖章）：${_sealerCompany}</span>
+          <span>日期：<u>2025 年 1 月 8 日</u></span>
+        </div>
+      `;
+    }
+    if (d.type === '担保函') {
+      return `
+        <div class="doc-title">${d.title}</div>
+        <p class="doc-p">致：郑州农业融担保股份有限公司</p>
+        <p class="doc-p">${_sealerCompany} 兹就与贵司签订的《融资合同》（编号：${financingNo}）项下的质物解押事宜，出具本担保函如下：</p>
+        <p class="doc-p"><b>一、担保范围：</b>本次解押出库质物清单中载明的全部货物。</p>
+        <p class="doc-p"><b>二、担保事项：</b>本公司保证解押货物的所有权清晰，不存在任何第三方权利主张。如因货物权属问题给贵司造成损失的，本公司愿承担全部赔偿责任。</p>
+        <p class="doc-p"><b>三、担保期限：</b>自本担保函出具之日起至本次解押出库手续办理完毕之日止。</p>
+        <div class="doc-sign">
+          <span>担保方（盖章）：${_sealerCompany}</span>
+          <span>日期：<u>2025 年 1 月 8 日</u></span>
+        </div>
+      `;
+    }
+    if (d.type === '出质方承诺书') {
+      return `
+        <div class="doc-title">${d.title}</div>
+        <p class="doc-p">${_sealerCompany}（以下简称"本公司"）就编号为 ${financingNo} 的融资合同项下的质物解押事宜，作出如下承诺：</p>
+        <p class="doc-p"><b>一、</b>本公司保证本次解押出库的货物与质物清单中所列货物完全一致，不存在调包、替换、虚假出库等任何违规行为。</p>
+        <p class="doc-p"><b>二、</b>本公司保证解押货物的来源合法、产权清晰，不存在任何质押、抵押、查封等权利限制。</p>
+        <p class="doc-p"><b>三、</b>本公司承诺按时足额偿还融资本息，如发生违约，自愿接受质权方按合同约定处置质物。</p>
+        <p class="doc-p"><b>四、</b>本公司理解并同意，监管方将按质权人的书面指令办理出库手续，监管方不承担货物验收责任。</p>
+        <div class="doc-sign">
+          <span>出质方（盖章）：${_sealerCompany}</span>
+          <span>日期：<u>2025 年 1 月 8 日</u></span>
+        </div>
+      `;
+    }
+    if (d.type === '监管方确认函') {
+      return `
+        <div class="doc-title">${d.title}</div>
+        <p class="doc-p">致：郑州农业融担保股份有限公司</p>
+        <p class="doc-p">大河智链物流（郑州）有限公司作为编号 ${financingNo} 融资合同项下质物的监管方，现就出质方 ${_sealerCompany} 提出的解押出库申请，作出如下确认：</p>
+        <p class="doc-p"><b>一、</b>经我方现场核查，本次拟解押出库的质物（清单编号：MPCB_14910955281409）实际库存与系统记录一致。</p>
+        <p class="doc-p"><b>二、</b>质物状态正常，无变质、损毁、缺失等异常情况，具备出库条件。</p>
+        <p class="doc-p"><b>三、</b>我方已收到质权方的出库指令，将在出质方完成本批出库所涉全部单据盖章手续后，按指令办理出库。</p>
+        <p class="doc-p"><b>四、</b>本确认函仅证明质物库存与状态，不构成对货物质量、权属的确认或担保。</p>
+        <div class="doc-sign">
+          <span>监管方（盖章）：大河智链物流（郑州）有限公司</span>
+          <span>日期：<u>2025 年 1 月 8 日</u></span>
+        </div>
+      `;
+    }
+    return `<div class="doc-title">${d.title || d.type}</div><p class="doc-p">（单据内容待补充）</p>`;
+  }
+
+  function renderThumb(d, i) {
+    const isActive = i === _currentIdx;
+    const isSealed = d.sealed;
+    return `
+      <div class="thumb-item ${isActive ? 'active' : ''} ${isSealed ? 'sealed' : ''}" onclick="selectDoc(${i})">
+        ${isSealed ? '<span class="thumb-badge">✓ 已盖章</span>' : ''}
+        <div class="thumb-preview">
+          <div class="mock">${d.type}<br/>第 ${i+1}/${_docs.length} 页</div>
+        </div>
+        <div class="thumb-name">${d.name}</div>
+        <div class="thumb-actions">
+          ${isSealed
+            ? `<button class="thumb-btn thumb-btn-clear" onclick="event.stopPropagation(); clearSeal(${i})">清除</button>`
+            : `<button class="thumb-btn thumb-btn-seal" onclick="event.stopPropagation(); sealDoc(${i})">盖章</button>`
+          }
+        </div>
+      </div>
+    `;
+  }
+
+  function renderFooterActions() {
+    const allSealed = _docs.every(d => d.sealed);
+    return `
+      <div class="footer-spacer"></div>
+      <div class="footer-actions">
+        <div class="max-w-[1280px] mx-auto px-6 flex items-center justify-between gap-4">
+          <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none">
+            <input type="checkbox" id="agreeCheck" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+            <span>我方已经认真阅读并知悉上述融资相关协议文件的内容，自愿承担融资相关协议文件的义务和风险。</span>
+          </label>
+          <div class="flex items-center gap-3">
+            <button onclick="goBack()" class="px-6 py-2 border border-slate-300 text-slate-700 hover:bg-slate-50 rounded text-sm font-medium">返回</button>
+            <button onclick="voidAll()" class="px-6 py-2 border border-amber-300 text-amber-700 hover:bg-amber-50 rounded text-sm font-medium">${allSealed ? '清除全部盖章' : '作废'}</button>
+            <button onclick="downloadDocs()" class="px-6 py-2 border border-blue-300 text-blue-700 hover:bg-blue-50 rounded text-sm font-medium">下载</button>
+            <button onclick="sealAll()" class="px-6 py-2 ${allSealed ? 'bg-slate-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded text-sm font-medium flex items-center gap-1.5" ${allSealed ? 'disabled' : ''}>
+              <span class="inline-flex w-4 h-4 bg-yellow-400 rounded items-center justify-center text-[10px]">⚡</span>
+              一键盖章
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ============ 交互 ============
+  window.selectDoc = (i) => {
+    _currentIdx = i;
+    _zoomMode = '';
+    document.body.classList.remove('zoom-in-mode', 'zoom-out-mode');
+    refresh();
+  };
+
+  window.sealDoc = (i) => {
+    if (!document.getElementById('agreeCheck').checked) {
+      alert('请先勾选底部"我方已经认真阅读并知悉上述融资相关协议文件的内容"协议确认');
+      return;
+    }
+    _docs[i].sealed = true;
+    _docs[i].sealedBy = _sealer;
+    const now = new Date();
+    _docs[i].sealedAt = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    refresh();
+  };
+
+  window.clearSeal = (i) => {
+    if (!confirm(`确认要清除「${_docs[i].name}」的盖章吗？`)) return;
+    _docs[i].sealed = false;
+    _docs[i].sealedBy = '';
+    _docs[i].sealedAt = '';
+    refresh();
+  };
+
+  window.sealAll = () => {
+    if (!document.getElementById('agreeCheck').checked) {
+      alert('请先勾选底部"我方已经认真阅读并知悉上述融资相关协议文件的内容"协议确认');
+      return;
+    }
+    if (_docs.every(d => d.sealed)) {
+      alert('所有单据已盖章，无需重复操作');
+      return;
+    }
+    if (!confirm(`确认一键盖章全部 ${_docs.filter(d => !d.sealed).length} 张未盖章单据？`)) return;
+    const now = new Date();
+    const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    _docs.forEach(d => {
+      if (!d.sealed) { d.sealed = true; d.sealedBy = _sealer; d.sealedAt = ts; }
+    });
+    refresh();
+  };
+
+  window.voidAll = () => {
+    const sealedCount = _docs.filter(d => d.sealed).length;
+    if (sealedCount === 0) {
+      alert('当前没有已盖章的单据');
+      return;
+    }
+    if (!confirm(`确认清除全部 ${sealedCount} 张单据的盖章？`)) return;
+    _docs.forEach(d => { d.sealed = false; d.sealedBy = ''; d.sealedAt = ''; });
+    refresh();
+  };
+
+  window.downloadDocs = () => {
+    alert(`📥 模拟下载：${_docs.length} 张单据（demo 项目，实际未生成 PDF 文件）`);
+  };
+
+  window.goBack = () => {
+    if (window.history.length > 1) window.history.back();
+    else window.location.href = Utils.nav('/customer/outbound');
+  };
+
+  window.zoomIn  = () => { _zoom = Math.min(2.0, _zoom + 0.1); refresh(); };
+  window.zoomOut = () => { _zoom = Math.max(0.5, _zoom - 0.1); refresh(); };
+
+  // ============ Mount ============
+  function refresh() {
+    document.getElementById('app').innerHTML = render();
+  }
+  refresh();
+</script>
+</body>
+</html>
