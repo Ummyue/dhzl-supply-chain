@@ -240,8 +240,6 @@
               查看完整单据
             </button>
             <button onclick="Utils.toast('生成 PDF 中（占位）','info')" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">下载 PDF</button>
-            <button onclick="window.print()" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">打印</button>
-            <button onclick="Utils.toast('复制分享链接（占位）','info')" class="px-4 py-2 border border-slate-300 rounded text-sm hover:bg-slate-50">分享</button>
           </div>
         </div>
       </section>
@@ -718,7 +716,6 @@
             </div>
             <button onclick="resetImage()" class="px-2 py-1 text-xs border border-slate-200 rounded hover:bg-slate-50" title="还原">还原</button>
             <button onclick="rotateImage()" class="px-2 py-1 text-xs border border-slate-200 rounded hover:bg-slate-50" title="旋转 90°">↻</button>
-            <button onclick="Utils.toast('打印功能（占位）','info')" class="px-2 py-1 text-xs border border-slate-200 rounded hover:bg-slate-50" title="打印">🖨</button>
             <a href="/shared/img/inbound-application-full.jpg" download="入库申请单_${bizNo}.jpg" class="px-2 py-1 text-xs border border-slate-200 rounded hover:bg-slate-50" title="下载原图">⬇</a>
             <button onclick="closeFullDocModal()" class="ml-1 px-2 py-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded" title="关闭">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
