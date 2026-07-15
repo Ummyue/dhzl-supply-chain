@@ -99,22 +99,22 @@
       ${Components.filterBar({
         filters: filters,
         fields: [
-          { key: 'bank', type: 'select', placeholder: '金融机构', options: [
+          { label: '金融机构', key: 'bank', type: 'select', placeholder: '金融机构', options: [
             { value: '', label: '全部' },
             { value: '中原银行', label: '中原银行' },
             { value: '工商银行', label: '工商银行' },
             { value: '中融信托·冷链金融部', label: '中融信托·冷链金融部' },
             { value: '招商银行', label: '招商银行' },
           ] },
-          { key: 'warehouse', type: 'select', placeholder: '仓库名称', options: [
+          { label: '仓库名称', key: 'warehouse', type: 'select', placeholder: '仓库名称', options: [
             { value: '', label: '请选择' },
             ...[...new Set((MockData.inventoryLedger || []).map(r => r.warehouseName).filter(Boolean))].map(w => ({ value: w, label: w })),
           ] },
-          { key: 'location', type: 'select', placeholder: '仓房-货位', options: [
+          { label: '仓房-货位', key: 'location', type: 'select', placeholder: '仓房-货位', options: [
             { value: '', label: '请选择' },
             ...[...new Set((MockData.inventoryLedger || []).map(r => r.location).filter(Boolean))].map(l => ({ value: l, label: l })),
           ] },
-          { key: 'product', type: 'select', placeholder: '货物名称', options: [
+          { label: '货物名称', key: 'product', type: 'select', placeholder: '货物名称', options: [
             { value: '', label: '请选择' },
             ...[...new Set((MockData.inventoryLedger || []).map(r => r.productFullName).filter(Boolean))].map(p => ({ value: p, label: p })),
           ] },

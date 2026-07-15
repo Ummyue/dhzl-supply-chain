@@ -122,11 +122,11 @@
       ${Components.filterBar({
         filters: filters,
         fields: [
-          { key: 'companyName', type: 'text', placeholder: '请输入企业名称', suggest: { primaryKey: 'customer', secondaryKey: 'creditCode' } },
-          { key: 'creditCode', type: 'text', placeholder: '请输入社会统一信用代码', suggest: { primaryKey: 'creditCode', secondaryKey: 'customer' } },
-          { key: 'date', type: 'dateRange', placeholder: '申请日期', fromKey: 'dateStart', toKey: 'dateEnd' },
-          { key: 'applyResult', type: 'select', placeholder: '申请结果', options: [{ value: '', label: '请选择' }, { value: '通过', label: '通过' }, { value: '不通过', label: '不通过' }] },
-          { key: 'progress', type: 'select', placeholder: '当前进度', options: [
+          { label: '企业名称', key: 'companyName', type: 'text', placeholder: '请输入企业名称', suggest: { primaryKey: 'customer', secondaryKey: 'creditCode' } },
+          { label: '社会统一信用代码', key: 'creditCode', type: 'text', placeholder: '请输入社会统一信用代码', suggest: { primaryKey: 'creditCode', secondaryKey: 'customer' } },
+          { label: '申请日期', key: 'date', type: 'dateRange', placeholder: '申请日期', fromKey: 'dateStart', toKey: 'dateEnd' },
+          { label: '申请结果', key: 'applyResult', type: 'select', placeholder: '申请结果', options: [{ value: '', label: '请选择' }, { value: '通过', label: '通过' }, { value: '不通过', label: '不通过' }] },
+          { label: '当前进度', key: 'progress', type: 'select', placeholder: '当前进度', options: [
             { value: '', label: '请选择' },
             { value: '基础材料收集', label: '基础材料收集' },
             { value: '资质审核', label: '资质审核' },

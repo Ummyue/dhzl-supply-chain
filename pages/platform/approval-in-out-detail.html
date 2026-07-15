@@ -109,22 +109,22 @@
               ${Components.filterBar({
         filters: state,
         fields: [
-          { key: 'bizNoSearch', type: 'text', placeholder: isIn ? '请输入入库单号' : '请输入出库单号', suggest: { primaryKey: 'bizNo', secondaryKey: 'bizNo' } },
-          { key: 'warehouseId', type: 'select', placeholder: '库点名称', options: [{ value: '', label: '请选择' }, ...MockData.warehouses.map(w => ({ value: w.id, label: w.name }))] },
-          { key: 'location', type: 'select', placeholder: '仓房-货位', options: [{ value: '', label: '请选择' }, ...uniqueLocations().map(l => ({ value: l, label: l }))] },
-          { key: 'applyNoSearch', type: 'text', placeholder: isIn ? '请输入入库申请编号' : '请输入出库申请编号' },
-          { key: 'productName', type: 'select', placeholder: '货物名称', options: [{ value: '', label: '请选择' }, ...uniqueProducts().map(p => ({ value: p, label: p }))] },
-          { key: 'date', type: 'dateRange', placeholder: isIn ? '入库时间' : '出库时间', fromKey: 'dateStart', toKey: 'dateEnd' },
+          { label: '入库/出库单号', key: 'bizNoSearch', type: 'text', placeholder: isIn ? '请输入入库单号' : '请输入出库单号', suggest: { primaryKey: 'bizNo', secondaryKey: 'bizNo' } },
+          { label: '库点名称', key: 'warehouseId', type: 'select', placeholder: '库点名称', options: [{ value: '', label: '请选择' }, ...MockData.warehouses.map(w => ({ value: w.id, label: w.name }))] },
+          { label: '仓房-货位', key: 'location', type: 'select', placeholder: '仓房-货位', options: [{ value: '', label: '请选择' }, ...uniqueLocations().map(l => ({ value: l, label: l }))] },
+          { label: '入库/出库申请编号', key: 'applyNoSearch', type: 'text', placeholder: isIn ? '请输入入库申请编号' : '请输入出库申请编号' },
+          { label: '货物名称', key: 'productName', type: 'select', placeholder: '货物名称', options: [{ value: '', label: '请选择' }, ...uniqueProducts().map(p => ({ value: p, label: p }))] },
+          { label: '申请日期', key: 'date', type: 'dateRange', placeholder: isIn ? '入库时间' : '出库时间', fromKey: 'dateStart', toKey: 'dateEnd' },
           ...(isIn ? [
-            { key: 'dataType', type: 'select', placeholder: '数据类型', options: [
+            { label: '数据类型', key: 'dataType', type: 'select', placeholder: '数据类型', options: [
               { value: '', label: '请选择' },
               { value: '手动添加', label: '手动添加' },
               { value: '数据同步', label: '数据同步' },
               { value: 'API导入', label: 'API导入' },
             ] },
           ] : [
-            { key: 'contractNo', type: 'text', placeholder: '请输入关联合同/订单编号' },
-            { key: 'dataType', type: 'select', placeholder: '数据类型', options: [
+            { label: '关联合同/订单编号', key: 'contractNo', type: 'text', placeholder: '请输入关联合同/订单编号' },
+            { label: '数据类型', key: 'dataType', type: 'select', placeholder: '数据类型', options: [
               { value: '', label: '请选择' },
               { value: '手动添加', label: '手动添加' },
               { value: '数据同步', label: '数据同步' },

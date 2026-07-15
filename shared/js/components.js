@@ -419,17 +419,22 @@ const Components = {
     window.__filterBarState = { filters, fields, dataSource, onChange, hasExport, exportCSV };
     const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
     const renderField = (f, i) => {
+      const labelHtml = f.label ? `<label class="block text-xs text-slate-500 mb-1">${esc(f.label)}</label>` : '';
       if (f.type === 'text') {
         if (f.suggest) {
-          return `<div class="relative">
-            <input id="filterInput_${f.key}" type="text" value="${esc(filters[f.key] || '')}"
-              oninput="Components.__suggestInput('${f.key}', this.value, ${i})"
-              placeholder="${esc(f.placeholder || '')}"
-              class="w-full px-3 py-2 text-sm border border-slate-200 rounded text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none placeholder:text-slate-300">
-            <div id="filterSuggest_${f.key}" class="absolute z-20 left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded shadow-lg max-h-60 overflow-auto hidden"></div>
+          return `<div>
+            ${labelHtml}
+            <div class="relative">
+              <input id="filterInput_${f.key}" type="text" value="${esc(filters[f.key] || '')}"
+                oninput="Components.__suggestInput('${f.key}', this.value, ${i})"
+                placeholder="${esc(f.placeholder || '')}"
+                class="w-full px-3 py-2 text-sm border border-slate-200 rounded text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none placeholder:text-slate-300">
+              <div id="filterSuggest_${f.key}" class="absolute z-20 left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded shadow-lg max-h-60 overflow-auto hidden"></div>
+            </div>
           </div>`;
         }
         return `<div>
+          ${labelHtml}
           <input type="text" value="${esc(filters[f.key] || '')}"
             oninput="updateFilter('${f.key}', this.value); ${onChange}"
             placeholder="${esc(f.placeholder || '')}"
@@ -437,10 +442,11 @@ const Components = {
         </div>`;
       }
       if (f.type === 'select') {
-        const opts = (f.options || []).map(o => 
+        const opts = (f.options || []).map(o =>
           `<option value="${esc(o.value)}" ${filters[f.key] === o.value ? 'selected' : ''}>${esc(o.label)}</option>`
         ).join('');
         return `<div>
+          ${labelHtml}
           <select onchange="updateFilter('${f.key}', this.value); ${onChange}"
             class="w-full px-3 py-2 text-sm border border-slate-200 rounded bg-white text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
             ${opts}
@@ -450,12 +456,15 @@ const Components = {
       if (f.type === 'dateRange') {
         const fromKey = f.fromKey || (f.key + 'Start');
         const toKey = f.toKey || (f.key + 'End');
-        return `<div class="flex items-center gap-2">
-          <input type="date" value="${esc(filters[fromKey] || '')}" onchange="updateFilter('${fromKey}', this.value); ${onChange}"
-            class="flex-1 min-w-0 px-2 py-2 text-sm border border-slate-200 rounded text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-          <span class="text-slate-400">-</span>
-          <input type="date" value="${esc(filters[toKey] || '')}" onchange="updateFilter('${toKey}', this.value); ${onChange}"
-            class="flex-1 min-w-0 px-2 py-2 text-sm border border-slate-200 rounded text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+        return `<div>
+          ${labelHtml}
+          <div class="flex items-center gap-2">
+            <input type="date" value="${esc(filters[fromKey] || '')}" onchange="updateFilter('${fromKey}', this.value); ${onChange}"
+              class="flex-1 min-w-0 px-2 py-2 text-sm border border-slate-200 rounded text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+            <span class="text-slate-400">-</span>
+            <input type="date" value="${esc(filters[toKey] || '')}" onchange="updateFilter('${toKey}', this.value); ${onChange}"
+              class="flex-1 min-w-0 px-2 py-2 text-sm border border-slate-200 rounded text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          </div>
         </div>`;
       }
       return '<div></div>';

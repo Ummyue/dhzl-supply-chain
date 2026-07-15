@@ -80,12 +80,12 @@
       ${Components.filterBar({
         filters: filters,
         fields: [
-          { key: 'applyNo', type: 'text', placeholder: '请输入出库申请单编号', suggest: { primaryKey: 'applyNo', secondaryKey: 'warehouse' } },
-          { key: 'warehouse', type: 'select', placeholder: '库点', options: [{ value: '', label: '请选择' }, ...uniqueValues('warehouse').map(v => ({ value: v, label: v }))] },
-          { key: 'position', type: 'select', placeholder: '仓房-货位', options: [{ value: '', label: '请选择' }, ...uniqueValues('position').map(v => ({ value: v, label: v }))] },
-          { key: 'product', type: 'select', placeholder: '金融产品', options: [{ value: '', label: '请选择' }, ...uniqueValues('product').map(v => ({ value: v, label: v }))] },
-          { key: 'pledgeFinancingNo', type: 'text', placeholder: '请输入货押融资编号' },
-          { key: 'inventoryAssetNo', type: 'text', placeholder: '请输入存贷资产编号' },
+          { label: '出库申请单编号', key: 'applyNo', type: 'text', placeholder: '请输入出库申请单编号', suggest: { primaryKey: 'applyNo', secondaryKey: 'warehouse' } },
+          { label: '库点', key: 'warehouse', type: 'select', placeholder: '库点', options: [{ value: '', label: '请选择' }, ...uniqueValues('warehouse').map(v => ({ value: v, label: v }))] },
+          { label: '仓房-货位', key: 'position', type: 'select', placeholder: '仓房-货位', options: [{ value: '', label: '请选择' }, ...uniqueValues('position').map(v => ({ value: v, label: v }))] },
+          { label: '金融产品', key: 'product', type: 'select', placeholder: '金融产品', options: [{ value: '', label: '请选择' }, ...uniqueValues('product').map(v => ({ value: v, label: v }))] },
+          { label: '货押融资编号', key: 'pledgeFinancingNo', type: 'text', placeholder: '请输入货押融资编号' },
+          { label: '存贷资产编号', key: 'inventoryAssetNo', type: 'text', placeholder: '请输入存贷资产编号' },
         ],
         dataSource: MockData.dischargeList,
         onChange: 'refresh',

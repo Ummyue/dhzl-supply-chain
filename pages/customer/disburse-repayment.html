@@ -79,16 +79,16 @@
             ${Components.filterBar({
         filters: filters,
         fields: [
-          { key: 'financingNo', type: 'text', placeholder: '请输入融资申请编号' },
-          { key: 'pledgeNo', type: 'text', placeholder: '请输入存贷资产编号' },
-          { key: 'bankDraftNo', type: 'text', placeholder: '请输入原柜号/提单号' },
-          { key: 'product', type: 'select', placeholder: '金融产品', options: [
+          { label: '融资申请编号', key: 'financingNo', type: 'text', placeholder: '请输入融资申请编号' },
+          { label: '存贷资产编号', key: 'pledgeNo', type: 'text', placeholder: '请输入存贷资产编号' },
+          { label: '原柜号/提单号', key: 'bankDraftNo', type: 'text', placeholder: '请输入原柜号/提单号' },
+          { label: '金融产品', key: 'product', type: 'select', placeholder: '金融产品', options: [
             { value: '', label: '请选择' },
             ...[...new Set((MockData.disbursementList || []).map(d => d.product).filter(Boolean))].map(p => ({ value: p, label: p })),
           ] },
-          { key: 'loanDate', type: 'dateRange', placeholder: '放款日期', fromKey: 'loanDateStart', toKey: 'loanDateEnd' },
-          { key: 'repayDate', type: 'dateRange', placeholder: '还款日期', fromKey: 'repayDateStart', toKey: 'repayDateEnd' },
-          { key: 'bank', type: 'select', placeholder: '金融机构', options: [
+          { label: '放款日期', key: 'loanDate', type: 'dateRange', placeholder: '放款日期', fromKey: 'loanDateStart', toKey: 'loanDateEnd' },
+          { label: '还款日期', key: 'repayDate', type: 'dateRange', placeholder: '还款日期', fromKey: 'repayDateStart', toKey: 'repayDateEnd' },
+          { label: '金融机构', key: 'bank', type: 'select', placeholder: '金融机构', options: [
             { value: '', label: '请选择' },
             ...[...new Set((MockData.disbursementList || []).map(d => d.bank).filter(Boolean))].map(b => ({ value: b, label: b })),
           ] },

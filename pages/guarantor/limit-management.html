@@ -97,10 +97,10 @@
                 ${Components.filterBar({
         filters: filters,
         fields: [
-          { key: 'bank', type: 'text', placeholder: '请输入金融机构' },
-          { key: 'productName', type: 'text', placeholder: '请输入产品名称' },
-          { key: 'authorizedNo', type: 'text', placeholder: '请输入授信批复号' },
-          { key: 'date', type: 'dateRange', placeholder: '起始日期', fromKey: 'startDate', toKey: 'endDate' },
+          { label: '金融机构', key: 'bank', type: 'text', placeholder: '请输入金融机构' },
+          { label: '产品名称', key: 'productName', type: 'text', placeholder: '请输入产品名称' },
+          { label: '授信批复号', key: 'authorizedNo', type: 'text', placeholder: '请输入授信批复号' },
+          { label: '起始日期', key: 'date', type: 'dateRange', placeholder: '起始日期', fromKey: 'startDate', toKey: 'endDate' },
         ],
         dataSource: MockData.limitList,
         onChange: 'refresh',
