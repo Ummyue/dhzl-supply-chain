@@ -107,88 +107,50 @@
     const myTotal = getMyList().length;
     const filtered = applyFilters();
     const tabFiltered = applyTab(filtered, currentInboundTab);
+    // v1.7.82 动态 options
+    const pledgorOptions = [{ value: '', label: '请选择' }, ..._unique('applicant').map(v => ({ value: v, label: v }))];
+    const productOptions = [{ value: '', label: '请选择' }, ...(MockData.products_market || []).map(p => ({ value: p.name, label: p.name }))];
     return `
       <!-- 顶部角色化提示条 -->
       <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-xs text-blue-800">
         <span class="font-medium">v1.7.51 资金方视图：</span>您（<strong>${currentUser.name}</strong> - ${currentUser.company}）正在查看<strong>全量</strong>入库申请（${myTotal} 条），不进行银行过滤。本节点为<strong>入库见证</strong>——确认货物真实入库，作为后续放款依据。
       </div>
 
-      <div class="bg-white rounded-xl border border-slate-200 p-4 mb-4">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-semibold text-slate-700">筛选条件</h3>
-          <button onclick="resetAllFilters()" class="text-xs text-slate-500 hover:text-slate-700">重置</button>
-        </div>
-        <div class="grid grid-cols-5 gap-3">
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">入库申请编号</label>
-            <input type="text" value="${inboundFilters.applyNo}" oninput="updateFilter('applyNo', this.value)" placeholder="支持模糊搜索" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">出质方</label>
-            <select onchange="updateFilter('pledgor', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
-              <option value="">请选择</option>
-              ${_unique('applicant').map(v => `<option value="${v}" ${inboundFilters.pledgor === v ? 'selected' : ''}>${v}</option>`).join('')}
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">质权方</label>
-            <select onchange="updateFilter('pledgee', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
-              <option value="">请选择</option>
-              <option value="中原再担保股份有限公司" ${inboundFilters.pledgee === '中原再担保股份有限公司' ? 'selected' : ''}>中原再担保股份有限公司</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">金融机构</label>
-            <select onchange="updateFilter('bank', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
-              <option value="">请选择</option>
-              <option value="中原银行股份有限公司" ${inboundFilters.bank === '中原银行股份有限公司' ? 'selected' : ''}>中原银行股份有限公司</option>
-              <option value="工商银行郑州分行" ${inboundFilters.bank === '工商银行郑州分行' ? 'selected' : ''}>工商银行郑州分行</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">金融产品</label>
-            <select onchange="updateFilter('productName', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
-              <option value="">请选择</option>
-              <option value="中原e贷" ${inboundFilters.productName === '中原e贷' ? 'selected' : ''}>中原e贷</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">货物名称</label>
-            <select onchange="updateFilter('product', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
-              <option value="">请选择</option>
-              ${(MockData.products_market || []).map(p => `<option value="${p.name}" ${inboundFilters.product === p.name ? 'selected' : ''}>${p.name}</option>`).join('')}
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">入库时间</label>
-            <div class="flex items-center gap-1">
-              <input type="date" value="${inboundFilters.dateStart}" onchange="updateFilter('dateStart', this.value)" class="w-full px-1.5 py-1.5 text-xs border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-              <span class="text-slate-400 text-xs">~</span>
-              <input type="date" value="${inboundFilters.dateEnd}" onchange="updateFilter('dateEnd', this.value)" class="w-full px-1.5 py-1.5 text-xs border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-            </div>
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">监管方</label>
-            <select onchange="updateFilter('supervisor', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
-              <option value="">请选择</option>
-              <option value="大河智链供应链管理有限公司" ${inboundFilters.supervisor === '大河智链供应链管理有限公司' ? 'selected' : ''}>大河智链供应链管理有限公司</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">货物所在地</label>
-            <select onchange="updateFilter('location', this.value)" class="w-full px-2 py-1.5 text-sm border border-slate-200 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none bg-white">
-              <option value="">请选择</option>
-              <option value="河南省郑州市" ${inboundFilters.location === '河南省郑州市' ? 'selected' : ''}>河南省郑州市</option>
-              <option value="天津市" ${inboundFilters.location === '天津市' ? 'selected' : ''}>天津市</option>
-            </select>
-          </div>
-          <div class="flex items-end justify-end gap-2 col-span-1">
-            <button onclick="exportInboundCSV()" class="px-3 py-1.5 text-sm text-blue-600 hover:underline">
-              数据导出
-            </button>
-          </div>
-        </div>
-      </div>
+      ${Components.filterBar({
+        filters: inboundFilters,
+        fields: [
+          { key: 'applyNo', type: 'text', placeholder: '请输入入库申请编号', suggest: { primaryKey: 'bizNo', secondaryKey: 'applicant' } },
+          { key: 'pledgor', type: 'select', placeholder: '出质方', options: pledgorOptions },
+          { key: 'pledgee', type: 'select', placeholder: '质权方', options: [
+            { value: '', label: '请选择' },
+            { value: '中原再担保股份有限公司', label: '中原再担保股份有限公司' },
+          ] },
+          { key: 'bank', type: 'select', placeholder: '金融机构', options: [
+            { value: '', label: '请选择' },
+            { value: '中原银行股份有限公司', label: '中原银行股份有限公司' },
+            { value: '工商银行郑州分行', label: '工商银行郑州分行' },
+          ] },
+          { key: 'productName', type: 'select', placeholder: '金融产品', options: [
+            { value: '', label: '请选择' },
+            { value: '中原e贷', label: '中原e贷' },
+          ] },
+          { key: 'product', type: 'select', placeholder: '货物名称', options: productOptions },
+          { key: 'date', type: 'dateRange', placeholder: '入库时间', fromKey: 'dateStart', toKey: 'dateEnd' },
+          { key: 'supervisor', type: 'select', placeholder: '监管方', options: [
+            { value: '', label: '请选择' },
+            { value: '大河智链供应链管理有限公司', label: '大河智链供应链管理有限公司' },
+          ] },
+          { key: 'location', type: 'select', placeholder: '货物所在地', options: [
+            { value: '', label: '请选择' },
+            { value: '河南省郑州市', label: '河南省郑州市' },
+            { value: '天津市', label: '天津市' },
+          ] },
+        ],
+        dataSource: MockData.inboundList,
+        onChange: 'refresh',
+        hasExport: true,
+        exportCSV: 'exportInboundCSV',
+      })}
 
       <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div class="border-b border-slate-200 px-4 bg-slate-50/50 overflow-x-auto">
@@ -292,10 +254,15 @@
   }
 
   window.switchInboundTab = function(id) { currentInboundTab = id; refresh(); };
-  window.updateFilter = function(key, val) { inboundFilters[key] = val; refresh(); };
-  window.removeTag = function(key) { inboundFilters[key] = ''; refresh(); };
+  window.updateFilter = function(key, val) { inboundFilters[key] = val; };
+  window.removeTag = function(key, isDate) {
+    if (isDate) { inboundFilters.dateStart = ''; inboundFilters.dateEnd = ''; }
+    else { inboundFilters[key] = ''; const i = document.getElementById('filterInput_' + key); if (i) i.value = ''; }
+    refresh();
+  };
   window.resetAllFilters = function() {
     Object.keys(inboundFilters).forEach(k => inboundFilters[k] = '');
+    document.querySelectorAll('[id^="filterInput_"]').forEach(i => i.value = '');
     refresh();
   };
   window.viewInbound = function(id) {
