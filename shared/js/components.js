@@ -394,7 +394,196 @@ const Components = {
       if (!e.target.closest('#productSwitcher')) document.getElementById('productMenu')?.classList.add('hidden');
     });
   },
+
+  // ============ v1.7.82 通用筛选条 (3×3 网格 + 实时刷新 + 抽屉式模糊搜索 + 数据导出) ============
+  // 用法: 在 render() 中调用 Components.filterBar({ filters, fields, dataSource, onChange, hasExport, exportCSV, renderTags })
+  // - filters: 筛选状态对象(引用,直接修改)
+  // - fields: 字段定义数组 [{ key, type, placeholder, options?, suggest?, fromKey?, toKey? }]
+  //   - type: 'text' | 'select' | 'dateRange'
+  //   - suggest: { primaryKey, secondaryKey } 抽屉式模糊搜索(text only)
+  // - dataSource: 数组,用于 suggest 模糊搜索
+  // - onChange: 任意字段变化时的回调(字符串,会被 eval 调用,或函数)
+  // - hasExport / exportCSV: 数据导出
+  // - renderTags: 自定义 tag 行渲染(可选)
+  filterBar(opts) {
+    const { 
+      filters, 
+      fields = [], 
+      dataSource = [], 
+      onChange = 'void(0)', 
+      hasExport = false, 
+      exportCSV = 'void(0)',
+      renderTags = null,
+    } = opts;
+    // 临时存到 window, suggest 抽屉用
+    window.__filterBarState = { filters, fields, dataSource, onChange, hasExport, exportCSV };
+    const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+    const renderField = (f, i) => {
+      if (f.type === 'text') {
+        if (f.suggest) {
+          return `<div class="relative">
+            <input id="filterInput_${f.key}" type="text" value="${esc(filters[f.key] || '')}"
+              oninput="Components.__suggestInput('${f.key}', this.value, ${i})"
+              placeholder="${esc(f.placeholder || '')}"
+              class="w-full px-3 py-2 text-sm border border-slate-200 rounded text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none placeholder:text-slate-300">
+            <div id="filterSuggest_${f.key}" class="absolute z-20 left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded shadow-lg max-h-60 overflow-auto hidden"></div>
+          </div>`;
+        }
+        return `<div>
+          <input type="text" value="${esc(filters[f.key] || '')}"
+            oninput="updateFilter('${f.key}', this.value); ${onChange}"
+            placeholder="${esc(f.placeholder || '')}"
+            class="w-full px-3 py-2 text-sm border border-slate-200 rounded text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none placeholder:text-slate-300">
+        </div>`;
+      }
+      if (f.type === 'select') {
+        const opts = (f.options || []).map(o => 
+          `<option value="${esc(o.value)}" ${filters[f.key] === o.value ? 'selected' : ''}>${esc(o.label)}</option>`
+        ).join('');
+        return `<div>
+          <select onchange="updateFilter('${f.key}', this.value); ${onChange}"
+            class="w-full px-3 py-2 text-sm border border-slate-200 rounded bg-white text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+            ${opts}
+          </select>
+        </div>`;
+      }
+      if (f.type === 'dateRange') {
+        const fromKey = f.fromKey || (f.key + 'Start');
+        const toKey = f.toKey || (f.key + 'End');
+        return `<div class="flex items-center gap-2">
+          <input type="date" value="${esc(filters[fromKey] || '')}" onchange="updateFilter('${fromKey}', this.value); ${onChange}"
+            class="flex-1 min-w-0 px-2 py-2 text-sm border border-slate-200 rounded text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+          <span class="text-slate-400">-</span>
+          <input type="date" value="${esc(filters[toKey] || '')}" onchange="updateFilter('${toKey}', this.value); ${onChange}"
+            class="flex-1 min-w-0 px-2 py-2 text-sm border border-slate-200 rounded text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+        </div>`;
+      }
+      return '<div></div>';
+    };
+    // 渲染 3x3 grid
+    const cells = [];
+    for (let i = 0; i < 9; i++) {
+      if (i < fields.length) {
+        cells.push(renderField(fields[i], i));
+      } else {
+        cells.push('<div></div>');
+      }
+    }
+    // 最后一格(右下)是数据导出
+    if (hasExport) {
+      cells[8] = `<div class="flex items-end justify-end">
+        <button onclick="${exportCSV}()" class="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          数据导出
+        </button>
+      </div>`;
+    }
+    // tag 行
+    const tagsHtml = renderTags ? renderTags() : this.__defaultRenderTags(filters, fields, onChange);
+    return `
+      <div class="bg-white border border-slate-200 rounded-xl p-4 mb-3">
+        <div class="flex items-center justify-between mb-3 text-sm">
+          <div class="flex items-center flex-wrap gap-1.5 min-h-[24px]">
+            <span class="text-slate-500">当前搜索:</span>
+            ${tagsHtml}
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-x-6 gap-y-4">
+          ${cells.join('\n')}
+        </div>
+      </div>
+    `;
+  },
+  __defaultRenderTags(filters, fields, onChange) {
+    const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+    const tags = [];
+    fields.forEach(f => {
+      if (f.type === 'dateRange') {
+        const fromKey = f.fromKey || (f.key + 'Start');
+        const toKey = f.toKey || (f.key + 'End');
+        if (filters[fromKey] || filters[toKey]) {
+          tags.push({ key: '_' + f.key, label: `${f.placeholder || '日期'} ${filters[fromKey] || '不限'} ~ ${filters[toKey] || '不限'}`, isDate: true, fromKey, toKey });
+        }
+      } else if (filters[f.key]) {
+        const opt = (f.options || []).find(o => o.value === filters[f.key]);
+        const display = opt ? opt.label : filters[f.key];
+        tags.push({ key: f.key, label: `${f.placeholder || f.key}: ${display}` });
+      }
+    });
+    if (!tags.length) return '<span class="text-slate-400 text-xs">（无筛选条件）</span>';
+    const hasFilter = tags.length > 0;
+    return tags.map(t => `
+      <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-slate-100 text-slate-700 rounded">
+        ${esc(t.label)}<button onclick="removeTag('${t.key}'${t.isDate ? `, true` : ''})" class="text-slate-400 hover:text-slate-700">×</button>
+      </span>
+    `).join('') + (hasFilter ? `<button onclick="resetAllFilters()" class="text-xs text-rose-500 hover:text-rose-700 ml-2">清除全部</button>` : '');
+  },
+  // 抽屉式模糊搜索全局 handle
+  __suggestInput(key, val, fieldIdx) {
+    const state = window.__filterBarState;
+    if (!state) return;
+    const f = state.fields[fieldIdx];
+    if (!f || !f.suggest) return;
+    state.filters[key] = val;
+    const fn = (typeof state.onChange === 'string') ? new Function(`return ${state.onChange}`)() : state.onChange;
+    if (typeof fn === 'function') fn();
+    const q = (val || '').trim();
+    if (!q) {
+      document.getElementById(`filterSuggest_${key}`)?.classList.add('hidden');
+      return;
+    }
+    const matches = (state.dataSource || []).filter(item => {
+      const v = item[f.suggest.primaryKey] || '';
+      return v.includes(q);
+    }).slice(0, 8);
+    const target = document.getElementById(`filterSuggest_${key}`);
+    if (!target) return;
+    if (!matches.length) {
+      target.classList.add('hidden');
+      return;
+    }
+    const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+    const hl = (text) => {
+      if (!q) return esc(text);
+      const i = text.indexOf(q);
+      if (i < 0) return esc(text);
+      return esc(text.slice(0, i)) + '<span class="text-blue-600 font-medium">' + esc(text.slice(i, i + q.length)) + '</span>' + esc(text.slice(i + q.length));
+    };
+    target.innerHTML = matches.map(item => {
+      const itemId = (item.id || '').replace(/'/g, "\\'");
+      return `<div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm border-b border-slate-100 last:border-0"
+             onclick="Components.__suggestSelect('${key}', '${itemId}', ${fieldIdx})">
+        <div class="text-slate-800 truncate">${hl(item[f.suggest.primaryKey] || '')}</div>
+        <div class="text-xs text-slate-400 font-mono mt-0.5">${esc(item[f.suggest.secondaryKey] || '')}</div>
+      </div>`;
+    }).join('');
+    target.classList.remove('hidden');
+  },
+  __suggestSelect(key, id, fieldIdx) {
+    const state = window.__filterBarState;
+    if (!state) return;
+    const f = state.fields[fieldIdx];
+    if (!f || !f.suggest) return;
+    const item = (state.dataSource || []).find(x => x.id === id);
+    if (!item) return;
+    state.filters[key] = item[f.suggest.primaryKey];
+    const input = document.getElementById(`filterInput_${key}`);
+    if (input) input.value = item[f.suggest.primaryKey];
+    document.getElementById(`filterSuggest_${key}`)?.classList.add('hidden');
+    const fn = (typeof state.onChange === 'string') ? new Function(`return ${state.onChange}`)() : state.onChange;
+    if (typeof fn === 'function') fn();
+  },
 };
+
+// v1.7.82 全局点击关闭筛选条抽屉
+document.addEventListener('click', (e) => {
+  document.querySelectorAll('[id^="filterInput_"]').forEach(input => {
+    const key = input.id.replace('filterInput_', '');
+    if (!e.target.closest(`#filterInput_${key}`) && !e.target.closest(`#filterSuggest_${key}`)) {
+      document.getElementById(`filterSuggest_${key}`)?.classList.add('hidden');
+    }
+  });
+});
 
 window.Components = Components;
 

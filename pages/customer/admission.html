@@ -119,74 +119,28 @@
   function render() {
     const list = applyFilters();
     return `
-      <!-- v1.7.82 新筛选样式:3 列 × 3 行 + 顶部 tag + 右下数据导出 -->
-      <div class="bg-white border border-slate-200 rounded-xl p-4 mb-3">
-        <!-- 当前搜索 tag 行 -->
-        <div class="flex items-center justify-between mb-3 text-sm">
-          <div class="flex items-center flex-wrap gap-1.5 min-h-[24px]">
-            <span class="text-slate-500">当前搜索:</span>
-            ${renderActiveTags()}
-          </div>
-        </div>
-
-        <!-- 3 列 × 3 行 筛选区 -->
-        <div class="grid grid-cols-3 gap-x-6 gap-y-4">
-          <!-- 行 1:企业名称(搜索) | 统一社会信用代码(搜索) | 申请日期范围 -->
-          <div class="relative">
-            <input id="companyNameInput" type="text" value="${escapeHtml(filters.companyName)}"
-              oninput="onCompanyNameInput(this.value)"
-              placeholder="请输入企业名称"
-              class="w-full px-3 py-2 text-sm border border-slate-200 rounded text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none placeholder:text-slate-300">
-            <div id="companyNameSuggest" class="absolute z-20 left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded shadow-lg max-h-60 overflow-auto hidden"></div>
-          </div>
-          <div class="relative">
-            <input id="creditCodeInput" type="text" value="${escapeHtml(filters.creditCode)}"
-              oninput="onCreditCodeInput(this.value)"
-              placeholder="请输入社会统一信用代码"
-              class="w-full px-3 py-2 text-sm border border-slate-200 rounded text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none placeholder:text-slate-300">
-            <div id="creditCodeSuggest" class="absolute z-20 left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded shadow-lg max-h-60 overflow-auto hidden"></div>
-          </div>
-          <div class="flex items-center gap-2">
-            <input type="date" value="${filters.dateStart}" onchange="updateFilter('dateStart', this.value); refresh()"
-              class="flex-1 min-w-0 px-2 py-2 text-sm border border-slate-200 rounded text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-            <span class="text-slate-400">-</span>
-            <input type="date" value="${filters.dateEnd}" onchange="updateFilter('dateEnd', this.value); refresh()"
-              class="flex-1 min-w-0 px-2 py-2 text-sm border border-slate-200 rounded text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-          </div>
-
-          <!-- 行 2:申请结果 | 当前进度 | (空) -->
-          <div>
-            <select onchange="updateFilter('applyResult', this.value); refresh()"
-              class="w-full px-3 py-2 text-sm border border-slate-200 rounded bg-white text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-              <option value="">请选择</option>
-              <option value="通过" ${filters.applyResult === '通过' ? 'selected' : ''}>通过</option>
-              <option value="不通过" ${filters.applyResult === '不通过' ? 'selected' : ''}>不通过</option>
-            </select>
-          </div>
-          <div>
-            <select onchange="updateFilter('progress', this.value); refresh()"
-              class="w-full px-3 py-2 text-sm border border-slate-200 rounded bg-white text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
-              <option value="">请选择</option>
-              <option value="基础材料收集" ${filters.progress === '基础材料收集' ? 'selected' : ''}>基础材料收集</option>
-              <option value="资质审核" ${filters.progress === '资质审核' ? 'selected' : ''}>资质审核</option>
-              <option value="现场考察" ${filters.progress === '现场考察' ? 'selected' : ''}>现场考察</option>
-              <option value="风险评估" ${filters.progress === '风险评估' ? 'selected' : ''}>风险评估</option>
-              <option value="办结" ${filters.progress === '办结' ? 'selected' : ''}>办结</option>
-            </select>
-          </div>
-          <div></div>
-
-          <!-- 行 3:第 3 列右下角 数据导出 -->
-          <div></div>
-          <div></div>
-          <div class="flex items-end justify-end">
-            <button onclick="exportCSV()" class="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center gap-1">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-              数据导出
-            </button>
-          </div>
-        </div>
-      </div>
+      ${Components.filterBar({
+        filters: filters,
+        fields: [
+          { key: 'companyName', type: 'text', placeholder: '请输入企业名称', suggest: { primaryKey: 'customer', secondaryKey: 'creditCode' } },
+          { key: 'creditCode', type: 'text', placeholder: '请输入社会统一信用代码', suggest: { primaryKey: 'creditCode', secondaryKey: 'customer' } },
+          { key: 'date', type: 'dateRange', placeholder: '申请日期', fromKey: 'dateStart', toKey: 'dateEnd' },
+          { key: 'applyResult', type: 'select', placeholder: '申请结果', options: [{ value: '', label: '请选择' }, { value: '通过', label: '通过' }, { value: '不通过', label: '不通过' }] },
+          { key: 'progress', type: 'select', placeholder: '当前进度', options: [
+            { value: '', label: '请选择' },
+            { value: '基础材料收集', label: '基础材料收集' },
+            { value: '资质审核', label: '资质审核' },
+            { value: '现场考察', label: '现场考察' },
+            { value: '风险评估', label: '风险评估' },
+            { value: '办结', label: '办结' },
+          ] },
+        ],
+        dataSource: MockData.admissionList,
+        onChange: 'refresh',
+        hasExport: true,
+        exportCSV: 'exportCSV',
+        renderTags: renderActiveTags,
+      })}
 
       <!-- 6 列准入申请表格 -->
       <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
@@ -244,93 +198,14 @@
     if (filters.creditCode) tags.push({ key: 'creditCode', label: `信用代码:${filters.creditCode}` });
     if (filters.applyResult) tags.push({ key: 'applyResult', label: `结果:${filters.applyResult}` });
     if (filters.progress) tags.push({ key: 'progress', label: `进度:${filters.progress}` });
-    if (filters.dateStart || filters.dateEnd) tags.push({ key: '_date', label: `日期 ${filters.dateStart || '不限'} ~ ${filters.dateEnd || '不限'}` });
+    if (filters.dateStart || filters.dateEnd) tags.push({ key: '_date', label: `日期 ${filters.dateStart || '不限'} ~ ${filters.dateEnd || '不限'}`, isDate: true });
     if (!tags.length) return '<span class="text-slate-400 text-xs">（无筛选条件）</span>';
     return tags.map(t => `
       <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-slate-100 text-slate-700 rounded">
-        ${t.label}<button onclick="removeTag('${t.key}')" class="text-slate-400 hover:text-slate-700">×</button>
+        ${t.label}<button onclick="removeTag('${t.key}'${t.isDate ? ', true' : ''})" class="text-slate-400 hover:text-slate-700">×</button>
       </span>
-    `).join('');
+    `).join('') + `<button onclick="resetAllFilters()" class="text-xs text-rose-500 hover:text-rose-700 ml-2">清除全部</button>`;
   }
-
-  // ============ v1.7.82 抽屉式模糊搜索 (企业名称 / 统一社会信用代码) ============
-  function renderSuggest(targetId, items, primaryKey, secondaryKey) {
-    const target = document.getElementById(targetId);
-    if (!target) return;
-    if (!items.length) {
-      target.classList.add('hidden');
-      target.innerHTML = '';
-      return;
-    }
-    target.innerHTML = items.map(a => `
-      <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm border-b border-slate-100 last:border-0"
-           onclick="selectSuggest('${targetId}', '${a.id}', '${primaryKey}', '${secondaryKey}')">
-        <div class="text-slate-800 truncate">${highlightMatch(a[primaryKey] || '', targetId === 'companyNameSuggest' ? filters.companyName : filters.creditCode)}</div>
-        <div class="text-xs text-slate-400 font-mono mt-0.5">${a[secondaryKey] || ''}</div>
-      </div>
-    `).join('');
-    target.classList.remove('hidden');
-  }
-
-  // 搜索关键字高亮
-  function highlightMatch(text, q) {
-    if (!q) return escapeHtml(text);
-    const i = text.indexOf(q);
-    if (i < 0) return escapeHtml(text);
-    return escapeHtml(text.slice(0, i)) + '<span class="text-blue-600 font-medium">' + escapeHtml(text.slice(i, i + q.length)) + '</span>' + escapeHtml(text.slice(i + q.length));
-  }
-
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-  }
-
-  window.onCompanyNameInput = (v) => {
-    filters.companyName = v;
-    refresh();
-    const q = (v || '').trim();
-    if (!q) {
-      document.getElementById('companyNameSuggest')?.classList.add('hidden');
-      return;
-    }
-    const matches = (MockData.admissionList || []).filter(a => (a.customer || '').includes(q)).slice(0, 8);
-    renderSuggest('companyNameSuggest', matches, 'customer', 'creditCode');
-  };
-
-  window.onCreditCodeInput = (v) => {
-    filters.creditCode = v;
-    refresh();
-    const q = (v || '').trim();
-    if (!q) {
-      document.getElementById('creditCodeSuggest')?.classList.add('hidden');
-      return;
-    }
-    const matches = (MockData.admissionList || []).filter(a => (a.creditCode || '').includes(q)).slice(0, 8);
-    renderSuggest('creditCodeSuggest', matches, 'creditCode', 'customer');
-  };
-
-  window.selectSuggest = (targetId, id, primaryKey, secondaryKey) => {
-    const a = (MockData.admissionList || []).find(x => x.id === id);
-    if (!a) return;
-    if (targetId === 'companyNameSuggest') {
-      filters.companyName = a.customer;
-      document.getElementById('companyNameInput').value = a.customer;
-    } else if (targetId === 'creditCodeSuggest') {
-      filters.creditCode = a.creditCode;
-      document.getElementById('creditCodeInput').value = a.creditCode;
-    }
-    document.getElementById(targetId)?.classList.add('hidden');
-    refresh();
-  };
-
-  // 全局点击关闭抽屉
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('#companyNameInput') && !e.target.closest('#companyNameSuggest')) {
-      document.getElementById('companyNameSuggest')?.classList.add('hidden');
-    }
-    if (!e.target.closest('#creditCodeInput') && !e.target.closest('#creditCodeSuggest')) {
-      document.getElementById('creditCodeSuggest')?.classList.add('hidden');
-    }
-  });
 
   // ============ 数据导出 ============
   window.exportCSV = () => {
@@ -363,16 +238,19 @@
   // 注: function refresh() 在文件末尾声明,本身就是 window.refresh,无需再赋值
   window.resetFilters = () => {
     Object.keys(filters).forEach(k => filters[k] = '');
-    document.getElementById('companyNameInput') && (document.getElementById('companyNameInput').value = '');
-    document.getElementById('creditCodeInput') && (document.getElementById('creditCodeInput').value = '');
+    const i1 = document.getElementById('filterInput_companyName'); if (i1) i1.value = '';
+    const i2 = document.getElementById('filterInput_creditCode'); if (i2) i2.value = '';
     refresh();
   };
   window.resetAllFilters = window.resetFilters;
-  window.removeTag = (k) => {
-    if (k === '_date') { filters.dateStart = ''; filters.dateEnd = ''; }
-    else if (k === 'companyName') { filters.companyName = ''; document.getElementById('companyNameInput') && (document.getElementById('companyNameInput').value = ''); }
-    else if (k === 'creditCode') { filters.creditCode = ''; document.getElementById('creditCodeInput') && (document.getElementById('creditCodeInput').value = ''); }
-    else filters[k] = '';
+  window.removeTag = (k, isDate) => {
+    if (isDate) {
+      filters.dateStart = '';
+      filters.dateEnd = '';
+    } else {
+      filters[k] = '';
+      const i = document.getElementById('filterInput_' + k); if (i) i.value = '';
+    }
     refresh();
   };
   window.goDetail = (id) => {
@@ -381,6 +259,17 @@
     const tab = mapStatusToTab(a || {});
     window.location.href = `${Utils.nav('/customer/admission-detail')}?id=${id}&tab=${tab}`;
   };
+
+  // ============ 临时测试钩子 (v1.7.82 自检用,做完截图即删) ============
+  if (location.hash === '#drawer-zheng') {
+    setTimeout(() => {
+      const input = document.getElementById('filterInput_companyName');
+      if (input) {
+        input.value = '郑';
+        Components.__suggestInput('companyName', '郑', 0);
+      }
+    }, 0);
+  }
 
   function refresh() {
     document.getElementById('app').innerHTML = Components.pageShell({
@@ -398,9 +287,6 @@
       `,
       content: render(),
     });
-    // refresh 后恢复当前 filter 值到 input (因为 pageShell 重新渲染了 DOM)
-    if (filters.companyName) document.getElementById('companyNameInput') && (document.getElementById('companyNameInput').value = filters.companyName);
-    if (filters.creditCode) document.getElementById('creditCodeInput') && (document.getElementById('creditCodeInput').value = filters.creditCode);
   }
 </script>
 </body>
