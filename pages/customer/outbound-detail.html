@@ -139,7 +139,8 @@
         <h3 class="text-base font-bold text-slate-800 mb-3"><span class="inline-block w-1 h-4 bg-blue-500 rounded mr-2 align-middle"></span>融资信息</h3>
         <div class="border border-slate-200 rounded overflow-hidden">
           ${finRow('融资编号', `<span class="text-blue-600 font-mono">${financing.financingNo || 'RZ202411280002'}</span>`)}
-          ${finRow3('融资方', financing.pledgor || '河南军牧原国际贸易有限公司', '金融产品', financing.product || '中原e货')}
+          ${finRow('融资方', financing.pledgor || '河南军牧原国际贸易有限公司')}
+          ${finRow('金融产品', financing.product || '中原e货')}
           ${finRow3('金融机构', financing.bank || '中原银行股份有限公司', '融资利率', `<span class="num-focus">${financing.interestRate || '2.3%'}</span>`, '融资放款日期', financing.loanDate || '2024-11-21')}
           ${finRow3('融资到期日期', financing.dueDate || '2025-11-16', '借据号', financing.loanNote || 'sn0018288', '柜号', financing.counterNo || 'sn0018288')}
           ${finRow3('放款金额（元）', `<span class="text-rose-600 num-focus">${Utils.fmtMoney(financing.loanAmount || 300000)}</span>`, '已还款金额（元）', `<span class="text-rose-600 num-focus">${Utils.fmtMoney(financing.repaidAmount || 300000)}</span>`, '剩余还款金额（元）', `<span class="text-rose-600 num-focus">${Utils.fmtMoney(financing.remainingAmount || 300000)}</span>`)}
@@ -194,7 +195,8 @@
         <div class="border border-slate-200 rounded overflow-hidden">
           ${finRow3('拟还款日期', repay.planDate || '2026-03-22', '计息天数（天）', repay.interestDays ?? 120, '逾期天数（天）', repay.overdueDays ?? 0)}
           ${finRow3('应还本金（元）', `<span class="num-focus">${Utils.fmtMoney(repay.principal || 300000)}</span>`, '应还利息（元）', `<span class="num-focus">${Utils.fmtMoney(repay.interest || 10000)}</span>`, '应还罚息（元）', `<span class="num-focus">${Utils.fmtMoney(repay.penalty || 0)}</span>`)}
-          ${finRow3('应还总金额（元）', `<span class="num-focus font-bold">${Utils.fmtMoney(repay.totalAmount || 320000)}</span>`, '还款账户', `<span class="num-focus text-blue-700">${repay.repayAccount || '中国银行西安华陆大厦支行 102084339010'}</span>`)}
+          ${finRow('应还总金额（元）', `<span class="num-focus font-bold">${Utils.fmtMoney(repay.totalAmount || 320000)}</span>`)}
+          ${finRow('还款账户', `<span class="num-focus text-blue-700">${repay.repayAccount || '中国银行西安华陆大厦支行 102084339010'}</span>`)}
         </div>
       </div>
     `;

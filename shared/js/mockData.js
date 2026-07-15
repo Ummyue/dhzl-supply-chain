@@ -2541,9 +2541,9 @@ const MockData = {
   },
 
   // ========== v1.7.23 解押出库申请列表（图1） ==========
-  // 状态机 9 tab：draft / pending_supervisor / pending_supervisor_seal / pending_guarantor
-  //             / pending_guarantor_seal / pending_funding / pending_discharge / completed / rejected / invalid
-  // (按图 1 命名待对方：待提交/待监管方确认/待担保方确认/待融资方盖章/待还款/已还款/驳回/无效)
+  // 状态机 10 tab：draft / pending_supervisor / pending_supervisor_seal / pending_guarantor
+  //              / pending_guarantor_seal / pending_funding / pending_discharge / completed / rejected / invalid
+  // (v1.7.78 加 pending_supervisor_seal "待监管方盖章"，invalid 改 "作废")
   dischargeList: (function() {
     const REGS = ['大河智链供应链管理有限公司', '大河智链物流（郑州）有限公司'];
     const PRODUCTS = ['民生e货', '中原e货', '冷链现货质押融资（90天）', 'e仓融'];
@@ -2551,6 +2551,7 @@ const MockData = {
     const POSITIONS = ['智链监管仓-1号位', '冻品-监管位', '冷藏-1号仓-1层'];
     const labels = ['draft','pending_supervisor','pending_supervisor','pending_supervisor',
                     'pending_guarantor','pending_guarantor','pending_funding','pending_funding',
+                    'pending_supervisor_seal','pending_supervisor_seal',
                     'pending_discharge','completed','completed','rejected','invalid'];
     const list = [];
     for (let i = 0; i < labels.length; i++) {

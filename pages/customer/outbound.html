@@ -56,10 +56,10 @@
     pending_discharge:     '待还款',
     completed:             '已还款',
     rejected:              '驳回',
-    invalid:               '无效',
+    invalid:               '作废',
   };
-  // 图 1 顺序：全部 / 待提交 / 待监管方确认 / 待担保方确认 / 待融资方盖章(1) / 待还款 / 已还款 / 驳回 / 无效
-  const TAB_ORDER = ['all','draft','pending_supervisor','pending_guarantor','pending_funding','pending_discharge','completed','rejected','invalid'];
+  // 图 1 顺序：全部 / 待提交 / 待监管方确认 / 待担保方确认 / 待融资方盖章(1) / 待监管方盖章 / 待还款 / 已还款 / 驳回 / 作废
+  const TAB_ORDER = ['all','draft','pending_supervisor','pending_guarantor','pending_funding','pending_supervisor_seal','pending_discharge','completed','rejected','invalid'];
 
   document.getElementById('app').innerHTML = Components.pageShell({
     title: '解押出库申请',
