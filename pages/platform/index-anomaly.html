@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>异常指数管理 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '异常指数管理',
+    currentPath: '/platform/index-anomaly',
+    breadcrumb: [
+      { label: '运营管理中心', path: '/dashboard' },
+      { label: '盯市管理', path: '/dashboard' },
+      { label: '指数管理', path: '/platform/index-anomaly' },
+      { label: '异常指数管理', path: '/platform/index-anomaly' },
+    ],
+    extra: '',
+    content: `
+      <div class="bg-white border border-slate-200 rounded-xl px-6 py-16 text-center">
+        <div class="w-20 h-20 mx-auto mb-5 bg-blue-50 rounded-full flex items-center justify-center text-3xl">🚧</div>
+        <h1 class="text-2xl font-bold text-slate-800 mb-2">异常指数管理</h1>
+        <p class="text-slate-500 max-w-md mx-auto leading-relaxed">该模块即将上线，v1.7.76+ 占位。</p>
+        <p class="text-xs text-slate-400 mt-2">（异常指数监控：波动超过阈值的指数列表 + 处置记录）</p>
+        <a href="${Utils.nav('/dashboard')}" class="inline-block mt-6 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">← 返回首页</a>
+      </div>
+    `
+  });
+</script>
+</body>
+</html>

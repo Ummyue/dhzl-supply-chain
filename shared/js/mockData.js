@@ -210,6 +210,10 @@ const MockData = {
         { id: 'enterprise', label: '企业信息管理', path: '/portal/enterprise', status: 'placeholder',
           description: '企业概览 / 数据管理',
           subtitle: '企业信息管理平台' },
+        // v1.7.76：新增「盯市管理」模块（占位 subItem）
+        { id: 'market', label: '盯市管理', path: '/portal/market', status: 'placeholder',
+          description: '指数配置 / 异常指数管理',
+          subtitle: '指数管理系统' },
       ],
     },
   ],
@@ -416,6 +420,19 @@ const MockData = {
           { icon: 'file', label: '数据管理', path: '/enterprise/data-management' },
         ]},
       ],
+    },
+    // v1.7.76：盯市管理（运营管理中心 → 盯市管理 subItem）—— 仅监管方可见
+    market: {
+      customer:   [],
+      platform: [
+        { group: '指数管理', items: [
+          { icon: 'chart', label: '指数配置', path: '/platform/index-config' },
+          { icon: 'alert', label: '异常指数管理', path: '/platform/index-anomaly' },
+        ]},
+      ],
+      guarantor:  [],
+      bank:       [],
+      warehouse:  [],
     },
   },
 
