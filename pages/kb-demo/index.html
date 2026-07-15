@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>智慧人力 · 知识库 Demo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --primary: #3370ff;
+      --primary-light: #e8f0ff;
+      --nav-black: #1a1a1a;
+      --text: #1f2329;
+      --text-secondary: #646a73;
+      --text-tertiary: #8f959e;
+      --border: #e5e6eb;
+      --bg: #f5f6f7;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+      background: #f0f2f5;
+      color: var(--text);
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+    /* 设备外框（用 CSS 模拟 iPhone 14 Pro） */
+    .device {
+      width: 390px;
+      height: 844px;
+      background: #fff;
+      border-radius: 50px;
+      border: 10px solid #1a1a1a;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15), 0 0 0 2px #2a2a2a inset;
+      overflow: hidden;
+      position: relative;
+      margin: 0 auto;
+    }
+    .device::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 120px; height: 30px;
+      background: #1a1a1a;
+      border-radius: 0 0 18px 18px;
+      z-index: 100;
+    }
+    .device-screen {
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+      background: #fff;
+      position: relative;
+      padding-top: 44px; /* 状态栏 */
+    }
+    .device-screen::-webkit-scrollbar { display: none; }
+    .status-bar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 50;
+      color: #1f2329;
+    }
+    .home-indicator {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 134px; height: 5px;
+      background: #1f2329;
+      border-radius: 3px;
+      z-index: 50;
+    }
+    /* 顶部 nav */
+    .app-nav {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+    /* 屏幕切换 */
+    .screen { display: none; }
+    .screen.active { display: block; }
+    /* 底部 tab */
+    .bottom-tab {
+      position: sticky;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding-bottom: 16px;
+    }
+    .tab-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      cursor: pointer;
+      color: var(--text-tertiary);
+      font-size: 10px;
+      transition: color 0.2s;
+    }
+    .tab-item.active { color: var(--primary); }
+    .tab-item.active .tab-icon { transform: scale(1.05); }
+    .tab-icon { transition: transform 0.2s; }
+    /* 卡片 */
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      transition: all 0.2s;
+    }
+    .card:active { transform: scale(0.98); }
+    /* 分类卡片 */
+    .cat-tile {
+      aspect-ratio: 1.1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px 8px;
+      cursor: pointer;
+    }
+    .cat-icon-wrap {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+    /* 搜索高亮 */
+    .hl { background: #fff3a3; color: #c2410c; padding: 0 2px; border-radius: 2px; }
+    .hl-blue { background: var(--primary-light); color: var(--primary); padding: 0 2px; border-radius: 2px; }
+    /* 列表项 */
+    .list-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .list-item:last-child { border-bottom: none; }
+    .list-icon {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    /* 按钮 */
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-ghost {
+      background: #fff;
+      color: var(--primary);
+      border: 1px solid var(--primary);
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .btn-icon {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-icon:active { background: #f5f5f5; }
+    /* 文章卡 */
+    .article-card {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 16px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .article-card:active { transform: scale(0.99); }
+    /* 滚动条隐藏 */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    /* 二级 tab */
+    .tab-pill {
+      padding: 6px 14px;
+      border-radius: 16px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      background: transparent;
+      border: 1px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .tab-pill.active {
+      color: var(--primary);
+      background: var(--primary-light);
+      font-weight: 500;
+    }
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(0,0,0,0.85);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 22px;
+      font-size: 13px;
+      z-index: 999;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    /* 演示控制条（顶部） */
+    .demo-banner {
+      background: linear-gradient(90deg, #3370ff 0%, #5b8def 100%);
+      color: #fff;
+      padding: 8px 16px;
+      text-align: center;
+      font-size: 12px;
+    }
+    /* 设备容器 */
+    .device-frame {
+      padding: 24px 0;
+    }
+  </style>
+</head>
+<body>
+  <!-- 演示提示条 -->
+  <div class="demo-banner">
+    📱 智慧人力 · 知识库移动端 Demo · 飞书风格 · 浏览器按 F12 切到手机模式体验更佳
+  </div>
+
+  <!-- 设备外框 -->
+  <div class="device-frame">
+    <div class="device">
+      <div class="device-screen" id="screen-container">
+
+        <!-- 状态栏 -->
+        <div class="status-bar">
+          <span>9:41</span>
+          <span style="display:flex;gap:4px;align-items:center;">
+            <span>📶</span>
+            <span>📡</span>
+            <span style="background:#1f2329;color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">100%</span>
+          </span>
+        </div>
+
+        <!-- ============ 屏 1: 首页 ============ -->
+        <div class="screen active" id="screen-home">
+          <div class="app-nav">
+            <div style="width:24px;"></div>
+            <div style="font-size:17px;font-weight:600;">知识库</div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-icon" onclick="showToast('已打开扫码')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="3" height="3" fill="currentColor"/><rect x="18" y="14" width="3" height="3" fill="currentColor"/><rect x="14" y="18" width="3" height="3" fill="currentColor"/><rect x="18" y="18" width="3" height="3" fill="currentColor"/></svg>
+              </button>
+              <button class="btn-icon" onclick="showToast('更多功能')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div style="padding:20px 16px 0;">
+            <div style="font-size:22px;font-weight:600;line-height:1.4;">嗨，张伟 👋</div>
+            <div style="font-size:14px;color:var(--text-secondary);margin-top:4px;">有什么可以帮你？</div>
+          </div>
+
+          <!-- 搜索框 -->
+          <div style="padding:16px;">
+            <div onclick="goTo('search')" style="background:#f5f6f7;border-radius:8px;height:44px;display:flex;align-items:center;padding:0 14px;gap:10px;cursor:pointer;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8f959e" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <span style="color:#8f959e;font-size:14px;">搜索问题、指南、规范…</span>
+            </div>
+          </div>
+
+          <!-- 6 宫格分类 -->
+          <div style="padding:0 16px;">
+            <div style="font-size:16px;font-weight:600;margin-bottom:12px;">文档分类</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+              <div class="card cat-tile" onclick="goTo('category')">
+                <div class="cat-icon-wrap" style="background:#e8f0ff;color:#3370ff;">📘</div>
+                <div style="font-size:13px;font-weight:500;">政策法规库</div>
+                <div style="font-size:11px;color:var(--text-tertiary);">24 篇文章</div>
+              </div>
+              <div class="card cat-tile" onclick="goTo('category')">
+                <div class="cat-icon-wrap" style="background:#fff0e6;color:#ff8800;">📁</div>
+                <div style="font-size:13px;font-weight:500;">制度规范库</div>
+                <div style="font-size:11px;color:var(--text-tertiary);">67 篇文章</div>
+              </div>
+              <div class="card cat-tile" onclick="goTo('category')">
+                <div class="cat-icon-wrap" style="background:#f3e8ff;color:#8b5cf6;">⚙️</div>
+                <div style="font-size:13px;font-weight:500;">系统操作指引</div>
+                <div style="font-size:11px;color:var(--text-tertiary);">89 篇文章</div>
+              </div>
+              <div class="card cat-tile" onclick="goTo('category')">
+                <div class="cat-icon-wrap" style="background:#e6f9f4;color:#14b8a6;">👥</div>
+                <div style="font-size:13px;font-weight:500;">会议与知识库</div>
+                <div style="font-size:11px;color:var(--text-tertiary);">38 篇文章</div>
+              </div>
+              <div class="card cat-tile" onclick="goTo('detail')">
+                <div class="cat-icon-wrap" style="background:#fff7e6;color:#eab308;">⭐</div>
+                <div style="font-size:13px;font-weight:500;">我的收藏</div>
+                <div style="font-size:11px;color:var(--text-tertiary);">12 篇</div>
+              </div>
+              <div class="card cat-tile" onclick="showToast('查看浏览历史')">
+                <div class="cat-icon-wrap" style="background:#f5f5f5;color:#8f959e;">🕐</div>
+                <div style="font-size:13px;font-weight:500;">最近浏览</div>
+                <div style="font-size:11px;color:var(--text-tertiary);">24 篇</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 热门文章 -->
+          <div style="padding:24px 16px 0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+              <div style="font-size:16px;font-weight:600;">🔥 热门文章</div>
+              <div style="font-size:13px;color:var(--primary);cursor:pointer;" onclick="showToast('查看更多')">更多 →</div>
+            </div>
+            <div class="card" style="padding:4px 12px;">
+              <div class="list-item" onclick="goTo('detail')">
+                <div class="list-icon" style="background:#fff7e6;">🔥</div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:14px;font-weight:500;line-height:1.4;">2025年第一季度战略规划</div>
+                  <div style="font-size:12px;color:var(--text-tertiary);margin-top:2px;">政策法规库 · 1,024 阅读</div>
+                </div>
+              </div>
+              <div class="list-item" onclick="goTo('detail')">
+                <div class="list-icon" style="background:#fff7e6;">🔥</div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:14px;font-weight:500;line-height:1.4;">新员工入职指南（通用版）</div>
+                  <div style="font-size:12px;color:var(--text-tertiary);margin-top:2px;">制度规范库 · 856 阅读</div>
+                </div>
+              </div>
+              <div class="list-item" onclick="goTo('detail')">
+                <div class="list-icon" style="background:#fff7e6;">🔥</div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:14px;font-weight:500;line-height:1.4;">公司财务报销流程规范</div>
+                  <div style="font-size:12px;color:var(--text-tertiary);margin-top:2px;">制度规范库 · 690 阅读</div>
+                </div>
+              </div>
+              <div class="list-item" onclick="goTo('detail')">
+                <div class="list-icon" style="background:#f5f5f5;color:var(--text-tertiary);font-size:13px;font-weight:600;">4</div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:14px;line-height:1.4;">Q1 OKR 进度汇报模板</div>
+                  <div style="font-size:12px;color:var(--text-tertiary);margin-top:2px;">系统操作指引 · 2024-12-30</div>
+                </div>
+              </div>
+              <div class="list-item" onclick="goTo('detail')">
+                <div class="list-icon" style="background:#f5f5f5;color:var(--text-tertiary);font-size:13px;font-weight:600;">5</div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:14px;line-height:1.4;">2024年度干部述职报告模板</div>
+                  <div style="font-size:12px;color:var(--text-tertiary);margin-top:2px;">会议与知识库 · 2024-12-28</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 底部留白 -->
+          <div style="height:80px;"></div>
+
+          <!-- 底部 tab -->
+          <div class="bottom-tab">
+            <div class="tab-item active" onclick="goTo('home')">
+              <svg class="tab-icon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3z"/></svg>
+              <span>首页</span>
+            </div>
+            <div class="tab-item" onclick="goTo('search')">
+              <svg class="tab-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <span>搜索</span>
+            </div>
+            <div class="tab-item" onclick="showToast('收藏列表')">
+              <svg class="tab-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <span>收藏</span>
+            </div>
+            <div class="tab-item" onclick="showToast('个人中心')">
+              <svg class="tab-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span>我的</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ 屏 2: 搜索结果 ============ -->
+        <div class="screen" id="screen-search">
+          <div class="app-nav">
+            <button class="btn-icon" onclick="goTo('home')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <div style="font-size:17px;font-weight:600;">搜索结果</div>
+            <div style="width:24px;"></div>
+          </div>
+
+          <div style="padding:12px 16px;">
+            <div style="background:#f5f6f7;border-radius:8px;height:40px;display:flex;align-items:center;padding:0 12px;gap:8px;border:1.5px solid var(--primary);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <span style="font-size:14px;color:var(--text);">入职</span>
+            </div>
+          </div>
+
+          <div style="padding:0 16px 12px;display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-size:13px;color:var(--text-secondary);">找到 <strong style="color:var(--text);">3</strong> 条与"入职"相关结果</div>
+            <div onclick="showToast('打开筛选弹层')" style="font-size:13px;color:var(--primary);cursor:pointer;display:flex;align-items:center;gap:4px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+              筛选
+            </div>
+          </div>
+
+          <!-- 二级 tab -->
+          <div class="no-scrollbar" style="display:flex;gap:8px;padding:0 16px 12px;overflow-x:auto;">
+            <div class="tab-pill active">全部</div>
+            <div class="tab-pill">政策法规库</div>
+            <div class="tab-pill">制度规范库</div>
+            <div class="tab-pill">系统操作指引</div>
+            <div class="tab-pill">会议与知识库</div>
+          </div>
+
+          <div style="padding:0 16px;">
+            <div class="article-card" onclick="goTo('detail')">
+              <div style="font-size:15px;font-weight:600;line-height:1.5;color:var(--primary);">
+                新员工<span class="hl">入职</span>流程指南 V3.1
+              </div>
+              <div style="font-size:13px;color:var(--text-secondary);margin-top:8px;line-height:1.6;">
+                详细说明了从 offer 发送到<span class="hl">入职</span>当天的所有环节，包括<span class="hl">入职</span>材料提交、系统录入等…
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;font-size:12px;color:var(--text-tertiary);">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:20px;height:20px;border-radius:50%;background:#3370ff;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;">HR</div>
+                  <span>制度规范库 · 4小时前</span>
+                </div>
+                <div style="display:flex;gap:14px;">
+                  <span onclick="event.stopPropagation();showToast('👁 预览')">👁 预览</span>
+                  <span onclick="event.stopPropagation();showToast('⭐ 收藏')">⭐ 收藏</span>
+                  <span onclick="event.stopPropagation();showToast('⬇ 下载')">⬇ 下载</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="article-card" onclick="goTo('detail')">
+              <div style="font-size:15px;font-weight:600;line-height:1.5;color:var(--primary);">
+                <span class="hl">入职</span>培训计划与安排
+              </div>
+              <div style="font-size:13px;color:var(--text-secondary);margin-top:8px;line-height:1.6;">
+                新员工<span class="hl">入职</span>后第 1 周的培训内容、考核方式、负责人安排…
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;font-size:12px;color:var(--text-tertiary);">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:20px;height:20px;border-radius:50%;background:#ff8800;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;">政</div>
+                  <span>政策法规库 · 5小时前</span>
+                </div>
+                <div style="display:flex;gap:14px;">
+                  <span onclick="event.stopPropagation();showToast('👁 预览')">👁 预览</span>
+                  <span onclick="event.stopPropagation();showToast('⭐ 收藏')">⭐ 收藏</span>
+                  <span onclick="event.stopPropagation();showToast('⬇ 下载')">⬇ 下载</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="article-card" onclick="goTo('detail')">
+              <div style="font-size:15px;font-weight:600;line-height:1.5;color:var(--primary);">
+                系统账号<span class="hl">入职</span>申请表
+              </div>
+              <div style="font-size:13px;color:var(--text-secondary);margin-top:8px;line-height:1.6;">
+                新员工<span class="hl">入职</span>后需要申请的系统账号清单及流程…
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;font-size:12px;color:var(--text-tertiary);">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:20px;height:20px;border-radius:50%;background:#8b5cf6;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;">IT</div>
+                  <span>系统操作指引 · 6小时前</span>
+                </div>
+                <div style="display:flex;gap:14px;">
+                  <span onclick="event.stopPropagation();showToast('👁 预览')">👁 预览</span>
+                  <span onclick="event.stopPropagation();showToast('⭐ 收藏')">⭐ 收藏</span>
+                  <span onclick="event.stopPropagation();showToast('⬇ 下载')">⬇ 下载</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="height:40px;display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);font-size:13px;">— 已显示全部结果 —</div>
+          <div style="height:80px;"></div>
+
+          <div class="bottom-tab">
+            <div class="tab-item" onclick="goTo('home')">
+              <svg class="tab-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+              <span>首页</span>
+            </div>
+            <div class="tab-item active">
+              <svg class="tab-icon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="white" stroke-width="2"/></svg>
+              <span>搜索</span>
+            </div>
+            <div class="tab-item" onclick="showToast('收藏列表')">
+              <svg class="tab-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <span>收藏</span>
+            </div>
+            <div class="tab-item" onclick="showToast('个人中心')">
+              <svg class="tab-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span>我的</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ 屏 3: 分类详情 ============ -->
+        <div class="screen" id="screen-category">
+          <div class="app-nav">
+            <button class="btn-icon" onclick="goTo('home')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <div style="font-size:17px;font-weight:600;">政策法规库</div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-icon" onclick="showToast('🔍 搜索本分类')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </button>
+              <button class="btn-icon" onclick="showToast('⚙ 排序/筛选')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div style="padding:16px 16px 8px;">
+            <div style="display:flex;align-items:baseline;gap:6px;">
+              <div style="font-size:18px;font-weight:600;">政策法规库</div>
+              <div style="font-size:13px;color:var(--text-secondary);">共 24 篇文章</div>
+            </div>
+          </div>
+
+          <!-- 二级 tab -->
+          <div class="no-scrollbar" style="display:flex;gap:8px;padding:0 16px 12px;overflow-x:auto;">
+            <div class="tab-pill active">全部 24</div>
+            <div class="tab-pill">国家常用法律</div>
+            <div class="tab-pill">国家关键行政法规</div>
+            <div class="tab-pill">河南省法规</div>
+          </div>
+
+          <div style="padding:0 16px;">
+            <div class="article-card" onclick="goTo('detail')">
+              <div style="font-size:15px;font-weight:600;line-height:1.5;color:var(--primary);">
+                中华人民共和国民法典（2025 修订版）
+              </div>
+              <div style="font-size:12px;color:var(--text-secondary);margin-top:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span>📋 发布单位：全国人大</span>
+                <span style="color:var(--border);">|</span>
+                <span>📂 所属目录：国家常用法律</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-size:12px;color:var(--text-tertiary);">
+                <div>📅 2026-01-01 · 👁 567 浏览</div>
+                <div style="display:flex;gap:10px;">
+                  <button class="btn-icon" onclick="event.stopPropagation();showToast('⭐ 已收藏')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="#eab308" stroke="#eab308" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  </button>
+                  <button class="btn-icon" onclick="event.stopPropagation();showToast('🔗 分享')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                  </button>
+                  <button class="btn-icon" onclick="event.stopPropagation();showToast('⋯ 更多')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="article-card" onclick="goTo('detail')">
+              <div style="font-size:15px;font-weight:600;line-height:1.5;color:var(--primary);">
+                关于加强网络安全管理的若干规定
+              </div>
+              <div style="font-size:12px;color:var(--text-secondary);margin-top:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span>📋 发布单位：网信办</span>
+                <span style="color:var(--border);">|</span>
+                <span>📂 所属目录：国家关键行政法规</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-size:12px;color:var(--text-tertiary);">
+                <div>📅 2025-12-15 · 👁 432 浏览</div>
+                <div style="display:flex;gap:10px;">
+                  <button class="btn-icon" onclick="event.stopPropagation();showToast('⭐ 收藏')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  </button>
+                  <button class="btn-icon" onclick="event.stopPropagation();showToast('🔗 分享')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                  </button>
+                  <button class="btn-icon" onclick="event.stopPropagation();showToast('⋯ 更多')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="article-card" onclick="goTo('detail')">
+              <div style="font-size:15px;font-weight:600;line-height:1.5;color:var(--primary);">
+                河南省科技创新促进条例（实施细则）
+              </div>
+              <div style="font-size:12px;color:var(--text-secondary);margin-top:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span>📋 发布单位：河南省政府</span>
+                <span style="color:var(--border);">|</span>
+                <span>📂 所属目录：河南省法规</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-size:12px;color:var(--text-tertiary);">
+                <div>📅 2025-11-30 · 👁 289 浏览</div>
+                <div style="display:flex;gap:10px;">
+                  <button class="btn-icon" onclick="event.stopPropagation();showToast('⭐ 收藏')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  </button>
+                  <button class="btn-icon" onclick="event.stopPropagation();showToast('🔗 分享')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                  </button>
+                  <button class="btn-icon" onclick="event.stopPropagation();showToast('⋯ 更多')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="height:80px;"></div>
+
+          <div class="bottom-tab">
+            <div class="tab-item active" onclick="goTo('home')">
+              <svg class="tab-icon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3z"/></svg>
+              <span>首页</span>
+            </div>
+            <div class="tab-item" onclick="goTo('search')">
+              <svg class="tab-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <span>搜索</span>
+            </div>
+            <div class="tab-item" onclick="showToast('收藏列表')">
+              <svg class="tab-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <span>收藏</span>
+            </div>
+            <div class="tab-item" onclick="showToast('个人中心')">
+              <svg class="tab-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span>我的</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ 屏 4: 文章详情 ============ -->
+        <div class="screen" id="screen-detail">
+          <div class="app-nav">
+            <button class="btn-icon" onclick="goTo('category')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <div style="font-size:17px;font-weight:600;">文章详情</div>
+            <button class="btn-icon" onclick="showToast('⋯ 更多操作')">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+            </button>
+          </div>
+
+          <div style="padding:16px 16px 12px;">
+            <div style="font-size:11px;color:var(--primary);font-weight:600;letter-spacing:0.5px;">国家常用法律</div>
+            <h1 style="font-size:20px;font-weight:600;line-height:1.4;margin:8px 0 12px;">中华人民共和国民法典（2025 修订版）</h1>
+            <div style="display:flex;align-items:center;gap:12px;font-size:12px;color:var(--text-tertiary);flex-wrap:wrap;">
+              <span>👁 1,204 阅读</span>
+              <span>⭐ 89 收藏</span>
+              <span>👍 56 有帮助</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);margin-top:8px;">
+              <div style="width:20px;height:20px;border-radius:50%;background:#3370ff;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;">人大</div>
+              <span>全国人大 · 2026-01-01 发布</span>
+            </div>
+          </div>
+
+          <div style="padding:0 16px;">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+              <span style="background:var(--primary-light);color:var(--primary);padding:4px 10px;border-radius:12px;font-size:11px;">#民法典</span>
+              <span style="background:var(--primary-light);color:var(--primary);padding:4px 10px;border-radius:12px;font-size:11px;">#2025修订</span>
+              <span style="background:var(--primary-light);color:var(--primary);padding:4px 10px;border-radius:12px;font-size:11px;">#民事</span>
+            </div>
+
+            <div style="background:#fafbfc;border-radius:8px;padding:12px;font-size:12px;color:var(--text-secondary);margin-bottom:16px;">
+              <div style="font-weight:500;color:var(--text);margin-bottom:4px;">📌 文档信息</div>
+              版本号：V2025.1 · 创建日期：2025-12-01 · 更新日期：2026-01-01
+            </div>
+
+            <div style="font-size:14px;line-height:1.8;color:var(--text);">
+              <p style="margin:0 0 12px;"><strong>第一编　总则</strong></p>
+              <p style="margin:0 0 12px;">
+                为了保护民事主体的合法权益，调整民事关系，维护社会和经济秩序，适应<mark style="background:#fff3a3;">中国特色社会主义</mark>发展要求，弘扬社会主义核心价值观，根据宪法，制定本法。
+              </p>
+              <p style="margin:0 0 12px;"><strong>第一章　基本规定</strong></p>
+              <p style="margin:0 0 12px;">
+                民法调整平等主体的自然人、法人和非法人组织之间的人身关系和财产关系。
+              </p>
+              <p style="margin:0 0 12px;">
+                民事主体从事民事活动，应当遵守法律，不得违背公序良俗。
+              </p>
+              <p style="margin:0 0 12px;">
+                民事主体从事民事活动，应当有利于节约资源、保护生态环境。
+              </p>
+              <p style="margin:0 0 12px;"><strong>第二章　自然人</strong></p>
+              <p style="margin:0 0 12px;">
+                自然人从出生时起到死亡时止，具有民事权利能力，依法享有民事权利，承担民事义务。
+              </p>
+            </div>
+          </div>
+
+          <div style="height:140px;"></div>
+
+          <!-- 底部操作区（sticky） -->
+          <div style="position:absolute;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);padding:8px 16px 24px;">
+            <div style="display:flex;gap:8px;margin-bottom:8px;">
+              <button class="btn-ghost" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="showToast('⬇ 开始下载')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                下载
+              </button>
+              <button class="btn-ghost" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="showToast('⭐ 已收藏')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#eab308" stroke="#eab308" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                已收藏
+              </button>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;justify-content:center;font-size:12px;color:var(--text-tertiary);margin-bottom:6px;">
+              <span>文档是否有帮助？</span>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button onclick="vote(this,'helpful')" style="flex:1;background:#10b981;color:#fff;border:none;border-radius:8px;padding:8px;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;">
+                <span>👍</span> 有帮助
+              </button>
+              <button onclick="vote(this,'nothelpful')" style="flex:1;background:#ef4444;color:#fff;border:none;border-radius:8px;padding:8px;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;">
+                <span>👎</span> 无帮助
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">操作成功</div>
+
+  <script>
+    // 屏幕切换
+    function goTo(screen) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      const target = document.getElementById('screen-' + screen);
+      if (target) {
+        target.classList.add('active');
+        target.querySelector('.device-screen').scrollTop = 0;
+      }
+    }
+    // Toast
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+    }
+    // 投票
+    function vote(btn, type) {
+      const parent = btn.parentElement;
+      const btns = parent.querySelectorAll('button');
+      btns.forEach(b => {
+        b.disabled = true;
+        b.style.opacity = '0.5';
+        b.style.cursor = 'not-allowed';
+      });
+      btn.style.opacity = '1';
+      btn.style.transform = 'scale(0.95)';
+      setTimeout(() => btn.style.transform = 'scale(1)', 150);
+      const label = type === 'helpful' ? '👍 已记录：您认为有帮助' : '👎 已记录：意见已提交';
+      showToast(label);
+      // 替换为已投票状态
+      setTimeout(() => {
+        parent.innerHTML = '<div style="flex:1;text-align:center;color:var(--text-tertiary);font-size:12px;padding:8px 0;">✓ 感谢您的反馈</div>';
+      }, 500);
+    }
+    // 初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      // 模拟文档水印（详情页）
+      const detailScreen = document.getElementById('screen-detail');
+      const watermark = document.createElement('div');
+      watermark.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:1;opacity:0.06;font-size:14px;color:#000;transform:rotate(-30deg);transform-origin:center;display:flex;flex-wrap:wrap;align-content:flex-start;overflow:hidden;';
+      const wmText = '张伟 · 13800000000 · 2026-07-15 · 智慧人力';
+      for (let i = 0; i < 60; i++) {
+        const span = document.createElement('span');
+        span.textContent = wmText;
+        span.style.cssText = 'padding:30px 50px;white-space:nowrap;';
+        watermark.appendChild(span);
+      }
+      detailScreen.querySelector('.app-nav').style.zIndex = 100;
+      detailScreen.style.position = 'relative';
+      detailScreen.insertBefore(watermark, detailScreen.children[1]);
+    });
+  </script>
+</body>
+</html>
