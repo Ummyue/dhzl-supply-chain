@@ -39,10 +39,10 @@
 
   // 质物明细行（v1.7.14：含【有效期】列，默认 4 行）
   let pledgeRows = [
-    { no: 1, name: '保乐肩', country: '巴西', factoryNo: '002', qty: 140, qtyUnit: '箱', weight: 3000, weightUnit: '千克', expiryDate: '2027-06-30', plannedInbound: '2026-01-01', produceDate: '2026-01-01', batchNo: '2026-01-01', contractNo: '2026-01-01', waybill: 'ZXT20260103', cabinet: '002', location: '河南省郑州市' },
-    { no: 2, name: '保乐肩', country: '巴西', factoryNo: '002', qty: 140, qtyUnit: '箱', weight: 3000, weightUnit: '千克', expiryDate: '2027-06-30', plannedInbound: '2026-01-01', produceDate: '2026-01-01', batchNo: '2026-01-01', contractNo: '2026-01-01', waybill: 'ZXT20260103', cabinet: '002', location: '河南省郑州市' },
-    { no: 3, name: '保乐肩', country: '巴西', factoryNo: '002', qty: 140, qtyUnit: '箱', weight: 3000, weightUnit: '千克', expiryDate: '2027-06-30', plannedInbound: '2026-01-01', produceDate: '2026-01-01', batchNo: '2026-01-01', contractNo: '2026-01-01', waybill: 'ZXT20260103', cabinet: '002', location: '河南省郑州市' },
-    { no: 4, name: '保乐肩', country: '巴西', factoryNo: '002', qty: 140, qtyUnit: '箱', weight: 3000, weightUnit: '千克', expiryDate: '2027-06-30', plannedInbound: '2026-01-01', produceDate: '2026-01-01', batchNo: '2026-01-01', contractNo: '2026-01-01', waybill: 'ZXT20260103', cabinet: '002', location: '河南省郑州市' },
+    { no: 1, name: '保乐肩', country: '巴西', factoryNo: '002', qty: 140, qtyUnit: '箱', weight: 3000, weightUnit: '千克', expiryDate: { value: 18, unit: 'month' }, plannedInbound: '2026-01-01', produceDate: '2026-01-01', batchNo: '2026-01-01', contractNo: '2026-01-01', waybill: 'ZXT20260103', cabinet: '002', location: '河南省郑州市' },
+    { no: 2, name: '保乐肩', country: '巴西', factoryNo: '002', qty: 140, qtyUnit: '箱', weight: 3000, weightUnit: '千克', expiryDate: { value: 18, unit: 'month' }, plannedInbound: '2026-01-01', produceDate: '2026-01-01', batchNo: '2026-01-01', contractNo: '2026-01-01', waybill: 'ZXT20260103', cabinet: '002', location: '河南省郑州市' },
+    { no: 3, name: '保乐肩', country: '巴西', factoryNo: '002', qty: 140, qtyUnit: '箱', weight: 3000, weightUnit: '千克', expiryDate: { value: 12, unit: 'month' }, plannedInbound: '2026-01-01', produceDate: '2026-01-01', batchNo: '2026-01-01', contractNo: '2026-01-01', waybill: 'ZXT20260103', cabinet: '002', location: '河南省郑州市' },
+    { no: 4, name: '保乐肩', country: '巴西', factoryNo: '002', qty: 140, qtyUnit: '箱', weight: 3000, weightUnit: '千克', expiryDate: { value: 1, unit: 'year' }, plannedInbound: '2026-01-01', produceDate: '2026-01-01', batchNo: '2026-01-01', contractNo: '2026-01-01', waybill: 'ZXT20260103', cabinet: '002', location: '河南省郑州市' },
   ];
 
   let selectedRows = new Set(); // 复选框选中的行号
@@ -260,6 +260,15 @@
     return `<span>${text} <span class="ml-1 px-1 py-0.5 text-[10px] bg-emerald-100 text-emerald-700 rounded font-medium">新</span></span>`;
   }
 
+  // v1.7.83 有效期格式化: { value: 18, unit: 'month' } → "18月"
+  function formatExpiry(e) {
+    if (!e) return '-';
+    if (typeof e === 'string') return e;  // 兼容旧 string 数据
+    const unitMap = { day: '天', month: '月', year: '年' };
+    const u = unitMap[e.unit] || e.unit || '';
+    return `${e.value || ''}${u}`;
+  }
+
   function renderPledgeRows() {
     if (!pledgeRows.length) {
       return `<tr><td colspan="18" class="py-12 text-center text-slate-400 text-sm">📭 暂无明细，请点击「新增」按钮添加</td></tr>`;
@@ -275,7 +284,7 @@
         <td class="px-2 py-2">${row.qtyUnit}</td>
         <td class="px-2 py-2 text-right num-focus">${row.weight}</td>
         <td class="px-2 py-2">${row.weightUnit}</td>
-        <td class="px-2 py-2"><span class="text-blue-700">${row.expiryDate || '-'}</span></td>
+        <td class="px-2 py-2"><span class="text-blue-700">${formatExpiry(row.expiryDate)}</span></td>
         <td class="px-2 py-2">${row.plannedInbound || '-'}</td>
         <td class="px-2 py-2">${row.produceDate || '-'}</td>
         <td class="px-2 py-2">${row.batchNo || '-'}</td>
@@ -399,7 +408,14 @@
               <span class="ml-1 px-1 py-0.5 text-[10px] bg-emerald-100 text-emerald-700 rounded font-medium">v1.7.14 新增</span>
               <span class="ml-2 text-slate-400 text-xs">（影响融资期限合规校验）</span>
             </label>
-            <input type="date" id="dm_expiry" value="${d.expiryDate}" class="w-full px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+            <div class="flex items-center gap-2">
+              <input type="number" id="dm_expiryValue" min="1" value="${(d.expiryDate && d.expiryDate.value) || ''}" placeholder="请输入数字" class="flex-1 min-w-0 px-3 py-2 border border-slate-300 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+              <select id="dm_expiryUnit" class="w-28 px-3 py-2 border border-slate-300 rounded text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-100 outline-none">
+                <option value="day" ${(d.expiryDate && d.expiryDate.unit === 'day') ? 'selected' : ''}>天</option>
+                <option value="month" ${(d.expiryDate && d.expiryDate.unit === 'month') ? 'selected' : ''}>月</option>
+                <option value="year" ${(!d.expiryDate || !d.expiryDate.unit || d.expiryDate.unit === 'year') ? 'selected' : ''}>年</option>
+              </select>
+            </div>
           </div>
 
           <div>
@@ -460,7 +476,10 @@
       weight: document.getElementById('dm_weight').value,
       weightUnit: document.getElementById('dm_weightUnit').value,
       produceDate: document.getElementById('dm_produce').value,
-      expiryDate: document.getElementById('dm_expiry').value,
+      expiryDate: {
+        value: parseInt(document.getElementById('dm_expiryValue').value, 10) || null,
+        unit: document.getElementById('dm_expiryUnit').value,
+      },
       batchNo: document.getElementById('dm_batchNo').value,
       contractNo: document.getElementById('dm_contractNo').value,
       waybill: document.getElementById('dm_waybill').value,
@@ -476,7 +495,7 @@
     if (!data.qty) missing.push('入库数量');
     if (!data.weight) missing.push('入库重量');
     if (!data.produceDate) missing.push('生产日期');
-    if (!data.expiryDate) missing.push('有效期');
+    if (!data.expiryDate || !data.expiryDate.value || !data.expiryDate.unit) missing.push('有效期');
     if (!data.plannedInbound) missing.push('计划入库时间');
     if (!data.location) missing.push('货物所在地');
     if (missing.length) return Utils.toast(`请填写：${missing.join('、')}`, 'error');
@@ -542,7 +561,7 @@
       return Utils.toast('请填写所有基础信息必填项', 'error');
     }
     if (pledgeRows.length === 0) return Utils.toast('请至少添加一条质物明细', 'error');
-    const noExpiry = pledgeRows.find(r => !r.expiryDate);
+    const noExpiry = pledgeRows.find(r => !r.expiryDate || !r.expiryDate.value || !r.expiryDate.unit);
     if (noExpiry) return Utils.toast(`第 ${noExpiry.no} 行缺少「有效期」字段`, 'error');
     Utils.toast('入库申请已提交，等待审批', 'success');
     setTimeout(() => goBack(), 1000);
