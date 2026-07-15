@@ -182,7 +182,7 @@
     `;
   }
 
-  function renderRows(tabId, f, actionRenderer, statusLabelMap) {
+  function renderRows(tabId, f, actionRenderer, statusLabelMap, onRowClick) {
     // 状态机文本：默认 + 调用方覆盖（合并而非替换）
     const statusMap = Object.assign({}, DEFAULT_STATUS_LABEL, statusLabelMap || {});
     const tabFiltered = tabId === 'all'
@@ -194,8 +194,10 @@
     }
     return list.map(rec => {
       const s = statusMap[rec.status] || { text: rec.status, color: 'text-slate-500' };
+      // v1.7.77：行可点 → 调 window.__FinancingList.gotoDetail(recId)（按钮 stopPropagation 防冒泡）
+      const rowAttr = onRowClick ? `onclick="window.__FinancingList.gotoDetail('${rec.id}')" style="cursor:pointer"` : '';
       return `
-        <tr class="border-t border-slate-100 hover:bg-blue-50/30">
+        <tr class="border-t border-slate-100 hover:bg-blue-50/30" ${rowAttr}>
           <td class="px-3 py-3 font-mono text-xs text-blue-700 whitespace-nowrap">${rec.bizNo}</td>
           <td class="px-3 py-3 whitespace-nowrap">${rec.applicant}</td>
           <td class="px-3 py-3 whitespace-nowrap text-slate-700">${rec.bank || '-'}</td>
@@ -310,7 +312,7 @@
 
       const tabsHtml = renderTabs(state.currentTab, getCount);
       const filterBarHtml = renderFilterBar(state);
-      const rowsHtml = renderRows(state.currentTab, state, config.actionRenderer || defaultActionRenderer, config.statusLabelMap);
+      const rowsHtml = renderRows(state.currentTab, state, config.actionRenderer || defaultActionRenderer, config.statusLabelMap, config.onRowClick);
 
       // v1.7.8 修复：只更新各自的容器，保留外层布局样式（border / 背景 / 容器）
       const barEl = document.getElementById('financingFilterBarInner');
@@ -336,6 +338,13 @@
       },
       exportCSV: () => exportCSV(state),
       getState: () => state,
+      // v1.7.77：行点击 → 默认详情页（由 page 在 config.onRowClick 里配置）
+      gotoDetail: (id) => {
+        if (config.onRowClick) {
+          const rec = MockData.financingList.find(x => x.id === id);
+          if (rec) config.onRowClick(rec);
+        }
+      },
     };
 
     // 列表容器 + 顶部 structure（filter + tabs + table）
@@ -378,7 +387,7 @@
                   <th class="text-center px-3 py-3 whitespace-nowrap">操作</th>
                 </tr>
               </thead>
-              <tbody id="financingRowsBody">${renderRows(state.currentTab, state, config.actionRenderer || defaultActionRenderer, config.statusLabelMap)}</tbody>
+              <tbody id="financingRowsBody">${renderRows(state.currentTab, state, config.actionRenderer || defaultActionRenderer, config.statusLabelMap, config.onRowClick)}</tbody>
             </table>
           </div>
         </div>

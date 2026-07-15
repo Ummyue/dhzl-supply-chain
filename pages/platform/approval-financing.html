@@ -39,15 +39,17 @@
       </div>
 
       ${FinancingList.render({
+        // v1.7.77：行可点击 → 默认跳监管方评估货值详情页（按钮 stopPropagation 防冒泡）
+        onRowClick: (rec) => { window.location.href = Utils.nav('/platform/approval-financing-detail?id=' + rec.id); },
         actionRenderer: (rec) => {
           // 监管方专属：status 涉及待监管方盖章时显示对应动作
           const showEvaluate = rec.status === 'pending_supervisor_eval';
           const showAudit = rec.status === 'pending_supervisor';
           const showDetail = true;
           return `
-            ${showDetail ? `<button onclick="Utils.nav('/platform/approval-financing-detail?id=' + '${rec.id}')" class="text-blue-600 hover:underline text-xs font-medium">详情</button>` : ''}
-            ${showEvaluate ? `<button onclick="Utils.nav('/platform/approval-financing-detail?id=' + '${rec.id}')" class="text-amber-600 hover:underline text-xs font-medium">待监管方评估货值</button>` : ''}
-            ${showAudit ? `<button onclick="alert('即将对 ${rec.bizNo} 进行待监管方盖章（待完善审批内容）')" class="text-blue-600 hover:underline text-xs font-medium">待监管方盖章</button>` : ''}
+            ${showDetail ? `<button onclick=\"event.stopPropagation(); window.location.href = Utils.nav('/platform/approval-financing-detail?id=' + '${rec.id}')\" class="text-blue-600 hover:underline text-xs font-medium">详情</button>` : ''}
+            ${showEvaluate ? `<button onclick=\"event.stopPropagation(); window.location.href = Utils.nav('/platform/approval-financing-detail?id=' + '${rec.id}')\" class="text-amber-600 hover:underline text-xs font-medium">待监管方评估货值</button>` : ''}
+            ${showAudit ? `<button onclick="event.stopPropagation(); alert('即将对 ${rec.bizNo} 进行待监管方盖章（待完善审批内容）')" class="text-blue-600 hover:underline text-xs font-medium">待监管方盖章</button>` : ''}
           `;
         },
         statusLabelMap: {
