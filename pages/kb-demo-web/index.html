@@ -1647,7 +1647,9 @@
       const params = new URLSearchParams(location.search);
       const initPath = params.get('init');
       if (initPath) {
-        initPath.split('/').filter(Boolean).forEach(name => navTo(name));
+        // 直接用 initPath 覆盖 default（默认 ['全部']）
+        currentPath = initPath.split('/').filter(Boolean);
+        renderCatalog();
       } else {
         renderCatalog();
       }
