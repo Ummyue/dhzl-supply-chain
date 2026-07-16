@@ -1,0 +1,156 @@
+{
+  "_meta": {
+    "title": "高保真原型变更记录",
+    "description": "记录 dhzl-supply-chain 原型从 v1.7.82 至今的所有变更(字段/菜单/提示词/单位/选项/控件/状态机/依赖关系)",
+    "typeLabels": {
+      "field": "字段",
+      "menu": "菜单",
+      "copy": "提示词",
+      "unit": "单位",
+      "option": "选项",
+      "control": "控件",
+      "state": "状态机",
+      "deps": "依赖关系"
+    },
+    "typeColors": {
+      "field": "blue",
+      "menu": "purple",
+      "copy": "green",
+      "unit": "orange",
+      "option": "teal",
+      "control": "indigo",
+      "state": "rose",
+      "deps": "amber"
+    }
+  },
+  "entries": [
+    {
+      "version": "v1.7.86",
+      "date": "2026-07-16",
+      "title": "修浮层页面跳转（用 Utils.nav 拼完整 URL）",
+      "types": ["deps"],
+      "summary": "浮层 <a href> 从裸 path (/customer/xxx) 改为 Utils.nav() 拼完整 URL (/pages/customer/xxx)，不再依赖全局 click 拦截器",
+      "event": "用户反馈监管方【准入审批】点击后无法正常跳转（middle-click 新标签页 / 中键 / 带修饰键点击全部 404）",
+      "impact": [
+        "所有 30+ 页面的浮层入口链接",
+        "中键 / 新标签页 / 带修饰键点击全部能正确跳转",
+        "CF Pages clean URL 自动补 .html"
+      ],
+      "files": ["shared/js/components.js"],
+      "screenshot": null
+    },
+    {
+      "version": "v1.7.85",
+      "date": "2026-07-16",
+      "title": "全局页面目录（Axure 风格浮层 + 左上角图标入口）",
+      "types": ["control", "menu"],
+      "summary": "新增 Components.pageTree 通用组件。浮层式全局页面目录,嵌在 topbar logo 之前的 36×36 入口图标触发,双层 tabs(产品线 + 角色),树形展示,折叠状态 localStorage 记忆,当前页高亮",
+      "event": "用户提出: 做个全局的页面目录,清晰呈现父子集关系,类似 Axure 原型图左侧的目录结构,默认收起,左上角图标触发,后续改菜单可同步维护",
+      "impact": [
+        "30+ 页面自动获得全局目录入口(改 1 处覆盖所有页面)",
+        "数据源 = MockData.menus[product][role],改菜单自动同步",
+        "X 关闭 / 浮层外点击 / ESC 三种关闭方式"
+      ],
+      "files": ["shared/js/components.js"],
+      "screenshot": "assets/changelog/v1.7.85-pageTree-warehouse-customer.png"
+    },
+    {
+      "version": "v1.7.84",
+      "date": "2026-07-16",
+      "title": "去除入库申请清单【打印】【分享】按钮",
+      "types": ["control"],
+      "summary": "删除入库申请清单页面底部的【打印】【分享】按钮,以及【查看完整单据】弹窗工具栏的 🖨 打印按钮",
+      "event": "用户要求去除这些按钮",
+      "impact": [
+        "pages/customer/inbound-create.html 清单页 + 完整单据弹窗",
+        "未影响其他角色页面（仅货主方入库申请）"
+      ],
+      "files": ["pages/customer/inbound-create.html"],
+      "screenshot": null
+    },
+    {
+      "version": "v1.7.83",
+      "date": "2026-07-16",
+      "title": "质物明细有效期改为 N 天 / 月 / 年（数字 + 单位选择器）",
+      "types": ["field", "unit"],
+      "summary": "data.expiryDate 数据格式: string '2027-06-30' → object { value: 18, unit: 'month' }。列表 formatExpiry(e) 工具函数智能渲染(向后兼容 string)。新增弹窗用 <input type=number> + <select>(天/月/年) 替代 <input type=date>。保存为对象,校验: !value || !unit 触发『请填写:有效期』",
+      "event": "用户要求『质物明细有效期』改为 N 天/月/年形式(数字+单位选择器交互)",
+      "impact": [
+        "pages/customer/inbound-create.html 质物明细表格 + 新增弹窗",
+        "后续所有依赖 expiryDate 字段的列表 / 详情页通过 formatExpiry 工具函数自动兼容"
+      ],
+      "files": ["pages/customer/inbound-create.html", "shared/js/mockData.js"],
+      "screenshot": null
+    },
+    {
+      "version": "v1.7.82(补 label)",
+      "date": "2026-07-16",
+      "title": "全部列表页给 field 补 label（label 字段是用户最初截图的字段名）",
+      "types": ["field"],
+      "summary": "给 Components.filterBar 的每个 field 加 f.label 属性(input 上方的字段名,text-xs text-slate-500)。27 个文件 +174 label,清 87 重复 placeholder。label 提取规则: placeholder『请输入X』→『X』;placeholder『请选择 / 全部』→ KEY_LABELS 字典;placeholder『X』→『X』",
+      "event": "用户反馈『你把所有筛选项的名称都去掉了,这个是要保留的』(我误把 label 当 placeholder 用了)",
+      "impact": [
+        "22 个列表页全部恢复字段名(输入框上方的 label 文字)",
+        "Components.filterBar 字段模型完善: label(字段名) ≠ placeholder(输入提示),两者必须保留"
+      ],
+      "files": ["shared/js/components.js", "22 列表页"],
+      "screenshot": null
+    },
+    {
+      "version": "v1.7.82(批量推广)",
+      "date": "2026-07-16",
+      "title": "4 角色 + 货主方批量接入通用筛选条（22 个列表页）",
+      "types": ["control"],
+      "summary": "用通用组件 Components.filterBar 批量改造 22 个列表页(5 货主方 + 17 4 角色): inbound / outbound / inventory-ledger / limit-management / pledge-list / admission / financing / disburse-repayment / in-out-detail。删除 22 处重复的 renderActiveTags / hasAnyFilter / 筛选区 div,精简 ~1986 行重复代码(各 commit 之和)",
+      "event": "用户要求『优化筛选控件』",
+      "impact": [
+        "5 货主方核心页 + 17 4 角色页全部统一筛选条样式/行为",
+        "减少 1986 行重复代码(净减少,因通用组件 235 行替换了 2221 行散落筛选区)",
+        "筛选行为统一: 实时刷新 + 抽屉式模糊搜索 + 数据导出"
+      ],
+      "files": [
+        "pages/customer/inbound.html",
+        "pages/customer/outbound.html",
+        "pages/customer/inventory-ledger.html",
+        "pages/customer/limit-management.html",
+        "pages/customer/pledge-list.html",
+        "pages/customer/financing.html",
+        "pages/customer/disburse-repayment.html",
+        "pages/customer/in-out-detail.html",
+        "pages/bank/approval-inbound.html",
+        "pages/bank/approval-outbound.html",
+        "pages/bank/inventory-ledger.html",
+        "pages/bank/disburse-repayment.html",
+        "pages/bank/approval-in-out-detail.html",
+        "pages/guarantor/approval-inbound.html",
+        "pages/guarantor/approval-outbound.html",
+        "pages/guarantor/inventory-ledger.html",
+        "pages/guarantor/limit-management.html",
+        "pages/guarantor/disburse-repayment.html",
+        "pages/guarantor/approval-in-out-detail.html",
+        "pages/platform/approval-inbound.html",
+        "pages/platform/approval-outbound.html",
+        "pages/platform/inventory-ledger.html",
+        "pages/platform/limit-management.html",
+        "pages/platform/disburse-repayment.html",
+        "pages/platform/approval-in-out-detail.html"
+      ],
+      "screenshot": null
+    },
+    {
+      "version": "v1.7.82(通用组件)",
+      "date": "2026-07-15",
+      "title": "抽出通用筛选条组件 Components.filterBar",
+      "types": ["control"],
+      "summary": "新增 Components.filterBar 通用组件: 3×3 网格 + 实时刷新 + 抽屉式模糊搜索(text only, suggest.primaryKey/secondaryKey) + 数据导出 + 顶部 tag 行 + label/placeholder 分离。field 类型: text / select / dateRange。onChange 字符串(用 new Function()() 调用)或函数。全局 window.__filterBarState 暂存。准入申请 v2 接入验证",
+      "event": "用户提出『优化筛选控件』,原 admission 100+ 行手写筛选区被精简到 30 行 fields 配置",
+      "impact": [
+        "shared/js/components.js 新增 235 行通用组件",
+        "准入申请 v2 验证通用组件可行性",
+        "为后续 22 页批量改造铺路"
+      ],
+      "files": ["shared/js/components.js", "pages/customer/admission.html"],
+      "screenshot": null
+    }
+  ]
+}

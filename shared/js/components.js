@@ -925,7 +925,17 @@ function initPage(currentPath = '') {
             <div id="pageTreeBody" class="flex-1 overflow-y-auto py-2 bg-slate-50/30"></div>
             <div class="px-4 py-2 border-t border-slate-200 text-[11px] text-slate-500 flex items-center justify-between">
               <span id="pageTreeInfo">--</span>
-              <span>共 <span id="pageTreeCount">0</span> 个页面</span>
+              <div class="flex items-center gap-3">
+                <a href="/docs/changelog.html" target="_blank"
+                  class="text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1"
+                  title="查看高保真原型所有变更记录（字段/菜单/提示词/单位/选项/控件/状态机/依赖关系）">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                  变更记录
+                </a>
+                <span>共 <span id="pageTreeCount">0</span> 个页面</span>
+              </div>
             </div>
           `;
         })()}

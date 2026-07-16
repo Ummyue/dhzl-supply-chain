@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>高保真原型 - 变更记录 | 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* 时间线样式 */
+    .timeline-dot { width: 14px; height: 14px; border-radius: 50%; border: 3px solid #3b82f6; background: #fff; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+    .timeline-line { width: 2px; background: linear-gradient(to bottom, #cbd5e1, transparent); }
+    .entry-card { transition: transform 0.15s, box-shadow 0.15s; }
+    .entry-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); }
+    .filter-chip { transition: all 0.15s; user-select: none; }
+    .filter-chip.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+    .filter-chip:not(.active):hover { background: #eff6ff; border-color: #93c5fd; }
+    .impact-list li::before { content: "▸"; color: #3b82f6; margin-right: 6px; }
+    .type-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 500; }
+    /* 颜色按 type 区分 */
+    .type-field { background: #dbeafe; color: #1e40af; }
+    .type-menu { background: #ede9fe; color: #5b21b6; }
+    .type-copy { background: #d1fae5; color: #065f46; }
+    .type-unit { background: #fed7aa; color: #9a3412; }
+    .type-option { background: #ccfbf1; color: #115e59; }
+    .type-control { background: #e0e7ff; color: #3730a3; }
+    .type-state { background: #ffe4e6; color: #9f1239; }
+    .type-deps { background: #fef3c7; color: #92400e; }
+    /* 隐藏/显示动画 */
+    .entry-hidden { display: none !important; }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+  <!-- 顶部 Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
+    <div class="max-w-7xl mx-auto px-6 py-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold text-slate-800">变更记录</h1>
+            <p class="text-xs text-slate-500">高保真原型 · 字段 / 菜单 / 提示词 / 单位 / 选项 / 控件 / 状态机 / 依赖关系</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 text-sm">
+          <a href="/pages/customer/dashboard.html" class="px-3 py-1.5 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+            </svg>
+            返回首页
+          </a>
+          <div class="text-right">
+            <div class="text-2xl font-bold text-blue-600" id="stat-total">0</div>
+            <div class="text-xs text-slate-500">次变更</div>
+          </div>
+          <div class="text-right">
+            <div class="text-2xl font-bold text-indigo-600" id="stat-versions">0</div>
+            <div class="text-xs text-slate-500">个版本</div>
+          </div>
+        </div>
+      </div>
+      <!-- 类型过滤条 -->
+      <div class="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2 flex-wrap">
+        <span class="text-xs text-slate-500 font-medium">类型过滤：</span>
+        <button class="filter-chip active px-3 py-1 rounded-full border border-slate-300 text-xs font-medium" data-type="all">全部</button>
+        <button class="filter-chip px-3 py-1 rounded-full border border-slate-300 text-xs font-medium" data-type="field">字段</button>
+        <button class="filter-chip px-3 py-1 rounded-full border border-slate-300 text-xs font-medium" data-type="menu">菜单</button>
+        <button class="filter-chip px-3 py-1 rounded-full border border-slate-300 text-xs font-medium" data-type="copy">提示词</button>
+        <button class="filter-chip px-3 py-1 rounded-full border border-slate-300 text-xs font-medium" data-type="unit">单位</button>
+        <button class="filter-chip px-3 py-1 rounded-full border border-slate-300 text-xs font-medium" data-type="option">选项</button>
+        <button class="filter-chip px-3 py-1 rounded-full border border-slate-300 text-xs font-medium" data-type="control">控件</button>
+        <button class="filter-chip px-3 py-1 rounded-full border border-slate-300 text-xs font-medium" data-type="state">状态机</button>
+        <button class="filter-chip px-3 py-1 rounded-full border border-slate-300 text-xs font-medium" data-type="deps">依赖关系</button>
+        <span class="ml-auto text-xs text-slate-400" id="filter-info">显示全部</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主体：时间线 + 卡片 -->
+  <main class="max-w-7xl mx-auto px-6 py-8">
+    <div id="timeline-container" class="relative">
+      <div class="text-center text-slate-400 py-12">
+        <svg class="w-8 h-8 mx-auto animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        <p class="mt-2 text-sm">加载中…</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // 类型标签映射
+    const TYPE_LABELS = {
+      field: '字段', menu: '菜单', copy: '提示词', unit: '单位',
+      option: '选项', control: '控件', state: '状态机', deps: '依赖关系'
+    };
+
+    // 状态：当前过滤类型
+    let activeTypes = new Set(['all']); // 'all' 表示全部
+
+    // 加载数据并渲染
+    fetch('changelog-data.json?v=' + Date.now())
+      .then(r => r.json())
+      .then(data => {
+        render(data);
+      })
+      .catch(err => {
+        document.getElementById('timeline-container').innerHTML =
+          '<div class="text-center text-rose-500 py-12">加载失败: ' + err.message + '</div>';
+      });
+
+    function render(data) {
+      const entries = data.entries || [];
+      // 按 version 倒序
+      const sorted = entries.slice().sort((a, b) => (b.date + b.version).localeCompare(a.date + a.version));
+      // 统计
+      const versions = new Set(sorted.map(e => e.version));
+      document.getElementById('stat-total').textContent = sorted.length;
+      document.getElementById('stat-versions').textContent = versions.size;
+
+      // 按版本分组
+      const grouped = {};
+      for (const e of sorted) {
+        if (!grouped[e.version]) grouped[e.version] = { date: e.date, items: [] };
+        grouped[e.version].items.push(e);
+      }
+      const versionList = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+
+      // 渲染
+      const html = versionList.map((v, vi) => {
+        const grp = grouped[v];
+        const cards = grp.items.map((e, ei) => renderCard(e, ei)).join('');
+        return `
+          <div class="version-section mb-12 flex gap-6" data-version="${v}">
+            <!-- 左侧时间线 -->
+            <div class="flex-shrink-0 w-32 relative">
+              <div class="sticky top-32">
+                <div class="flex items-center gap-2">
+                  <div class="timeline-dot ${vi === 0 ? '!bg-blue-600' : ''}"></div>
+                  <div class="font-bold text-slate-800">${v}</div>
+                </div>
+                <div class="text-xs text-slate-500 mt-1 ml-5">${grp.date}</div>
+                <div class="text-xs text-slate-400 mt-0.5 ml-5">${grp.items.length} 个变更</div>
+              </div>
+            </div>
+            <!-- 右侧卡片列表 -->
+            <div class="flex-1 space-y-5">
+              ${cards}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('timeline-container').innerHTML = html;
+
+      // 绑定 chip 过滤
+      document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          const t = chip.dataset.type;
+          if (t === 'all') {
+            activeTypes = new Set(['all']);
+            document.querySelectorAll('.filter-chip').forEach(c => c.classList.toggle('active', c.dataset.type === 'all'));
+          } else {
+            activeTypes.delete('all');
+            if (activeTypes.has(t)) activeTypes.delete(t);
+            else activeTypes.add(t);
+            if (activeTypes.size === 0) activeTypes = new Set(['all']);
+            // 更新 all 按钮高亮
+            const allBtn = document.querySelector('.filter-chip[data-type="all"]');
+            allBtn.classList.toggle('active', activeTypes.has('all'));
+            // 更新当前按钮高亮
+            chip.classList.toggle('active', activeTypes.has(t));
+          }
+          applyFilter();
+        });
+      });
+
+      // 文件列表展开
+      document.querySelectorAll('.files-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const wrap = btn.nextElementSibling;
+          wrap.classList.toggle('hidden');
+          btn.querySelector('span').textContent = wrap.classList.contains('hidden') ? '展开 ▾' : '收起 ▴';
+        });
+      });
+    }
+
+    function renderCard(e, idx) {
+      const types = (e.types || []).map(t => `<span class="type-badge type-${t}">${TYPE_LABELS[t] || t}</span>`).join('');
+      const impactItems = (e.impact || []).map(i => `<li class="text-sm text-slate-600 leading-relaxed">${i}</li>`).join('');
+      const files = (e.files || []);
+      const filesHtml = files.length ? `
+        <div class="mt-3">
+          <button class="files-toggle text-xs text-slate-500 hover:text-blue-600 flex items-center gap-1">
+            <span>展开 ▾</span>
+            <span class="text-slate-400">| ${files.length} 个文件</span>
+          </button>
+          <div class="hidden mt-2 bg-slate-50 rounded-md p-3 text-xs text-slate-600 max-h-40 overflow-y-auto">
+            ${files.map(f => `<div class="font-mono py-0.5">${f}</div>`).join('')}
+          </div>
+        </div>
+      ` : '';
+
+      // 截图区(优先 screenshot 字段,或该 version 第一张 + "screenshot": "路径" 配图)
+      const screenshotHtml = e.screenshot ? `
+        <div class="lg:w-2/5 w-full">
+          <div class="rounded-lg overflow-hidden border border-slate-200 shadow-sm bg-slate-50">
+            <img src="${e.screenshot}" alt="${e.title}" class="w-full h-auto" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'p-8 text-center text-xs text-slate-400\\'>图片未找到: ${e.screenshot}</div>'">
+          </div>
+        </div>
+      ` : `
+        <div class="lg:w-2/5 w-full">
+          <div class="rounded-lg border-2 border-dashed border-slate-200 bg-slate-50/50 p-8 h-full flex items-center justify-center text-slate-400 text-xs text-center">
+            <div>
+              <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+              <p>本变更未附截图</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      return `
+        <div class="entry-card bg-white border border-slate-200 rounded-xl p-5 shadow-sm" data-types="${(e.types || []).join(',')}">
+          <div class="flex flex-col lg:flex-row gap-5">
+            <!-- 左文 -->
+            <div class="flex-1">
+              <div class="flex items-start gap-2 mb-2">
+                <div class="flex flex-wrap gap-1.5">${types}</div>
+              </div>
+              <h3 class="text-base font-semibold text-slate-800 leading-snug">${e.title}</h3>
+              <p class="text-sm text-slate-600 mt-2 leading-relaxed">${e.summary || ''}</p>
+              <div class="mt-3 bg-blue-50/60 border-l-2 border-blue-400 px-3 py-2 text-sm text-slate-700 rounded-r">
+                <span class="font-medium text-blue-700">触发事件：</span>${e.event || '—'}
+              </div>
+              ${impactItems ? `
+                <div class="mt-3">
+                  <div class="text-xs font-medium text-slate-500 mb-1">影响范围：</div>
+                  <ul class="impact-list space-y-0.5 pl-1">${impactItems}</ul>
+                </div>
+              ` : ''}
+              ${filesHtml}
+            </div>
+            <!-- 右图 -->
+            ${screenshotHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    function applyFilter() {
+      const cards = document.querySelectorAll('.entry-card');
+      let visible = 0;
+      cards.forEach(card => {
+        const types = (card.dataset.types || '').split(',');
+        const show = activeTypes.has('all') || types.some(t => activeTypes.has(t));
+        card.classList.toggle('entry-hidden', !show);
+        if (show) visible++;
+      });
+      // 隐藏空 version section
+      document.querySelectorAll('.version-section').forEach(sec => {
+        const vis = sec.querySelectorAll('.entry-card:not(.entry-hidden)').length;
+        sec.classList.toggle('hidden', vis === 0);
+      });
+      // 更新顶部提示
+      const info = document.getElementById('filter-info');
+      if (activeTypes.has('all')) info.textContent = `显示全部 ${cards.length} 条`;
+      else info.textContent = `显示 ${visible} / ${cards.length} 条 (类型: ${[...activeTypes].map(t => TYPE_LABELS[t] || t).join(' / ')})`;
+    }
+  </script>
+</body>
+</html>
