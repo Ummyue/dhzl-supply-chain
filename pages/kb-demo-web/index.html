@@ -212,6 +212,12 @@
       padding: 24px 32px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
       margin-bottom: 24px;
+      /* 高度固定 = 视口 2/3，内部上下滚动 */
+      height: 66.6667vh;
+      max-height: 66.6667vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
     .catalog-title {
       font-size: 18px;
@@ -222,6 +228,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex: 0 0 auto;
     }
     .catalog-title .meta { font-size: 13px; color: var(--text-tertiary); font-weight: 400; }
     /* Tab 栏（层级式面包屑） */
@@ -277,7 +284,7 @@
       background: var(--border);
       margin: 10px 4px;
     }
-    .tab-content { padding: 8px 0; min-height: 200px; }
+    .tab-content { padding: 8px 0; min-height: 0; flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; }
     /* 全部模式：按一级分组 */
     .all-group { margin-bottom: 24px; }
     .all-group:last-child { margin-bottom: 0; }
@@ -1463,8 +1470,8 @@
       ]
     };
 
-    // 状态：当前路径（最多 3 级）
-    let currentPath = [];
+    // 状态：当前路径（最多 3 级）；默认就是【全部】
+    let currentPath = ['全部'];
 
     function renderCatalog() {
       renderTabs();
@@ -1475,13 +1482,13 @@
       const bar = document.getElementById('tab-bar');
       let html = '';
 
-      if (currentPath.length === 0) {
-        // 根：5 个 tab（全部 + 4 个真实一级）
-        const allActive = '';
-        const l1Active = '';
-        html += `<div class="tab ${allActive}" onclick="navTo('全部')">全部</div>`;
+      if (currentPath.length === 0 || currentPath[0] === '全部') {
+        // 根（含默认【全部】状态）：5 个 tab 横排，无返回按钮
+        // 【全部】状态时【全部】tab 加 active
+        const isAll = currentPath[0] === '全部';
+        html += `<div class="tab ${isAll ? 'active' : ''}" onclick="navTo('全部')">全部</div>`;
         Object.keys(catalogData).forEach(name => {
-          html += `<div class="tab ${l1Active}" onclick="navTo('${name}')">${name}</div>`;
+          html += `<div class="tab" onclick="navTo('${name}')">${name}</div>`;
         });
       } else {
         // 有路径：返回按钮 + breadcrumb
@@ -1504,8 +1511,13 @@
       const meta = document.getElementById('catalog-meta');
 
       if (currentPath.length === 0) {
-        content.innerHTML = '<div class="empty-hint">点击上方 tab 进入分类</div>';
+        // 兼容旧调用：直接显示全部
+        content.innerHTML = '';
         meta.textContent = '共 4 个一级分类 · 14 个二级目录 · 50 个三级目录 · 218 篇文章';
+        // 委托给"全部"分支
+        currentPath = ['全部'];
+        renderContent();
+        return;
       } else if (currentPath.length === 1 && currentPath[0] === '全部') {
         // 【全部】状态：合并 4 个一级库的所有二级卡片（按一级分组渲染）
         let html = '';
@@ -1601,7 +1613,11 @@
     }
 
     function navBack() {
+      // 已经是【全部】状态，无可返回层级
+      if (currentPath.length <= 1 && currentPath[0] === '全部') return;
       currentPath.pop();
+      // 弹完之后如果空了，回到【全部】根
+      if (currentPath.length === 0) currentPath = ['全部'];
       renderCatalog();
     }
 
