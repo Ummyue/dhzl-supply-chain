@@ -13,6 +13,13 @@ const Components = {
 
     return `
       <header class="bg-white border-b border-slate-200 h-16 px-6 flex items-center sticky top-0 z-30 shadow-sm">
+        <!-- v1.7.85 页面目录入口按钮(嵌在 logo 之前,Axure 风格工具栏) -->
+        <button id="pageTreeToggle" onclick="Components.pageTree.toggle()" title="页面目录(全局导航)"
+          class="w-9 h-9 bg-slate-100 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-lg flex items-center justify-center text-slate-600 hover:text-blue-600 transition-all flex-shrink-0 mr-3">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h6m0 0v6m0-6L4 12m6 0h10M4 18h6m0 0v-6m0 6l-6-6m6 0h10"/>
+          </svg>
+        </button>
         <div class="flex items-center gap-3 flex-shrink-0">
           <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white font-bold shadow-md">大</div>
           <div>
@@ -596,8 +603,344 @@ document.addEventListener('click', (e) => {
 
 window.Components = Components;
 
+// ============ v1.7.85 全局页面目录（浮层，Axure Pages 风格）============
+// 数据源自动从 MockData.menus 同步，改菜单树/名称自动更新
+// 入口：body 左上角小图标
+// 浮层：fixed 定位,不挤压原 sidebar
+// 关闭：X / 浮层外点击 / ESC
+Components.pageTree = function() {
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const ROLE_LABEL = { customer: '货主方', platform: '监管方', guarantor: '担保方', bank: '资金方', customer_seal: '货主方盖章员', platform_seal: '监管方盖章员', guarantor_seal: '担保方盖章员', bank_seal: '资金方盖章员' };
+  const currentProductLine = Utils.getProductLine ? Utils.getProductLine() : 'warehouse';
+  const currentRole = Utils.getRole();
+
+  // 产品线列表
+  const productLines = [
+    { id: 'warehouse', label: '智慧仓储' },
+    { id: 'finance',   label: '供应链金融' },
+  ];
+
+  // 入口按钮(嵌进 topbar,logo 左侧)— Axure 风格工具栏入口
+  // 不挤压 logo,固定位置永不被内容遮挡
+  const toggleBtn = `
+    <button id="pageTreeToggle" onclick="Components.pageTree.toggle()" title="页面目录（全局）"
+      class="w-9 h-9 bg-slate-100 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-lg flex items-center justify-center text-slate-600 hover:text-blue-600 transition-all flex-shrink-0">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h6m0 0v6m0-6L4 12m6 0h10M4 18h6m0 0v-6m0 6l-6-6m6 0h10"/>
+      </svg>
+    </button>
+  `;
+
+  // 浮层(默认隐藏)
+  const panel = `
+    <div id="pageTreePanel" class="hidden fixed top-0 left-0 z-40 h-screen w-80 bg-white border-r border-slate-200 shadow-2xl flex flex-col">
+      <!-- 顶部:产品线 tabs + 关闭 -->
+      <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h6m0 0v6m0-6L4 12m6 0h10M4 18h6m0 0v-6m0 6l-6-6m6 0h10"/>
+          </svg>
+          <span class="text-sm font-semibold text-slate-800">页面目录</span>
+        </div>
+        <button onclick="Components.pageTree.toggle()" title="关闭(ESC)" class="text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- 产品线 tabs -->
+      <div class="flex border-b border-slate-200 bg-slate-50">
+        ${productLines.map(p => `
+          <button data-product="${p.id}" onclick="Components.pageTree.switchProduct('${p.id}')"
+            class="flex-1 px-3 py-2.5 text-xs font-medium border-b-2 transition pageTree-productTab"
+            data-active="${p.id === currentProductLine}">
+            ${esc(p.label)}
+          </button>
+        `).join('')}
+      </div>
+
+      <!-- 角色 tabs -->
+      <div class="flex border-b border-slate-200 bg-white px-2 py-1.5 gap-1">
+        ${Object.keys(ROLE_LABEL).filter(r => r === 'customer' || r === 'platform' || r === 'guarantor' || r === 'bank').map(r => `
+          <button data-role="${r}" onclick="Components.pageTree.switchRole('${r}')"
+            class="flex-1 px-2 py-1 text-[11px] rounded transition pageTree-roleTab"
+            data-active="${r === currentRole}">
+            ${esc(ROLE_LABEL[r])}
+          </button>
+        `).join('')}
+      </div>
+
+      <!-- 树(滚动) -->
+      <div id="pageTreeBody" class="flex-1 overflow-y-auto py-2 bg-slate-50/30">
+        <!-- JS 动态渲染 -->
+      </div>
+
+      <!-- 底部:状态信息 -->
+      <div class="px-4 py-2 border-t border-slate-200 text-[11px] text-slate-500 flex items-center justify-between">
+        <span id="pageTreeInfo">--</span>
+        <span>共 <span id="pageTreeCount">0</span> 个页面</span>
+      </div>
+    </div>
+  `;
+
+  // 半透明遮罩(浮层外点击关闭)
+  const overlay = `<div id="pageTreeOverlay" class="hidden fixed inset-0 z-30 bg-black/30" onclick="Components.pageTree.toggle()"></div>`;
+
+  return toggleBtn + overlay + panel;
+};
+
+// 当前选中状态
+Components.pageTree._state = { product: 'warehouse', role: 'customer' };
+
+// 从 Utils 同步当前 product/role
+Components.pageTree._initState = function() {
+  const curProduct = (Utils.getProductLine && Utils.getProductLine()) || 'warehouse';
+  // 角色取主角色（去掉 _seal 后缀）
+  let curRole = (Utils.getRole && Utils.getRole()) || 'customer';
+  if (curRole.endsWith('_seal')) curRole = curRole.replace('_seal', '');
+  Components.pageTree._state.product = curProduct;
+  Components.pageTree._state.role = curRole;
+};
+
+Components.pageTree.toggle = function() {
+  const panel = document.getElementById('pageTreePanel');
+  const overlay = document.getElementById('pageTreeOverlay');
+  const isOpen = !panel.classList.contains('hidden');
+  if (isOpen) {
+    panel.classList.add('hidden');
+    overlay.classList.add('hidden');
+  } else {
+    Components.pageTree._initState && Components.pageTree._initState();
+    panel.classList.remove('hidden');
+    overlay.classList.remove('hidden');
+    Components.pageTree._refreshTabs && Components.pageTree._refreshTabs();
+    Components.pageTree.render();
+  }
+};
+
+// 同步 tab 高亮（state → DOM）
+Components.pageTree._refreshTabs = function() {
+  const state = Components.pageTree._state;
+  document.querySelectorAll('.pageTree-productTab').forEach(btn => {
+    const active = btn.dataset.product === state.product;
+    btn.dataset.active = active;
+    if (active) {
+      btn.classList.add('border-blue-600', 'text-blue-700', 'bg-white');
+      btn.classList.remove('border-transparent', 'text-slate-500');
+    } else {
+      btn.classList.remove('border-blue-600', 'text-blue-700', 'bg-white');
+      btn.classList.add('border-transparent', 'text-slate-500');
+    }
+  });
+  document.querySelectorAll('.pageTree-roleTab').forEach(btn => {
+    const active = btn.dataset.role === state.role;
+    btn.dataset.active = active;
+    if (active) {
+      btn.classList.add('bg-blue-600', 'text-white');
+      btn.classList.remove('text-slate-600', 'hover:bg-slate-100');
+    } else {
+      btn.classList.remove('bg-blue-600', 'text-white');
+      btn.classList.add('text-slate-600', 'hover:bg-slate-100');
+    }
+  });
+};
+
+Components.pageTree.switchProduct = function(product) {
+  Components.pageTree._state.product = product;
+  // 更新 tabs 高亮
+  document.querySelectorAll('.pageTree-productTab').forEach(btn => {
+    btn.dataset.active = btn.dataset.product === product;
+    if (btn.dataset.active === 'true') {
+      btn.classList.add('border-blue-600', 'text-blue-700', 'bg-white');
+      btn.classList.remove('border-transparent', 'text-slate-500');
+    } else {
+      btn.classList.remove('border-blue-600', 'text-blue-700', 'bg-white');
+      btn.classList.add('border-transparent', 'text-slate-500');
+    }
+  });
+  Components.pageTree.render();
+};
+
+Components.pageTree.switchRole = function(role) {
+  Components.pageTree._state.role = role;
+  document.querySelectorAll('.pageTree-roleTab').forEach(btn => {
+    btn.dataset.active = btn.dataset.role === role;
+    if (btn.dataset.active === 'true') {
+      btn.classList.add('bg-blue-600', 'text-white');
+      btn.classList.remove('text-slate-600', 'hover:bg-slate-100');
+    } else {
+      btn.classList.remove('bg-blue-600', 'text-white');
+      btn.classList.add('text-slate-600', 'hover:bg-slate-100');
+    }
+  });
+  Components.pageTree.render();
+};
+
+Components.pageTree.render = function() {
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const state = Components.pageTree._state;
+  const menus = (window.MockData && MockData.menus) || {};
+  const groups = (menus[state.product] && menus[state.product][state.role]) || [];
+  const currentPath = location.pathname;
+  const currentKey = `pageTreeState_${state.product}_${state.role}`;
+  const collapsedSet = (() => { try { return new Set(JSON.parse(localStorage.getItem(currentKey) || '[]')); } catch(e) { return new Set(); } })();
+  let totalCount = 0;
+
+  const treeHtml = groups.length
+    ? groups.map((g, gi) => {
+        const groupKey = `g_${gi}`;
+        const isCollapsed = collapsedSet.has(groupKey);
+        // 去 .html 后缀,让 endsWith 匹配生效
+        const curPath = currentPath.replace(/\.html$/, '');
+        const itemsHtml = (g.items || []).map((it, ii) => {
+          totalCount++;
+          // 匹配当前路径(去前缀 + 去 .html)
+          const itemPath = (it.path || '').replace(/^\//, '').replace(/\.html$/, '');
+          const isActive = curPath.endsWith('/' + itemPath) || curPath === itemPath;
+          return `
+            <a href="${esc(it.path || '#')}" data-item="${esc(itemPath)}"
+              class="pageTree-item flex items-center gap-2 px-3 py-1.5 mx-2 rounded text-xs hover:bg-blue-50 transition ${isActive ? 'bg-blue-100 text-blue-700 font-medium' : 'text-slate-700'}"
+              style="padding-left: ${1.5 + 0.5 + 0.75}rem;">
+              <svg class="w-3 h-3 flex-shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+              <span class="truncate">${esc(it.label || '')}</span>
+            </a>
+          `;
+        }).join('');
+        return `
+          <div class="mb-0.5">
+            <button onclick="Components.pageTree.toggleGroup('${groupKey}')"
+              class="pageTree-groupBtn w-full flex items-center justify-between px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 transition">
+              <span class="flex items-center gap-1.5">
+                <svg class="w-3 h-3 transition-transform ${isCollapsed ? '-rotate-90' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+                ${esc(g.group || '')}
+              </span>
+              <span class="text-[10px] text-slate-400">${(g.items || []).length}</span>
+            </button>
+            <div class="pageTree-groupBody ${isCollapsed ? 'hidden' : ''}">
+              ${itemsHtml}
+            </div>
+          </div>
+        `;
+      }).join('')
+    : `<div class="px-4 py-8 text-center text-xs text-slate-400">该角色暂无菜单</div>`;
+
+  const body = document.getElementById('pageTreeBody');
+  if (body) body.innerHTML = treeHtml;
+
+  const countEl = document.getElementById('pageTreeCount');
+  if (countEl) countEl.textContent = totalCount;
+  const infoEl = document.getElementById('pageTreeInfo');
+  if (infoEl) {
+    const ROLE_LABEL = { customer: '货主方', platform: '监管方', guarantor: '担保方', bank: '资金方' };
+    infoEl.textContent = `${state.product === 'warehouse' ? '智慧仓储' : '供应链金融'} · ${ROLE_LABEL[state.role] || state.role}`;
+  }
+};
+
+Components.pageTree.toggleGroup = function(groupKey) {
+  const state = Components.pageTree._state;
+  const currentKey = `pageTreeState_${state.product}_${state.role}`;
+  let arr = [];
+  try { arr = JSON.parse(localStorage.getItem(currentKey) || '[]'); } catch(e) {}
+  if (arr.includes(groupKey)) {
+    arr = arr.filter(k => k !== groupKey);
+  } else {
+    arr.push(groupKey);
+  }
+  localStorage.setItem(currentKey, JSON.stringify(arr));
+  Components.pageTree.render();
+};
+
+// 初始化:初始产品线/角色高亮 + 全局事件
+Components.pageTree.init = function() {
+  const state = Components.pageTree._state;
+  Components.pageTree.switchProduct(state.product);
+  Components.pageTree.switchRole(state.role);
+  // ESC 关闭
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const panel = document.getElementById('pageTreePanel');
+      if (panel && !panel.classList.contains('hidden')) {
+        Components.pageTree.toggle();
+      }
+    }
+  });
+};
+
+window.Components = Components;
+
 // 通用初始化
 function initPage(currentPath = '') {
   if (!Utils.getUser()) Utils.setUser(MockData.users[Utils.getRole()]);
+  // v1.7.85 自动挂载全局页面目录(浮层式,入口由 topbar() 内联生成)
+  if (!document.getElementById('pageTreePanel')) {
+    // 浮层 + 遮罩挂在 body 顶层
+    document.body.insertAdjacentHTML('beforeend', `
+      <div id="pageTreeOverlay" class="hidden fixed inset-0 z-30 bg-black/30" onclick="Components.pageTree.toggle()"></div>
+      <div id="pageTreePanel" class="hidden fixed top-0 left-0 z-40 h-screen w-80 bg-white border-r border-slate-200 shadow-2xl flex flex-col">
+        ${(() => {
+          const ROLE_LABEL = { customer: '货主方', platform: '监管方', guarantor: '担保方', bank: '资金方', customer_seal: '货主方盖章员', platform_seal: '监管方盖章员', guarantor_seal: '担保方盖章员', bank_seal: '资金方盖章员' };
+          const currentProductLine = Utils.getProductLine ? Utils.getProductLine() : 'warehouse';
+          const currentRole = Utils.getRole();
+          const productLines = [{ id: 'warehouse', label: '智慧仓储' }, { id: 'finance', label: '供应链金融' }];
+          return `
+            <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h6m0 0v6m0-6L4 12m6 0h10M4 18h6m0 0v-6m0 6l-6-6m6 0h10"/>
+                </svg>
+                <span class="text-sm font-semibold text-slate-800">页面目录</span>
+              </div>
+              <button onclick="Components.pageTree.toggle()" title="关闭(ESC)" class="text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded p-1">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+            <div class="flex border-b border-slate-200 bg-slate-50">
+              ${productLines.map(p => `
+                <button data-product="${p.id}" onclick="Components.pageTree.switchProduct('${p.id}')"
+                  class="flex-1 px-3 py-2.5 text-xs font-medium border-b-2 transition pageTree-productTab"
+                  data-active="${p.id === currentProductLine}">
+                  ${p.label}
+                </button>
+              `).join('')}
+            </div>
+            <div class="flex border-b border-slate-200 bg-white px-2 py-1.5 gap-1">
+              ${['customer','platform','guarantor','bank'].map(r => `
+                <button data-role="${r}" onclick="Components.pageTree.switchRole('${r}')"
+                  class="flex-1 px-2 py-1 text-[11px] rounded transition pageTree-roleTab"
+                  data-active="${r === currentRole}">
+                  ${ROLE_LABEL[r]}
+                </button>
+              `).join('')}
+            </div>
+            <div id="pageTreeBody" class="flex-1 overflow-y-auto py-2 bg-slate-50/30"></div>
+            <div class="px-4 py-2 border-t border-slate-200 text-[11px] text-slate-500 flex items-center justify-between">
+              <span id="pageTreeInfo">--</span>
+              <span>共 <span id="pageTreeCount">0</span> 个页面</span>
+            </div>
+          `;
+        })()}
+      </div>
+    `);
+    // ESC 关闭
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !document.getElementById('pageTreePanel').classList.contains('hidden')) {
+        Components.pageTree.toggle();
+      }
+    });
+    // tab 高亮初始化
+    Components.pageTree._refreshTabs && Components.pageTree._refreshTabs();
+  }
+  // dev: URL 带 _ptOpen=1 自动展开浮层(截图/演示用)
+  const sp = new URLSearchParams(location.search);
+  if (sp.get('_ptOpen') === '1') {
+    setTimeout(() => Components.pageTree && Components.pageTree.toggle(), 100);
+  }
 }
 initPage();
