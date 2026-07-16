@@ -224,6 +224,144 @@
       justify-content: space-between;
     }
     .catalog-title .meta { font-size: 13px; color: var(--text-tertiary); font-weight: 400; }
+    /* Tab 栏（层级式面包屑） */
+    .tab-bar {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .tab {
+      padding: 10px 18px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-radius: 8px 8px 0 0;
+      position: relative;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+    .tab:hover:not(.active):not(.back) {
+      background: var(--bg);
+      color: var(--text);
+    }
+    .tab.active {
+      color: var(--primary);
+      font-weight: 500;
+    }
+    .tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0; right: 0;
+      height: 2px;
+      background: var(--primary);
+    }
+    .tab.back {
+      color: var(--text-tertiary);
+      padding-left: 12px;
+    }
+    .tab.back:hover { color: var(--primary); background: var(--bg); }
+    .tab.back::before {
+      content: '←';
+      font-weight: bold;
+      margin-right: 4px;
+    }
+    .tab-divider {
+      width: 1px;
+      height: 20px;
+      background: var(--border);
+      margin: 10px 4px;
+    }
+    .tab-content { padding: 8px 0; min-height: 200px; }
+    /* 二级卡片 grid */
+    .grid-3col {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .card-l2 {
+      background: var(--primary-light);
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .card-l2:hover {
+      background: #fff;
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+    }
+    .card-l2 .name { font-size: 16px; font-weight: 500; color: var(--text); }
+    .card-l2 .count { font-size: 12px; color: var(--text-secondary); margin-top: 8px; }
+    /* 三级 chip 列表 */
+    .grid-chip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .chip {
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 1px solid #bfdbfe;
+      border-radius: 22px;
+      padding: 10px 20px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+    .chip:hover {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(37, 99, 235, 0.2);
+    }
+    /* 文章列表（mock） */
+    .article-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .article-row {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .article-row:hover {
+      border-color: var(--primary);
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+    }
+    .article-row .title { font-size: 14px; font-weight: 500; color: var(--primary); }
+    .article-row .meta { font-size: 12px; color: var(--text-tertiary); margin-top: 4px; }
+    .article-row .action { color: var(--primary); font-size: 13px; }
+    /* 空提示 */
+    .empty-hint {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-tertiary);
+      font-size: 14px;
+    }
+    .empty-hint::before {
+      content: '↑';
+      display: block;
+      font-size: 32px;
+      margin-bottom: 12px;
+      color: var(--border);
+    }
     .catalog-rows { display: flex; flex-direction: column; gap: 12px; }
     /* 目录行（一级 + 二级） */
     .cat-row {
@@ -712,234 +850,16 @@
 
     <!-- 主内容 -->
     <div class="main">
-      <!-- 知识库目录 -->
+      <!-- 知识库目录（层级式 Tab） -->
       <div class="catalog">
         <div class="catalog-title">
           <span>知识库目录</span>
-          <span class="meta">共 4 个一级分类 · 10 个二级目录 · 218 篇文章</span>
+          <span class="meta" id="catalog-meta">共 4 个一级分类 · 14 个二级目录 · 50 个三级目录 · 218 篇文章</span>
         </div>
-        <div class="catalog-rows">
-          <!-- 行 1: 政策法规库 (7 个二级 - 演示横向滚动) -->
-          <div class="cat-row scroll">
-            <div class="primary-card" onclick="goTo('category')">
-              <div class="name">政策法规库</div>
-              <div class="meta">3 个二级 / 24 篇文章</div>
-              <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            <div class="secondary-list">
-              <div class="secondary-card" onclick="goTo('category')">
-                <div>
-                  <div class="name">国家常用法律</div>
-                </div>
-                <div class="count"><span><strong>3</strong> 篇 / 8 个三级</span><span class="arrow">→</span></div>
-                <div class="tertiary-popup">
-                  <div class="label">▼ 8 个三级目录</div>
-                  <div class="tags">
-                    <span class="tag">组织管理</span>
-                    <span class="tag">招聘管理</span>
-                    <span class="tag">干部人事</span>
-                    <span class="tag">薪酬福利</span>
-                    <span class="tag">培训与发展</span>
-                    <span class="tag">档案管理</span>
-                    <span class="tag">外事管理</span>
-                    <span class="tag">职称管理</span>
-                  </div>
-                  <div class="more" onclick="event.stopPropagation();goTo('category')">查看全部 8 个 →</div>
-                </div>
-              </div>
-              <div class="secondary-card" onclick="goTo('category')">
-                <div>
-                  <div class="name">国家关键行政法规与规定</div>
-                </div>
-                <div class="count"><span><strong>1</strong> 篇 / 8 个三级</span><span class="arrow">→</span></div>
-                <div class="tertiary-popup">
-                  <div class="label">▼ 8 个三级目录</div>
-                  <div class="tags">
-                    <span class="tag">组织管理</span>
-                    <span class="tag">招聘管理</span>
-                    <span class="tag">干部人事</span>
-                    <span class="tag">薪酬福利</span>
-                    <span class="tag">+4 更多</span>
-                  </div>
-                  <div class="more">查看全部 8 个 →</div>
-                </div>
-              </div>
-              <div class="secondary-card" onclick="goTo('category')">
-                <div>
-                  <div class="name">河南省各地市法规与政策</div>
-                </div>
-                <div class="count"><span><strong>0</strong> 篇 / 8 个三级</span><span class="arrow">→</span></div>
-                <div class="tertiary-popup">
-                  <div class="label">⚠ 暂未发布文章</div>
-                  <div style="font-size:12px;color:var(--text-tertiary);">三级目录已就绪，等待上传文章</div>
-                </div>
-              </div>
-              <div class="secondary-card" onclick="goTo('category')">
-                <div>
-                  <div class="name">党内法规制度</div>
-                </div>
-                <div class="count"><span><strong>2</strong> 篇 / 5 个三级</span><span class="arrow">→</span></div>
-                <div class="tertiary-popup">
-                  <div class="label">▼ 5 个三级目录</div>
-                  <div class="tags">
-                    <span class="tag">党章</span>
-                    <span class="tag">准则</span>
-                    <span class="tag">条例</span>
-                    <span class="tag">规定</span>
-                    <span class="tag">办法</span>
-                  </div>
-                  <div class="more" onclick="event.stopPropagation();goTo('category')">查看全部 5 个 →</div>
-                </div>
-              </div>
-              <div class="secondary-card" onclick="goTo('category')">
-                <div>
-                  <div class="name">行业专项法规</div>
-                </div>
-                <div class="count"><span><strong>3</strong> 篇 / 6 个三级</span><span class="arrow">→</span></div>
-                <div class="tertiary-popup">
-                  <div class="label">▼ 6 个三级目录</div>
-                  <div class="tags">
-                    <span class="tag">金融监管</span>
-                    <span class="tag">劳动人事</span>
-                    <span class="tag">税务</span>
-                    <span class="tag">工商</span>
-                    <span class="tag">知识产权</span>
-                    <span class="tag">卫生健康</span>
-                  </div>
-                  <div class="more" onclick="event.stopPropagation();goTo('category')">查看全部 6 个 →</div>
-                </div>
-              </div>
-              <div class="secondary-card" onclick="goTo('category')">
-                <div>
-                  <div class="name">国际公约与条约</div>
-                </div>
-                <div class="count"><span><strong>1</strong> 篇 / 4 个三级</span><span class="arrow">→</span></div>
-                <div class="tertiary-popup">
-                  <div class="label">▼ 4 个三级目录</div>
-                  <div class="tags">
-                    <span class="tag">联合国公约</span>
-                    <span class="tag">双边协议</span>
-                    <span class="tag">多边协议</span>
-                    <span class="tag">WTO 协定</span>
-                  </div>
-                  <div class="more" onclick="event.stopPropagation();goTo('category')">查看全部 4 个 →</div>
-                </div>
-              </div>
-              <div class="secondary-card" onclick="goTo('category')">
-                <div>
-                  <div class="name">地方性法规与规章</div>
-                </div>
-                <div class="count"><span><strong>5</strong> 篇 / 7 个三级</span><span class="arrow">→</span></div>
-                <div class="tertiary-popup">
-                  <div class="label">▼ 7 个三级目录</div>
-                  <div class="tags">
-                    <span class="tag">省级条例</span>
-                    <span class="tag">市级条例</span>
-                    <span class="tag">县级规章</span>
-                    <span class="tag">开发区规章</span>
-                    <span class="tag">高新区规章</span>
-                    <span class="tag">自贸区规章</span>
-                    <span class="tag">特区规章</span>
-                  </div>
-                  <div class="more" onclick="event.stopPropagation();goTo('category')">查看全部 7 个 →</div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <!-- 行 2: 制度规范库 (2 个二级) -->
-          <div class="cat-row">
-            <div class="primary-card" onclick="goTo('category')">
-              <div class="name">制度规范库</div>
-              <div class="meta">2 个二级 / 67 篇文章</div>
-              <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            <div class="secondary-list">
-              <div class="secondary-card" onclick="goTo('category')">
-                <div>
-                  <div class="name">集团人力资源制度</div>
-                </div>
-                <div class="count"><span><strong>1</strong> 篇 / 11 个三级</span><span class="arrow">→</span></div>
-                <div class="tertiary-popup">
-                  <div class="label">▼ 11 个三级目录（部分）</div>
-                  <div class="tags">
-                    <span class="tag">组织人事</span>
-                    <span class="tag">干部管理</span>
-                    <span class="tag">招聘配置</span>
-                    <span class="tag">薪酬福利</span>
-                    <span class="tag">绩效管理</span>
-                    <span class="tag">培训发展</span>
-                    <span class="tag">+5 更多</span>
-                  </div>
-                  <div class="more">查看全部 11 个 →</div>
-                </div>
-              </div>
-              <div class="secondary-card" onclick="goTo('category')">
-                <div>
-                  <div class="name">板块/企业制度</div>
-                </div>
-                <div class="count"><span><strong>—</strong> 篇 / 2 个三级</span><span class="arrow">→</span></div>
-                <div class="tertiary-popup">
-                  <div class="label">▼ 2 个三级目录</div>
-                  <div class="tags">
-                    <span class="tag">【XX 板块】制度</span>
-                    <span class="tag">【XX 企业】制度</span>
-                  </div>
-                  <div class="more">查看全部 2 个 →</div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <!-- 行 3: 系统操作指引 (3 个二级) -->
-          <div class="cat-row">
-            <div class="primary-card" onclick="goTo('category')">
-              <div class="name">系统操作指引</div>
-              <div class="meta">3 个二级 / 89 篇文章</div>
-              <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            <div class="secondary-list">
-              <div class="secondary-card" onclick="goTo('category')">
-                <div>
-                  <div class="name">操作指引库（员工版）</div>
-                </div>
-                <div class="count"><span><strong>0</strong> 篇 / 5 个三级</span><span class="arrow">→</span></div>
-              </div>
-              <div class="secondary-card" onclick="goTo('category')">
-                <div>
-                  <div class="name">操作指引库（企业版）</div>
-                </div>
-                <div class="count"><span><strong>0</strong> 篇 / 9 个三级</span><span class="arrow">→</span></div>
-              </div>
-              <div class="secondary-card" onclick="goTo('category')">
-                <div>
-                  <div class="name">操作指引库（SSC 版）</div>
-                </div>
-                <div class="count"><span><strong>0</strong> 篇 / 10 个三级</span><span class="arrow">→</span></div>
-              </div>
-            </div>
-          </div>
-          <!-- 行 4: 会议与知识沉淀库 (2 个二级) -->
-          <div class="cat-row">
-            <div class="primary-card" onclick="goTo('category')">
-              <div class="name">会议与知识沉淀库</div>
-              <div class="meta">2 个二级 / 38 篇文章</div>
-              <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            <div class="secondary-list">
-              <div class="secondary-card" onclick="goTo('category')">
-                <div>
-                  <div class="name">专项会议材料</div>
-                </div>
-                <div class="count"><span><strong>0</strong> 篇 / 3 个三级</span><span class="arrow">→</span></div>
-              </div>
-              <div class="secondary-card" onclick="goTo('category')">
-                <div>
-                  <div class="name">专业知识库</div>
-                </div>
-                <div class="count"><span><strong>0</strong> 篇 / 2 个三级</span><span class="arrow">→</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <!-- Tab 栏（动态） -->
+        <div class="tab-bar" id="tab-bar"></div>
+        <!-- 主内容区（动态） -->
+        <div class="tab-content" id="tab-content"></div>
       </div>
 
       <!-- 三联卡片 -->
@@ -1486,6 +1406,163 @@
   <div class="toast" id="toast">操作成功</div>
 
   <script>
+    // ====== 知识库目录数据模型 ======
+    const catalogData = {
+      '政策法规库': {
+        secondaries: [
+          { name: '国家常用法律', count: 3, tertiaries: ['组织管理','招聘管理','干部人事','薪酬福利','培训与发展','档案管理','外事管理','职称管理'] },
+          { name: '国家关键行政法规与规定', count: 1, tertiaries: ['组织管理','招聘管理','干部人事','薪酬福利','培训与发展','档案管理','外事管理','职称管理'] },
+          { name: '河南省各地市法规与政策', count: 0, tertiaries: ['组织管理','招聘管理','干部人事','薪酬福利','培训与发展','档案管理','外事管理','职称管理'] },
+          { name: '党内法规制度', count: 2, tertiaries: ['党章','准则','条例','规定','办法'] },
+          { name: '行业专项法规', count: 3, tertiaries: ['金融监管','劳动人事','税务','工商','知识产权','卫生健康'] },
+          { name: '国际公约与条约', count: 1, tertiaries: ['联合国公约','双边协议','多边协议','WTO 协定'] },
+          { name: '地方性法规与规章', count: 5, tertiaries: ['省级条例','市级条例','县级规章','开发区规章','高新区规章','自贸区规章','特区规章'] }
+        ]
+      },
+      '制度规范库': {
+        secondaries: [
+          { name: '集团人力资源制度', count: 1, tertiaries: ['组织人事','干部管理','招聘配置','薪酬福利','绩效管理','培训发展','档案管理','外事管理','职称管理','智慧人力','OA 业务通知'] },
+          { name: '板块/企业制度', count: 0, tertiaries: ['【XX 板块】制度','【XX 企业】制度'] }
+        ]
+      },
+      '系统操作指引': {
+        secondaries: [
+          { name: '操作指引库（员工版）', count: 0, tertiaries: ['人事管理','社保公积金','档案管理','证照与职称','培训管理'] },
+          { name: '操作指引库（企业版）', count: 0, tertiaries: ['组织管理','人事管理','招聘管理','薪酬管理','社保公积金','档案管理','证照与职称','培训管理','系统操作指引'] },
+          { name: '操作指引库（SSC 版）', count: 0, tertiaries: ['组织管理','人事管理','招聘管理','薪酬管理','社保公积金','档案管理','证照与职称','培训管理','系统操作指引','系统与数据管理'] }
+        ]
+      },
+      '会议与知识沉淀库': {
+        secondaries: [
+          { name: '专项会议材料', count: 0, tertiaries: ['集团年度人力资源管理工作会议','智慧人力专项工作会议','人力资源数据分析大赛'] },
+          { name: '专业知识库', count: 0, tertiaries: ['电子书库','行业报告'] }
+        ]
+      }
+    };
+
+    // mock 文章数据（3 级 → 文章列表）
+    const mockArticles = {
+      'default': [
+        { title: '2024 年度 XX 管理办法实施细则', org: '人力资源部', date: '2026-01-15', views: 1234 },
+        { title: '关于 XX 工作流程优化的通知', org: '人力资源部', date: '2026-01-10', views: 856 },
+        { title: 'XX 制度修订说明（2025 版）', org: '人力资源部', date: '2025-12-28', views: 642 },
+        { title: 'XX 工作常见问题 FAQ', org: '人力资源部', date: '2025-12-20', views: 523 },
+        { title: 'XX 工作操作手册（图文版）', org: '人力资源部', date: '2025-12-15', views: 412 }
+      ]
+    };
+
+    // 状态：当前路径（最多 3 级）
+    let currentPath = [];
+
+    function renderCatalog() {
+      renderTabs();
+      renderContent();
+    }
+
+    function renderTabs() {
+      const bar = document.getElementById('tab-bar');
+      let html = '';
+
+      if (currentPath.length === 0) {
+        // 根：4 个一级 tab（都不 active）
+        Object.keys(catalogData).forEach(name => {
+          html += `<div class="tab" onclick="navTo('${name}')">${name}</div>`;
+        });
+      } else {
+        // 有路径：返回按钮 + breadcrumb
+        html += `<div class="tab back" onclick="navBack()">返回</div>`;
+        currentPath.forEach((name, i) => {
+          const isLast = i === currentPath.length - 1;
+          if (isLast) {
+            html += `<div class="tab active">${name}</div>`;
+          } else {
+            html += `<div class="tab" onclick="navToLevel(${i})">${name}</div>`;
+          }
+        });
+      }
+
+      bar.innerHTML = html;
+    }
+
+    function renderContent() {
+      const content = document.getElementById('tab-content');
+      const meta = document.getElementById('catalog-meta');
+
+      if (currentPath.length === 0) {
+        content.innerHTML = '<div class="empty-hint">点击上方 tab 进入分类</div>';
+        meta.textContent = '共 4 个一级分类 · 14 个二级目录 · 50 个三级目录 · 218 篇文章';
+      } else if (currentPath.length === 1) {
+        // 一级：显示该一级下的所有二级
+        const l1 = currentPath[0];
+        const secs = catalogData[l1].secondaries;
+        content.innerHTML = `<div class="grid-3col">${secs.map(s => `
+          <div class="card-l2" onclick="navTo('${s.name}')">
+            <div class="name">${s.name}</div>
+            <div class="count">${s.count} 篇 · ${s.tertiaries.length} 个三级目录</div>
+          </div>
+        `).join('')}</div>`;
+        meta.textContent = `${l1} · 共 ${secs.length} 个二级目录 · ${secs.reduce((s,x) => s + x.tertiaries.length, 0)} 个三级目录`;
+      } else if (currentPath.length === 2) {
+        // 二级：显示该二级下的所有三级（chip 形式）
+        const [l1, l2] = currentPath;
+        const s = catalogData[l1].secondaries.find(x => x.name === l2);
+        content.innerHTML = `<div class="grid-chip">${s.tertiaries.map(t => `
+          <div class="chip" onclick="navTo('${t}')">${t}</div>
+        `).join('')}</div>`;
+        meta.textContent = `${l1} / ${l2} · 共 ${s.tertiaries.length} 个三级目录`;
+      } else if (currentPath.length === 3) {
+        // 三级：显示文章列表（mock）
+        const articles = mockArticles.default;
+        content.innerHTML = `<div class="article-list">${articles.map(a => `
+          <div class="article-row" onclick="goTo('detail')">
+            <div>
+              <div class="title">${a.title}</div>
+              <div class="meta">${a.org} · ${a.date} · 👁 ${a.views} 浏览</div>
+            </div>
+            <div class="action">查看 →</div>
+          </div>
+        `).join('')}</div>`;
+        meta.textContent = `${currentPath.join(' / ')} · 共 ${articles.length} 篇文章`;
+      } else {
+        content.innerHTML = '<div class="empty-hint">已达最深层级</div>';
+      }
+    }
+
+    function navTo(name) {
+      // 截断到第一个同名（防止重复点）
+      if (currentPath.includes(name)) {
+        const idx = currentPath.indexOf(name);
+        currentPath = currentPath.slice(0, idx + 1);
+      } else {
+        currentPath.push(name);
+        if (currentPath.length > 3) currentPath = currentPath.slice(0, 3);
+      }
+      renderCatalog();
+    }
+
+    function navToLevel(idx) {
+      // 截断到 idx+1（即保留到该项）
+      currentPath = currentPath.slice(0, idx + 1);
+      renderCatalog();
+    }
+
+    function navBack() {
+      currentPath.pop();
+      renderCatalog();
+    }
+
+    // 初始化（支持 URL query 自动展开）
+    (function() {
+      const params = new URLSearchParams(location.search);
+      const initPath = params.get('init');
+      if (initPath) {
+        initPath.split('/').filter(Boolean).forEach(name => navTo(name));
+      } else {
+        renderCatalog();
+      }
+    })();
+
+    // ====== 屏幕切换（保留） ======
     function goTo(screen) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById('screen-' + screen).classList.add('active');
