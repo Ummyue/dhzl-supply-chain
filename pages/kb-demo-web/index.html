@@ -278,6 +278,18 @@
       margin: 10px 4px;
     }
     .tab-content { padding: 8px 0; min-height: 200px; }
+    /* 全部模式：按一级分组 */
+    .all-group { margin-bottom: 24px; }
+    .all-group:last-child { margin-bottom: 0; }
+    .all-group-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 10px;
+      padding-left: 4px;
+      border-left: 3px solid var(--primary);
+      line-height: 1.2;
+    }
     /* 二级卡片 grid */
     .grid-3col {
       display: grid;
@@ -1464,9 +1476,12 @@
       let html = '';
 
       if (currentPath.length === 0) {
-        // 根：4 个一级 tab（都不 active）
+        // 根：5 个 tab（全部 + 4 个真实一级）
+        const allActive = '';
+        const l1Active = '';
+        html += `<div class="tab ${allActive}" onclick="navTo('全部')">全部</div>`;
         Object.keys(catalogData).forEach(name => {
-          html += `<div class="tab" onclick="navTo('${name}')">${name}</div>`;
+          html += `<div class="tab ${l1Active}" onclick="navTo('${name}')">${name}</div>`;
         });
       } else {
         // 有路径：返回按钮 + breadcrumb
@@ -1491,6 +1506,27 @@
       if (currentPath.length === 0) {
         content.innerHTML = '<div class="empty-hint">点击上方 tab 进入分类</div>';
         meta.textContent = '共 4 个一级分类 · 14 个二级目录 · 50 个三级目录 · 218 篇文章';
+      } else if (currentPath.length === 1 && currentPath[0] === '全部') {
+        // 【全部】状态：合并 4 个一级库的所有二级卡片（按一级分组渲染）
+        let html = '';
+        let totalSec = 0;
+        let totalTer = 0;
+        Object.keys(catalogData).forEach(l1 => {
+          const secs = catalogData[l1].secondaries;
+          totalSec += secs.length;
+          totalTer += secs.reduce((s, x) => s + x.tertiaries.length, 0);
+          html += `<div class="all-group">
+            <div class="all-group-title">${l1}</div>
+            <div class="grid-3col">${secs.map(s => `
+              <div class="card-l2" onclick="navTo('${l1}','${s.name}')">
+                <div class="name">${s.name}</div>
+                <div class="count">${s.count} 篇 · ${s.tertiaries.length} 个三级目录</div>
+              </div>
+            `).join('')}</div>
+          </div>`;
+        });
+        content.innerHTML = html;
+        meta.textContent = `全部 · 共 ${totalSec} 个二级目录 · ${totalTer} 个三级目录 · ${Object.keys(catalogData).length} 个一级分类`;
       } else if (currentPath.length === 1) {
         // 一级：显示该一级下的所有二级
         const l1 = currentPath[0];
@@ -1528,7 +1564,25 @@
       }
     }
 
-    function navTo(name) {
+    function navTo(name, secName) {
+      // 1) 点"全部"：重置为 ['全部']
+      if (name === '全部') {
+        currentPath = ['全部'];
+        renderCatalog();
+        return;
+      }
+      // 2) 全部状态下点 2 级：补全 path 为 [一级, 二级]
+      if (currentPath[0] === '全部' && secName) {
+        currentPath = [name, secName];
+        renderCatalog();
+        return;
+      }
+      // 3) 全部状态下点其他 1 级：替换为 [该一级]
+      if (currentPath[0] === '全部') {
+        currentPath = [name];
+        renderCatalog();
+        return;
+      }
       // 截断到第一个同名（防止重复点）
       if (currentPath.includes(name)) {
         const idx = currentPath.indexOf(name);
