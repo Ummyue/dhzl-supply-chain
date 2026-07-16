@@ -224,13 +224,22 @@
       justify-content: space-between;
     }
     .catalog-title .meta { font-size: 13px; color: var(--text-tertiary); font-weight: 400; }
-    .catalog-rows { display: flex; flex-direction: column; gap: 16px; }
+    .catalog-rows { display: flex; flex-direction: column; gap: 12px; }
     /* 目录行（一级 + 二级） */
     .cat-row {
       display: flex;
       align-items: stretch;
-      gap: 16px;
+      gap: 12px;
       min-height: 110px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 6px;
+      transition: all 0.2s;
+    }
+    .cat-row:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
     }
     .primary-card {
       flex: 0 0 240px;
