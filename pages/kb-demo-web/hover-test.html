@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>body,html{margin:0;padding:0;}iframe{display:block;width:1440px;height:1100px;border:none;}</style>
+</head>
+<body>
+<iframe id="ifr" src="https://dhzl-supply-chain.pages.dev/pages/kb-demo-web/"></iframe>
+<script>
+const ifr = document.getElementById('ifr');
+ifr.addEventListener('load', () => {
+  setTimeout(() => {
+    const doc = ifr.contentDocument;
+    if (!doc) return;
+    // 找到第一个 secondary-card
+    const card = doc.querySelectorAll('.secondary-card')[0];
+    if (!card) return;
+    // 强制显示 popup（绕过 hover）
+    const popup = card.querySelector('.tertiary-popup');
+    if (popup) {
+      popup.style.opacity = '1';
+      popup.style.pointerEvents = 'auto';
+    }
+    // 高亮当前 card
+    card.style.background = '#fff';
+    card.style.borderColor = '#2563eb';
+    card.style.boxShadow = '0 4px 12px rgba(37,99,235,0.15)';
+    // 提升 popup 的父级 row z-index
+    const row = card.closest('.cat-row');
+    if (row) row.style.zIndex = '100';
+  }, 2500);
+});
+</script>
+</body>
+</html>
