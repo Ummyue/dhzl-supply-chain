@@ -798,8 +798,11 @@ Components.pageTree.render = function() {
           // 匹配当前路径(去前缀 + 去 .html)
           const itemPath = (it.path || '').replace(/^\//, '').replace(/\.html$/, '');
           const isActive = curPath.endsWith('/' + itemPath) || curPath === itemPath;
+          // v1.7.86 修跳转: 用 Utils.nav() 转成完整 URL,避免依赖全局 click 拦截器
+          // 这样 middle-click 新标签页/带修饰键点击 也能正确跳转
+          const fullHref = (window.Utils && Utils.nav) ? Utils.nav(it.path || '#') : (it.path || '#');
           return `
-            <a href="${esc(it.path || '#')}" data-item="${esc(itemPath)}"
+            <a href="${esc(fullHref)}" data-item="${esc(itemPath)}" data-raw="${esc(it.path || '')}"
               class="pageTree-item flex items-center gap-2 px-3 py-1.5 mx-2 rounded text-xs hover:bg-blue-50 transition ${isActive ? 'bg-blue-100 text-blue-700 font-medium' : 'text-slate-700'}"
               style="padding-left: ${1.5 + 0.5 + 0.75}rem;">
               <svg class="w-3 h-3 flex-shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
