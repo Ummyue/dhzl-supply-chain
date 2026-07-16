@@ -276,6 +276,18 @@
       flex-wrap: wrap;
       padding: 4px;
     }
+    /* 横向滚动行（子项多时启用） */
+    .cat-row.scroll .secondary-list {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding-bottom: 8px;
+    }
+    .cat-row.scroll .secondary-list::-webkit-scrollbar { height: 6px; }
+    .cat-row.scroll .secondary-list::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 3px; }
+    .cat-row.scroll .secondary-list::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+    .cat-row.scroll .secondary-list::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
     .secondary-card {
       flex: 1 1 200px;
       min-width: 180px;
@@ -290,6 +302,16 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+    }
+    /* 横向滚动行：子卡固定宽度 + 文字截断 */
+    .cat-row.scroll .secondary-card {
+      flex: 0 0 220px;
+      max-width: 220px;
+    }
+    .cat-row.scroll .secondary-card .name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .secondary-card:hover {
       background: #fff;
@@ -697,8 +719,8 @@
           <span class="meta">共 4 个一级分类 · 10 个二级目录 · 218 篇文章</span>
         </div>
         <div class="catalog-rows">
-          <!-- 行 1: 政策法规库 (3 个二级) -->
-          <div class="cat-row">
+          <!-- 行 1: 政策法规库 (7 个二级 - 演示横向滚动) -->
+          <div class="cat-row scroll">
             <div class="primary-card" onclick="goTo('category')">
               <div class="name">政策法规库</div>
               <div class="meta">3 个二级 / 24 篇文章</div>
@@ -750,6 +772,76 @@
                 <div class="tertiary-popup">
                   <div class="label">⚠ 暂未发布文章</div>
                   <div style="font-size:12px;color:var(--text-tertiary);">三级目录已就绪，等待上传文章</div>
+                </div>
+              </div>
+              <div class="secondary-card" onclick="goTo('category')">
+                <div>
+                  <div class="name">党内法规制度</div>
+                </div>
+                <div class="count"><span><strong>2</strong> 篇 / 5 个三级</span><span class="arrow">→</span></div>
+                <div class="tertiary-popup">
+                  <div class="label">▼ 5 个三级目录</div>
+                  <div class="tags">
+                    <span class="tag">党章</span>
+                    <span class="tag">准则</span>
+                    <span class="tag">条例</span>
+                    <span class="tag">规定</span>
+                    <span class="tag">办法</span>
+                  </div>
+                  <div class="more" onclick="event.stopPropagation();goTo('category')">查看全部 5 个 →</div>
+                </div>
+              </div>
+              <div class="secondary-card" onclick="goTo('category')">
+                <div>
+                  <div class="name">行业专项法规</div>
+                </div>
+                <div class="count"><span><strong>3</strong> 篇 / 6 个三级</span><span class="arrow">→</span></div>
+                <div class="tertiary-popup">
+                  <div class="label">▼ 6 个三级目录</div>
+                  <div class="tags">
+                    <span class="tag">金融监管</span>
+                    <span class="tag">劳动人事</span>
+                    <span class="tag">税务</span>
+                    <span class="tag">工商</span>
+                    <span class="tag">知识产权</span>
+                    <span class="tag">卫生健康</span>
+                  </div>
+                  <div class="more" onclick="event.stopPropagation();goTo('category')">查看全部 6 个 →</div>
+                </div>
+              </div>
+              <div class="secondary-card" onclick="goTo('category')">
+                <div>
+                  <div class="name">国际公约与条约</div>
+                </div>
+                <div class="count"><span><strong>1</strong> 篇 / 4 个三级</span><span class="arrow">→</span></div>
+                <div class="tertiary-popup">
+                  <div class="label">▼ 4 个三级目录</div>
+                  <div class="tags">
+                    <span class="tag">联合国公约</span>
+                    <span class="tag">双边协议</span>
+                    <span class="tag">多边协议</span>
+                    <span class="tag">WTO 协定</span>
+                  </div>
+                  <div class="more" onclick="event.stopPropagation();goTo('category')">查看全部 4 个 →</div>
+                </div>
+              </div>
+              <div class="secondary-card" onclick="goTo('category')">
+                <div>
+                  <div class="name">地方性法规与规章</div>
+                </div>
+                <div class="count"><span><strong>5</strong> 篇 / 7 个三级</span><span class="arrow">→</span></div>
+                <div class="tertiary-popup">
+                  <div class="label">▼ 7 个三级目录</div>
+                  <div class="tags">
+                    <span class="tag">省级条例</span>
+                    <span class="tag">市级条例</span>
+                    <span class="tag">县级规章</span>
+                    <span class="tag">开发区规章</span>
+                    <span class="tag">高新区规章</span>
+                    <span class="tag">自贸区规章</span>
+                    <span class="tag">特区规章</span>
+                  </div>
+                  <div class="more" onclick="event.stopPropagation();goTo('category')">查看全部 7 个 →</div>
                 </div>
               </div>
             </div>
