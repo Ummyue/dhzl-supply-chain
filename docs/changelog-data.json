@@ -157,6 +157,24 @@
       "screenshot": null
     },
     {
+      "version": "v1.7.94",
+      "date": "2026-07-17",
+      "title": "出/入库详情列表: 去掉关联合同/订单编号 + 数据类型列 + API导入选项",
+      "types": ["field"],
+      "summary": "v1.7.94 列表精简:\n  ① 列表列: 去掉【关联合同/订单编号】+【数据类型】2 列(出库 tab 12 列 → 10 列)\n  ② 顶部筛选条: 同步去掉这 2 个搜索字段(入库 tab 原来只有数据类型,出库 tab 两个都有,都去掉)\n  ③ 数据类型下拉选项: 原来有【手动添加/数据同步/API导入】, API 导入随之删除(整个数据类型字段已去掉)\n  ④ colspan 同步: 出库 tab 12 → 10;入库 tab 保持 9 不变",
+      "event": "用户反馈 v1.7.92 出库详情列表字段太多,关联合同/订单编号是出库申请带来的不是自己产生,数据类型里的 API 导入也不需要",
+      "impact": [
+        "列表更简洁:出库 12 列 → 10 列,入库 9 列不变",
+        "搜索更聚焦:6 个搜索字段(单号/库点/仓房-货位/申请编号/货物名称/申请日期)",
+        "状态字段清理:state 删除 contractNo + dataType",
+        "applyFilters / switchTab / resetAllFilters / exportInOutCSV 同步删除对应引用"
+      ],
+      "files": [
+        "pages/platform/approval-in-out-detail.html"
+      ],
+      "screenshot": null
+    },
+    {
       "version": "v1.7.93",
       "date": "2026-07-17",
       "title": "新增出入库详情 v2: 简化重量字段 + 表格行尾固定 + 内滚动",

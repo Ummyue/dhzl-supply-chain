@@ -46,8 +46,6 @@
     productName: '',                        // 货物名称
     dateStart: '',                          // 入库/出库时间起
     dateEnd: '',                            // 入库/出库时间止
-    contractNo: '',                         // 关联合同/订单编号（仅出库）
-    dataType: '',                           // 数据类型
     page: 1,
     pageSize: 10,
   };
@@ -69,8 +67,6 @@
       if (state.productName && r.productName !== state.productName) return false;
       if (state.dateStart && r.bizDate < state.dateStart) return false;
       if (state.dateEnd && r.bizDate > state.dateEnd) return false;
-      if (state.contractNo && !(r.contractNo || '').toLowerCase().includes(state.contractNo.toLowerCase().trim())) return false;
-      if (state.dataType && r.source !== state.dataType) return false;
       return true;
     });
   }
@@ -119,21 +115,6 @@
           { label: '入库/出库申请编号', key: 'applyNoSearch', type: 'text', placeholder: isIn ? '请输入入库申请编号' : '请输入出库申请编号' },
           { label: '货物名称', key: 'productName', type: 'select', placeholder: '货物名称', options: [{ value: '', label: '请选择' }, ...uniqueProducts().map(p => ({ value: p, label: p }))] },
           { label: '申请日期', key: 'date', type: 'dateRange', placeholder: isIn ? '入库时间' : '出库时间', fromKey: 'dateStart', toKey: 'dateEnd' },
-          ...(isIn ? [
-            { label: '数据类型', key: 'dataType', type: 'select', placeholder: '数据类型', options: [
-              { value: '', label: '请选择' },
-              { value: '手动添加', label: '手动添加' },
-              { value: '数据同步', label: '数据同步' },
-              { value: 'API导入', label: 'API导入' },
-            ] },
-          ] : [
-            { label: '关联合同/订单编号', key: 'contractNo', type: 'text', placeholder: '请输入关联合同/订单编号' },
-            { label: '数据类型', key: 'dataType', type: 'select', placeholder: '数据类型', options: [
-              { value: '', label: '请选择' },
-              { value: '手动添加', label: '手动添加' },
-              { value: '数据同步', label: '数据同步' },
-            ] },
-          ]),
         ],
         dataSource: MockData.warehouses,
         onChange: 'refreshPage',
@@ -168,8 +149,6 @@
                   <th class="text-right px-3 py-3 whitespace-nowrap">入库重量</th>
                   <th class="text-left px-3 py-3 whitespace-nowrap">数量单位</th>
                   <th class="text-left px-3 py-3 whitespace-nowrap">出库申请编号</th>
-                  <th class="text-left px-3 py-3 whitespace-nowrap">关联合同/订单编号</th>
-                  <th class="text-left px-3 py-3 whitespace-nowrap">数据类型</th>
                   <th class="text-center px-3 py-3 whitespace-nowrap">操作</th>
                 </tr>
               `}
@@ -190,7 +169,7 @@
   }
 
   function renderRows(items, isIn) {
-    if (!items.length) return `<tr><td colspan="${isIn ? 9 : 12}" class="py-12 text-center text-slate-400 text-sm">📭 当前筛选条件下无${isIn ? '入库' : '出库'}详情记录</td></tr>`;
+    if (!items.length) return `<tr><td colspan="${isIn ? 9 : 10}" class="py-12 text-center text-slate-400 text-sm">📭 当前筛选条件下无${isIn ? '入库' : '出库'}详情记录</td></tr>`;
     return items.map(r => `
       <tr class="border-t border-slate-100 hover:bg-blue-50/30">
         <td class="px-3 py-2.5 font-mono text-xs text-blue-700 whitespace-nowrap">${r.bizNo}</td>
@@ -207,10 +186,6 @@
           <td class="px-3 py-2.5 text-right num-focus whitespace-nowrap">${Utils.fmtNum(r.stockWeight)}</td>
           <td class="px-3 py-2.5 text-slate-500 text-xs whitespace-nowrap">${r.piecesUnit}</td>
           <td class="px-3 py-2.5 font-mono text-xs text-slate-700 whitespace-nowrap">${r.applyNo || '-'}</td>
-          <td class="px-3 py-2.5 font-mono text-xs text-slate-600 whitespace-nowrap">${r.contractNo || '-'}</td>
-          <td class="px-3 py-2.5 text-slate-700 text-xs whitespace-nowrap">
-            <span class="px-2 py-0.5 ${sourceClass(r.source)} rounded text-xs">${r.source || '-'}</span>
-          </td>
         `}
         <td class="px-3 py-2.5 text-center whitespace-nowrap">
           <button onclick="viewDetail('${r.id}', '${r.type}')" class="text-blue-600 hover:underline text-xs font-medium mr-3">查看</button>
@@ -256,8 +231,6 @@
   window.switchTab = function(id) {
     state.activeTab = id;
     state.page = 1;
-    // 切 tab 时清掉出库专属筛选
-    state.contractNo = '';
     refresh();
   };
   window.updateFilter = function(key, val) {
@@ -272,7 +245,7 @@
     refresh();
   };
   window.resetAllFilters = function() {
-    ['bizNoSearch','warehouseId','location','applyNoSearch','productName','dateStart','dateEnd','contractNo','dataType'].forEach(k => state[k] = '');
+    ['bizNoSearch','warehouseId','location','applyNoSearch','productName','dateStart','dateEnd'].forEach(k => state[k] = '');
     refresh();
   };
   window.setPage = function(p) { state.page = p; refresh(); };
@@ -649,8 +622,8 @@
       headers = ['入库单号','入库时间','货物名称','库点名称','仓房-货位','入库数量','入库重量','数量单位'];
       rows = filtered.map(r => [r.bizNo, `${r.bizDate} ${r.bizTime}`, r.productName, r.warehouseName, r.location, r.stockPieces, r.stockWeight, r.piecesUnit]);
     } else {
-      headers = ['出库单号','出库时间','货物名称','库点名称','仓房-货位','入库数量','入库重量','数量单位','出库申请编号','关联合同/订单编号','数据类型'];
-      rows = filtered.map(r => [r.bizNo, `${r.bizDate} ${r.bizTime}`, r.productName, r.warehouseName, r.location, r.stockPieces, r.stockWeight, r.piecesUnit, r.applyNo || '', r.contractNo || '', r.source || '']);
+      headers = ['出库单号','出库时间','货物名称','库点名称','仓房-货位','入库数量','入库重量','数量单位','出库申请编号'];
+      rows = filtered.map(r => [r.bizNo, `${r.bizDate} ${r.bizTime}`, r.productName, r.warehouseName, r.location, r.stockPieces, r.stockWeight, r.piecesUnit, r.applyNo || '']);
     }
     const csv = [headers, ...rows].map(row => row.map(c => {
       const v = String(c == null ? '' : c);
