@@ -212,9 +212,9 @@
       padding: 24px 32px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
       margin-bottom: 24px;
-      /* 高度固定 = 视口 2/3，内部上下滚动 */
-      height: 66.6667vh;
-      max-height: 66.6667vh;
+      /* 高度固定 = 视口 2/3 × 4/5 ≈ 53.33vh，内部上下滚动 */
+      height: 53.3333vh;
+      max-height: 53.3333vh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -1509,11 +1509,8 @@
       // 全部状态下：不显示返回按钮 + 5 个 tab
       const isAll = currentPath[0] === '全部';
 
-      // 第一行：返回按钮（仅 L1 / L2 / L3 显示）+ 5 个 tab
+      // 第一行：5 个 tab（无返回按钮，通过 tab 自身切换层级）
       html += `<div class="tab-row-top">`;
-      if (!isAll) {
-        html += `<div class="tab back" onclick="navBack()">返回</div>`;
-      }
       const activeL1 = currentPath[0];
       html += `<div class="tab ${isAll ? 'active' : ''}" onclick="switchTab('全部')">全部</div>`;
       Object.keys(catalogData).forEach(name => {
