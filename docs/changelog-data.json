@@ -117,6 +117,25 @@
       "screenshot": null
     },
     {
+      "version": "v1.7.91",
+      "date": "2026-07-17",
+      "title": "监管方【放款还款管理】加【放款登记】按钮 + 详情页",
+      "types": ["control", "field"],
+      "summary": "pages/platform/disburse-repayment.html 顶部 extra 位置加蓝底白字【+ 放款登记】按钮（按 v1.7 列表页按钮统一性原则）。新建 pages/platform/disburse-register.html 详情页：融资信息(只读 5 字段) + 放款信息(可编辑 4 字段,浅紫色高亮,必填: 借据号/放款本金/起息日/到期日) + 附件(2 必填: 电子回单 + 放款证明) + 底部固定按钮(取消/提交)。提交后状态变 released",
+      "event": "用户要求在监管方【放款还款管理】菜单页面加【放款登记】按钮（按按钮统一性原则摆放），点击进入放款登记详情页（页面字段如截图所示）",
+      "impact": [
+        "监管方放款还款管理页面新增【放款登记】入口",
+        "新页面 pages/platform/disburse-register.html 12 KB / 305 行",
+        "按钮位置: 顶部 extra 区(参考 financing.html 新建融资申请按钮规范)",
+        "校验: 借据号必填 / 放款本金 > 0 / 起息日 < 到期日 / 2 个附件必传"
+      ],
+      "files": [
+        "pages/platform/disburse-repayment.html",
+        "pages/platform/disburse-register.html"
+      ],
+      "screenshot": null
+    },
+    {
       "version": "v1.7.85",
       "date": "2026-07-16",
       "title": "全局页面目录（Axure 风格浮层 + 左上角图标入口）",

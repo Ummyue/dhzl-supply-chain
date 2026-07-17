@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>放款登记 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+  <style>
+    /* 底部固定操作栏 */
+    .footer-actions { position: fixed; bottom: 0; left: 0; right: 0; z-index: 40; background: #fff; border-top: 1px solid #e2e8f0; padding: 14px 0; box-shadow: 0 -2px 8px rgba(0,0,0,0.04); }
+    .footer-spacer { height: 80px; }
+    /* 必填星号 */
+    .req { color: #ef4444; margin-right: 2px; }
+    /* 浅紫色可编辑高亮 */
+    .editable { background: #f5f3ff; border-color: #c4b5fd; }
+    .editable:focus { background: #fff; border-color: #6366f1; outline: none; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+  </style>
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+
+<!-- v1.7.91 监管方【放款登记】- 按用户截图字段实现：融资信息(只读) + 放款信息(可编辑) + 附件 + 提交 -->
+
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // 默认从 financingList 取第一条作为 demo 数据
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlId = urlParams.get('id') || 'fn_001';
+  const f = MockData.financingList.find(x => x.id === urlId) || MockData.financingList[0];
+
+  // 借据号 / 放款本金 / 起息日 / 到期日 - 监管方录入
+  const regForm = {
+    loanReceiptNo: '',   // 借据号
+    disbursedAmount: '', // 放款本金(元)
+    startDate: '',        // 融资起息日期
+    maturityDate: '',     // 融资到期日期
+  };
+
+  // 附件：电子回单 + 放款证明
+  const attachForm = {
+    electronicReceipt: null,  // 电子回单
+    disbursementCert: null,   // 放款证明
+  };
+
+  function render() {
+    return `
+      <!-- 返回链接 -->
+      <div class="flex items-center justify-between mb-4">
+        <a href="${Utils.nav('/platform/disburse-repayment')}" class="flex items-center gap-1 text-slate-600 hover:text-blue-600 text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          返回放还款详情
+        </a>
+      </div>
+
+      <form id="disburseForm" class="bg-white border border-slate-200 rounded-xl space-y-5">
+        <!-- 1. 融资信息(只读) -->
+        <div class="px-6 pt-5 pb-2">
+          <div class="text-sm font-bold text-slate-800 border-l-4 border-blue-600 pl-3">融资信息</div>
+        </div>
+        <div class="px-6 pb-2">
+          <div class="border border-slate-200 rounded-lg overflow-hidden">
+            <table class="w-full text-sm">
+              <tbody>
+                <tr class="border-b border-slate-200">
+                  <td class="bg-slate-50 px-4 py-3 text-slate-600 w-32">融资编号</td>
+                  <td class="px-4 py-3 text-blue-700 font-mono">${f.bizNo}</td>
+                  <td class="bg-slate-50 px-4 py-3 text-slate-600 w-32">融资方</td>
+                  <td class="px-4 py-3 text-slate-800">${f.applicant}</td>
+                </tr>
+                <tr class="border-b border-slate-200">
+                  <td class="bg-slate-50 px-4 py-3 text-slate-600">金融产品</td>
+                  <td class="px-4 py-3 text-slate-800">${f.productName || '—'}</td>
+                  <td class="bg-slate-50 px-4 py-3 text-slate-600">金融机构</td>
+                  <td class="px-4 py-3 text-slate-800">${f.bank || '—'}</td>
+                </tr>
+                <tr>
+                  <td class="bg-slate-50 px-4 py-3 text-slate-600">融资利率</td>
+                  <td class="px-4 py-3 text-slate-800" colspan="3">${f.interestRate ? (f.interestRate * 100).toFixed(2) + '%' : '—'}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 2. 放款信息(可编辑,浅紫色高亮) -->
+        <div class="px-6 pt-4 pb-2">
+          <div class="text-sm font-bold text-slate-800 border-l-4 border-blue-600 pl-3">放款信息</div>
+        </div>
+        <div class="px-6 pb-2">
+          <div class="border-2 border-indigo-300 rounded-lg p-5 bg-indigo-50/30 space-y-4">
+            <div class="grid grid-cols-2 gap-5">
+              <div>
+                <label class="block text-xs text-slate-700 mb-1.5"><span class="req">*</span>借据号</label>
+                <input id="loanReceiptNo" type="text" value="${regForm.loanReceiptNo}" placeholder="请输入借据号"
+                  class="editable w-full px-3 py-2 border border-indigo-300 rounded text-sm text-slate-800" required>
+              </div>
+              <div>
+                <label class="block text-xs text-slate-700 mb-1.5"><span class="req">*</span>放款本金（元）</label>
+                <input id="disbursedAmount" type="text" value="${regForm.disbursedAmount}" placeholder="请输入放款本金"
+                  class="editable w-full px-3 py-2 border border-indigo-300 rounded text-sm text-slate-800 num-focus" required>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div>
+                <label class="block text-xs text-slate-700 mb-1.5"><span class="req">*</span>融资起息日期</label>
+                <input id="startDate" type="date" value="${regForm.startDate}"
+                  class="editable w-full px-3 py-2 border border-indigo-300 rounded text-sm text-slate-800" required>
+              </div>
+              <div>
+                <label class="block text-xs text-slate-700 mb-1.5"><span class="req">*</span>融资到期日期</label>
+                <input id="maturityDate" type="date" value="${regForm.maturityDate}"
+                  class="editable w-full px-3 py-2 border border-indigo-300 rounded text-sm text-slate-800" required>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. 附件 -->
+        <div class="px-6 pt-4 pb-2">
+          <div class="text-sm font-bold text-slate-800 border-l-4 border-blue-600 pl-3">附件</div>
+        </div>
+        <div class="px-6 pb-6">
+          <!-- 提示语 -->
+          <div class="bg-indigo-50/60 text-slate-600 text-xs rounded-md px-3 py-2.5 mb-4">
+            可支持格式为jpg，jpeg，png，pdf的附件，支持多张，单个附件大小不得超过100M的文件。
+          </div>
+          <!-- 附件表格 -->
+          <div class="border border-slate-200 rounded-lg overflow-hidden">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-slate-50 text-slate-600 text-xs">
+                  <th class="px-4 py-2.5 text-center font-medium w-32">单据类型</th>
+                  <th class="px-4 py-2.5 text-center font-medium w-32">操作</th>
+                  <th class="px-4 py-2.5 text-center font-medium w-44">上传时间</th>
+                  <th class="px-4 py-2.5 text-left font-medium">文件名</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${renderAttachRow('electronicReceipt', '电子回单')}
+                ${renderAttachRow('disbursementCert', '放款证明')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 底部操作栏占位 -->
+        <div class="footer-spacer"></div>
+      </form>
+
+      <!-- 4. 底部固定按钮 -->
+      <div class="footer-actions">
+        <div class="max-w-7xl mx-auto px-6 flex justify-end gap-3">
+          <button type="button" onclick="location.href = Utils.nav('/platform/disburse-repayment')"
+            class="px-5 py-2 border border-slate-300 hover:border-slate-400 text-slate-700 rounded text-sm font-medium">
+            取消
+          </button>
+          <button type="button" onclick="submitDisburse()"
+            class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium flex items-center gap-1">
+            提交
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderAttachRow(key, label) {
+    return `
+      <tr class="border-t border-slate-200">
+        <td class="px-4 py-3 text-center text-slate-700">${label}</td>
+        <td class="px-4 py-3 text-center">
+          <label class="inline-flex items-center px-3 py-1 border border-indigo-300 text-indigo-700 rounded text-xs hover:bg-indigo-50 cursor-pointer">
+            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            <span>上传</span>
+            <input type="file" class="hidden" onchange="onAttach('${key}', this)" accept=".jpg,.jpeg,.png,.pdf">
+          </label>
+        </td>
+        <td class="px-4 py-3 text-center text-slate-500 text-xs" id="attach-time-${key}">—</td>
+        <td class="px-4 py-3 text-slate-700 text-xs" id="attach-name-${key}">—</td>
+      </tr>
+    `;
+  }
+
+  function onAttach(key, input) {
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+      attachForm[key] = file;
+      const now = new Date();
+      const time = now.getFullYear() + '-' +
+        String(now.getMonth()+1).padStart(2,'0') + '-' +
+        String(now.getDate()).padStart(2,'0') + ' ' +
+        String(now.getHours()).padStart(2,'0') + ':' +
+        String(now.getMinutes()).padStart(2,'0') + ':' +
+        String(now.getSeconds()).padStart(2,'0');
+      document.getElementById('attach-time-' + key).textContent = time;
+      document.getElementById('attach-name-' + key).innerHTML = `
+        <span class="inline-flex items-center gap-1.5">
+          <span class="text-slate-700">${file.name}</span>
+          <button type="button" onclick="removeAttach('${key}')" class="text-slate-400 hover:text-rose-500">
+            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+          </button>
+        </span>
+      `;
+    }
+  }
+
+  function removeAttach(key) {
+    attachForm[key] = null;
+    document.getElementById('attach-time-' + key).textContent = '—';
+    document.getElementById('attach-name-' + key).textContent = '—';
+  }
+
+  function submitDisburse() {
+    // 校验
+    regForm.loanReceiptNo = document.getElementById('loanReceiptNo').value.trim();
+    regForm.disbursedAmount = document.getElementById('disbursedAmount').value.trim();
+    regForm.startDate = document.getElementById('startDate').value;
+    regForm.maturityDate = document.getElementById('maturityDate').value;
+
+    if (!regForm.loanReceiptNo) return Utils.toast('请填写借据号', 'warning');
+    if (!regForm.disbursedAmount) return Utils.toast('请填写放款本金', 'warning');
+    if (parseFloat(regForm.disbursedAmount) <= 0) return Utils.toast('放款本金必须 > 0', 'warning');
+    if (!regForm.startDate) return Utils.toast('请选择融资起息日期', 'warning');
+    if (!regForm.maturityDate) return Utils.toast('请选择融资到期日期', 'warning');
+    if (regForm.maturityDate <= regForm.startDate) return Utils.toast('到期日期必须晚于起息日期', 'warning');
+    if (!attachForm.electronicReceipt) return Utils.toast('请上传电子回单', 'warning');
+    if (!attachForm.disbursementCert) return Utils.toast('请上传放款证明', 'warning');
+
+    // 提交成功
+    const passText = '放款登记成功：';
+    Utils.toast(passText + `借据号 ${regForm.loanReceiptNo}, 放款本金 ¥${parseFloat(regForm.disbursedAmount).toLocaleString()}`, 'success');
+    setTimeout(() => location.href = Utils.nav('/platform/disburse-repayment'), 1200);
+  }
+
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '放款登记',
+    subtitle: '监管方视角 - 登记融资放款信息',
+    currentPath: '/platform/disburse-repayment',
+    breadcrumb: [
+      { label: '解押出库管理', path: '/platform/disburse-repayment' },
+      { label: '放还款详情', path: '/platform/disburse-repayment' },
+      { label: '放款登记', path: '/platform/disburse-register' },
+    ],
+    extra: ``,
+    content: render(),
+  });
+</script>
+</body>
+</html>
