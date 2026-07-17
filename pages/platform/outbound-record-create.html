@@ -25,6 +25,11 @@
     .editable:focus { background: #fff; border-color: #6366f1; outline: none; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
     /* 紫色虚线只读框 */
     .readonly-zone { background: #f0fdf4; border: 1px dashed #a78bfa; padding: 0; }
+    /* v1.7.93 行尾固定列(实提数量/重量) — 前方表格内滚动 */
+    .sticky-right-2 { position: sticky; right: 96px; z-index: 5; background: #fff; box-shadow: -1px 0 0 #e2e8f0; }
+    .sticky-right-1 { position: sticky; right: 0; z-index: 6; background: #fff; box-shadow: -2px 0 4px rgba(0,0,0,0.06); }
+    .sticky-right-head-2 { position: sticky; right: 96px; z-index: 7; background: #f8fafc; box-shadow: -1px 0 0 #e2e8f0; }
+    .sticky-right-head-1 { position: sticky; right: 0; z-index: 8; background: #f8fafc; box-shadow: -2px 0 4px rgba(0,0,0,0.06); }
   </style>
 </head>
 <body class="bg-slate-50">
@@ -71,16 +76,12 @@
     }));
   });
 
-  // 表单状态
+  // 表单状态(v1.7.93: 去掉毛重/皮重,保留净重,仓房&货位改非必填)
   const form = {
     recordNo: '',          // 出库单号
     recordTime: '',        // 出库时间
     warehouse: '',         // 仓库名称
-    location: '',          // 仓房&货位
-    grossWeight: '',       // 毛重总量
-    grossUnit: '千克',
-    tareWeight: '',        // 皮重总量
-    tareUnit: '千克',
+    location: '',          // 仓房&货位(v1.7.93 非必填)
     netWeight: '',         // 净重总量
     netUnit: '千克',
     remark: '',            // 备注
@@ -169,7 +170,7 @@
             </div>
             <div class="grid grid-cols-3 gap-5">
               <div>
-                <label class="block text-xs text-slate-700 mb-1.5"><span class="req">*</span>仓房&货位</label>
+                <label class="block text-xs text-slate-700 mb-1.5">仓房&货位<span class="text-xs text-slate-400 ml-1">(非必填)</span></label>
                 <select id="location" class="editable w-full px-3 py-2 border border-indigo-300 rounded text-sm text-slate-800">
                   <option value="">请选择仓房信息</option>
                   <option value="1号仓-A区-01">1号仓-A区-01</option>
@@ -182,28 +183,6 @@
                   class="w-full px-3 py-2 border border-slate-200 bg-slate-50 rounded text-sm text-slate-700">
               </div>
               <div>
-                <label class="block text-xs text-slate-700 mb-1.5"><span class="req">*</span>毛重总量</label>
-                <div class="flex items-stretch">
-                  <input id="grossWeight" type="text" value="${form.grossWeight}" placeholder="请输入毛重总量"
-                    class="editable flex-1 min-w-0 px-3 py-2 border border-indigo-300 rounded-l text-sm text-slate-800 num-focus" required>
-                  <select class="editable w-20 px-2 py-2 border border-l-0 border-indigo-300 rounded-r text-sm text-slate-700">
-                    <option>千克</option><option>吨</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-            <div class="grid grid-cols-3 gap-5">
-              <div>
-                <label class="block text-xs text-slate-700 mb-1.5"><span class="req">*</span>皮重总量</label>
-                <div class="flex items-stretch">
-                  <input id="tareWeight" type="text" value="${form.tareWeight}" placeholder="请输入皮重总量"
-                    class="editable flex-1 min-w-0 px-3 py-2 border border-indigo-300 rounded-l text-sm text-slate-800 num-focus" required>
-                  <select class="editable w-20 px-2 py-2 border border-l-0 border-indigo-300 rounded-r text-sm text-slate-700">
-                    <option>千克</option><option>吨</option>
-                  </select>
-                </div>
-              </div>
-              <div>
                 <label class="block text-xs text-slate-700 mb-1.5"><span class="req">*</span>净重总量</label>
                 <div class="flex items-stretch">
                   <input id="netWeight" type="text" value="${form.netWeight}" placeholder="请输入净重总量"
@@ -213,7 +192,6 @@
                   </select>
                 </div>
               </div>
-              <div></div>
             </div>
             <div>
               <label class="block text-xs text-slate-700 mb-1.5">备注</label>
@@ -246,8 +224,8 @@
                   <th class="px-3 py-2.5 text-center font-medium w-28">合同号</th>
                   <th class="px-3 py-2.5 text-center font-medium w-28">提/运单号</th>
                   <th class="px-3 py-2.5 text-center font-medium w-24">柜号</th>
-                  <th class="px-3 py-2.5 text-right font-medium w-24 bg-indigo-50/60">实提数量</th>
-                  <th class="px-3 py-2.5 text-right font-medium w-24 bg-indigo-50/60">实提重量</th>
+                  <th class="sticky-right-head-2 px-3 py-2.5 text-right font-medium w-24 bg-indigo-50">实提数量</th>
+                  <th class="sticky-right-head-1 px-3 py-2.5 text-right font-medium w-24 bg-indigo-50">实提重量</th>
                 </tr>
               </thead>
               <tbody>
@@ -267,14 +245,14 @@
                     <td class="px-3 py-2 text-center text-slate-700 text-xs">${r.contractNo}</td>
                     <td class="px-3 py-2 text-center text-slate-700 text-xs">${r.waybill}</td>
                     <td class="px-3 py-2 text-center text-slate-700 text-xs">${r.cabinet}</td>
-                    <td class="px-3 py-2">
+                    <td class="sticky-right-2 px-3 py-2">
                       <div class="flex items-stretch">
                         <input type="text" data-row="${r.no}" data-field="qty" value="${r.receivedQty}" placeholder="请输入"
                           class="editable flex-1 min-w-0 px-2 py-1 border border-indigo-300 rounded-l text-xs num-focus" oninput="onReceivedChange(${r.no}, 'qty', this.value)">
                         <span class="px-2 py-1 border border-l-0 border-indigo-300 bg-indigo-50/30 rounded-r text-xs text-slate-500 flex items-center">${r.qtyUnit}</span>
                       </div>
                     </td>
-                    <td class="px-3 py-2">
+                    <td class="sticky-right-1 px-3 py-2">
                       <div class="flex items-stretch">
                         <input type="text" data-row="${r.no}" data-field="weight" value="${r.receivedWeight}" placeholder="请输入"
                           class="editable flex-1 min-w-0 px-2 py-1 border border-indigo-300 rounded-l text-xs num-focus" oninput="onReceivedChange(${r.no}, 'weight', this.value)">
@@ -414,13 +392,7 @@
     if (!form.recordNo) return Utils.toast('请填写出库单号', 'warning');
     if (!form.recordTime) return Utils.toast('请选择出库时间', 'warning');
     if (!form.warehouse) return Utils.toast('请选择仓库名称', 'warning');
-    if (!form.location) return Utils.toast('请选择仓房&货位', 'warning');
-    if (!form.grossWeight || parseFloat(form.grossWeight) <= 0) return Utils.toast('请填写毛重总量（> 0）', 'warning');
-    if (!form.tareWeight || parseFloat(form.tareWeight) < 0) return Utils.toast('请填写皮重总量（≥ 0）', 'warning');
     if (!form.netWeight || parseFloat(form.netWeight) <= 0) return Utils.toast('请填写净重总量（> 0）', 'warning');
-    if (parseFloat(form.netWeight) !== parseFloat(form.grossWeight) - parseFloat(form.tareWeight)) {
-      return Utils.toast('净重 = 毛重 - 皮重，请检查', 'warning');
-    }
     // 校验货物明细实提
     const emptyReceived = productRows.find(r => !r.receivedQty || !r.receivedWeight);
     if (emptyReceived) return Utils.toast(`第 ${emptyReceived.no} 行实提数量 / 重量未填`, 'warning');

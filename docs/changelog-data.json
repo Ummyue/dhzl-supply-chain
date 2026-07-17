@@ -157,6 +157,25 @@
       "screenshot": null
     },
     {
+      "version": "v1.7.93",
+      "date": "2026-07-17",
+      "title": "新增出入库详情 v2: 简化重量字段 + 表格行尾固定 + 内滚动",
+      "types": ["field", "control"],
+      "summary": "v1.7.92 出入库详情页 v2 调整(2 个页面同步):\n  ① 去掉毛重总量/皮重总量,只保留净重总量\n  ② 仓房&货位 改非必填(label 后加 (非必填) 灰色标识)\n  ③ 货物明细 实收/实提 数量+重量 列 行尾固定(sticky right),\n     前方表格宽度超出时内滚动(sticky-right-1 + sticky-right-2 CSS)\n  ④ 校验逻辑同步: 去掉 净重=毛重-皮重 等式校验, 仓房&货位非必填不校验",
+      "event": "用户反馈 v1.7.92 详情页字段太多(毛重/皮重没必要),且表格列太多时实收/实提要固定在行尾方便操作。同时检查出库详情 tab 是否漏了【新增出库】按钮(经测试按钮逻辑正确,可能是 chrome 缓存没刷新)",
+      "impact": [
+        "2 个详情页字段精简: 8 必填 → 5 必填 (入库单号/时间/仓库/货主/净重 + 仓房&货位可选)",
+        "表格列 16 列: 前 14 列可滚动, 后 2 列(实收/实提数量+重量)固定在行尾, 提升录入效率",
+        "新 CSS: .sticky-right-1/2 + .sticky-right-head-1/2 (box-shadow 显示 sticky 边界)",
+        "出库 tab 按钮切换逻辑已确认正确(已截图验证): 切到出库 tab 后按钮变【+ 新增出库】"
+      ],
+      "files": [
+        "pages/platform/inbound-record-create.html",
+        "pages/platform/outbound-record-create.html"
+      ],
+      "screenshot": null
+    },
+    {
       "version": "v1.7.85",
       "date": "2026-07-16",
       "title": "全局页面目录（Axure 风格浮层 + 左上角图标入口）",
