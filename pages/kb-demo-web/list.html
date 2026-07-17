@@ -566,9 +566,9 @@
     // ====== 筛选 & 渲染列表 ======
     function getFilteredArticles() {
       let list = allArticles;
-      // 路径匹配：如果有 path，按 path 末级（l3）匹配
+      // 路径匹配：L3 路径只匹配 L1+L2（L3 模糊匹配，因为 L3 chip 是抽象分类）
       if (pathParts.length >= 3) {
-        list = list.filter(a => a.path[0] === pathParts[0] && a.path[1] === pathParts[1] && a.path[2] === pathParts[2]);
+        list = list.filter(a => a.path[0] === pathParts[0] && a.path[1] === pathParts[1]);
       } else if (pathParts.length === 2) {
         list = list.filter(a => a.path[0] === pathParts[0] && a.path[1] === pathParts[1]);
       } else if (pathParts.length === 1) {
