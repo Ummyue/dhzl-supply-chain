@@ -427,6 +427,10 @@ const MockData = {
           { icon: 'shield-check', label: '融资审核', path: '/guarantor/approval-financing' },
           { icon: 'cash', label: '放款还款管理', path: '/guarantor/disburse-repayment' },
         ]},
+        // v1.7.89：担保方补充【解押出库管理】- v1.7.69 已加页面但 finance 菜单未挂
+        { group: '解押出库管理', items: [
+          { icon: 'logistics', label: '解押/出库审批', path: '/guarantor/approval-outbound' },
+        ]},
         { group: '质押管理', items: [
           { icon: 'list', label: '质押货物台账', path: '/guarantor/pledge-ledger' },
           { icon: 'alert', label: '风险监控', path: '/guarantor/risk-monitoring' },
@@ -434,6 +438,10 @@ const MockData = {
         // v1.7.44：担保方新增「授信管理」（贷后管理改名为授信管理）
         { group: '授信管理', items: [
           { icon: 'chart', label: '额度管理', path: '/guarantor/limit-management' },
+        ]},
+        // v1.7.89：担保方补充【盯市管理】- 贷后盯市需要看押品价格波动
+        { group: '盯市管理', items: [
+          { icon: 'chart', label: '价格看板', path: '/customer/market' },
         ]},
       ],
       bank: [
@@ -468,6 +476,10 @@ const MockData = {
         ]},
       ],
       guarantor_seal: [
+        // v1.7.89：担保方盖章员补充【融资管理】- 融资流程的盖章③节点需要看待盖章融资列表
+        { group: '融资管理', items: [
+          { icon: 'shield-check', label: '融资审核', path: '/guarantor/approval-financing' },
+        ]},
         { group: '解押出库管理', items: [
           { icon: 'logistics', label: '解押/出库审批', path: '/guarantor/approval-outbound' },
           { icon: 'edit', label: '单据盖章', path: '/guarantor/seal-document' },
