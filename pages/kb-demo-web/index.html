@@ -978,7 +978,6 @@
       <div class="data-card">
         <div class="head">
           <h2>最近更新</h2>
-          <span class="more" onclick="showToast('查看更多')">查看更多 →</span>
         </div>
         <table class="data-table">
           <thead>
@@ -1583,25 +1582,13 @@
         meta.textContent = `${l1} · 共 ${secs.length} 个二级目录 · ${secs.reduce((s,x) => s + x.tertiaries.length, 0)} 个三级目录`;
       } else if (currentPath.length === 2) {
         // 二级：显示该二级下的所有三级（chip 形式）
+        // 点 chip → 跳 list.html 独立列表页（不再在原区域展示，空间不够）
         const [l1, l2] = currentPath;
         const s = catalogData[l1].secondaries.find(x => x.name === l2);
         content.innerHTML = `<div class="grid-chip">${s.tertiaries.map(t => `
-          <div class="chip" onclick="navToCard('${l1}','${l2}','${t}')">${t}</div>
+          <div class="chip" onclick="location.href='list.html?path=${encodeURIComponent(l1)}/${encodeURIComponent(l2)}/${encodeURIComponent(t)}'">${t}</div>
         `).join('')}</div>`;
         meta.textContent = `${l1} / ${l2} · 共 ${s.tertiaries.length} 个三级目录`;
-      } else if (currentPath.length === 3) {
-        // 三级：显示文章列表（mock）
-        const articles = mockArticles.default;
-        content.innerHTML = `<div class="article-list">${articles.map(a => `
-          <div class="article-row" onclick="goTo('detail')">
-            <div>
-              <div class="title">${a.title}</div>
-              <div class="meta">${a.org} · ${a.date} · 👁 ${a.views} 浏览</div>
-            </div>
-            <div class="action">查看 →</div>
-          </div>
-        `).join('')}</div>`;
-        meta.textContent = `${currentPath.join(' / ')} · 共 ${articles.length} 篇文章`;
       } else {
         content.innerHTML = '<div class="empty-hint">已达最深层级</div>';
       }
