@@ -38,13 +38,6 @@
         <span class="font-medium">v1.7 流程：</span>本页面是 <strong>3 级审核的第 3 步</strong>（监管方✓ → 担保方✓ → <strong>您（资金方）</strong>）。审核通过后，货主方需盖章③，然后进入「待放款」环节（线下打款 + 凭证上传）。
       </div>
 
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        ${Components.statCard({ label: '在贷余额', value: '¥3.6亿', hint: '资金方在贷余额 = 已放款且尚未结清的融资本金合计', gradient: true })}
-        ${Components.statCard({ label: '本月放款额', value: '¥8,200万', hint: '本月放款额 = 自然月内状态进入「已放款」的融资本金合计', color: 'text-emerald-600' })}
-        ${Components.statCard({ label: '不良率', value: '0.13%', hint: '不良率 = 逾期 90 天以上的未结清本金 ÷ 在贷余额 × 100%（银保监会五级分类口径）', color: 'text-blue-600' })}
-        ${Components.statCard({ label: '本月待审', value: `${MockData.financingList.filter(f => f.status === 'pending_funding').length} 笔`, hint: '本月待审 = 当前状态为「资方审核」且本自然月内提交的融资笔数', color: 'text-violet-600' })}
-      </div>
-
       ${FinancingList.render({
         actionRenderer: (rec) => {
           // 资金方专属操作按钮（v1.7.8 占位，详细审批内容由用户细化）
