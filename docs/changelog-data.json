@@ -136,6 +136,27 @@
       "screenshot": null
     },
     {
+      "version": "v1.7.92",
+      "date": "2026-07-17",
+      "title": "监管方【出/入库详情】tab 加【新增入库】+【新增出库】按钮 + 2 个详情页",
+      "types": ["control", "field"],
+      "summary": "pages/platform/approval-in-out-detail.html 顶部 extra 加按钮(按 tab 切换文字: 入库 tab 显示【+ 新增入库】, 出库 tab 显示【+ 新增出库】)。新建 2 个详情页: pages/platform/inbound-record-create.html(22KB,实际入库实收录入) + pages/platform/outbound-record-create.html(实际出库实提录入)。每个页面包含: 申请信息(只读,5 字段) + 申请业务信息(可编辑紫色高亮 7 字段必填,毛重/皮重/净重 + 单位) + 货物明细表(前 12 列只读紫色虚线 + 实收/实提 2 列可编辑,单位跟随不可编辑) + 附件(3 类: 单据/磅单/作业留痕) + 底部固定按钮(取消/提交,Ctrl+Enter 快捷提交)。出库页面差异: PREIN→JY前缀、入库单→出库单、入库→出库、实收→实提、计划入库时间→拟出库时间、入库数量→拟出库数量",
+      "event": "用户要求在监管方【出/入库详情】的入库详情 tab 加【新增入库】按钮,出库详情 tab 加【新增出库】按钮,分别进入对应表单页(字段如截图所示)。货物明细中实收/实提为可编辑,单位默认为前方数量单位,不可编辑",
+      "impact": [
+        "出/入库详情 tab 切换: 按钮文字同步切换(入库 tab→新增入库, 出库 tab→新增出库)",
+        "2 个新详情页(共 45 KB / 880 行)",
+        "货物明细 4 行(对应每个 product,实收/实提可编辑,单位跟随不可编辑)",
+        "校验: 入库单号/出库单号必填 + 毛重>0 + 净重=毛重-皮重 + 实收/实提必填 + 附件 3 类必填/选填",
+        "Ctrl+Enter 快捷提交"
+      ],
+      "files": [
+        "pages/platform/approval-in-out-detail.html",
+        "pages/platform/inbound-record-create.html",
+        "pages/platform/outbound-record-create.html"
+      ],
+      "screenshot": null
+    },
+    {
       "version": "v1.7.85",
       "date": "2026-07-16",
       "title": "全局页面目录（Axure 风格浮层 + 左上角图标入口）",
