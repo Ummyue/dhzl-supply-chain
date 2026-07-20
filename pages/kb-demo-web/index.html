@@ -272,16 +272,18 @@
     .catalog-title {
       font-size: 18px;
       font-weight: 600;
-      line-height: 1.4;
-      padding-left: 12px;
+      line-height: 1.5;
+      padding: 6px 0 6px 12px;
       border-left: 4px solid var(--primary);
       margin-bottom: 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex: 0 0 auto;
-      min-height: 28px;
+      min-height: 32px;
+      color: var(--text);
     }
+    .catalog-title > span:first-child { color: var(--text); display: inline-block; }
     .catalog-title .meta { font-size: 13px; color: var(--text-tertiary); font-weight: 400; }
     /* Tab 栏（层级式面包屑） */
     .tab-bar {
