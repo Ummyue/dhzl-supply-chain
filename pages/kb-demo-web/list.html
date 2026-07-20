@@ -160,11 +160,21 @@
     .breadcrumb .crumb-current { color: var(--text); font-weight: 500; }
     .breadcrumb .sep { color: var(--text-tertiary); }
 
+    /* 正文区容器：包搜索框 + main 主体 */
+    .container {
+      max-width: 1400px;
+      margin: 16px auto 0;
+      padding: 0 32px 32px;
+    }
+    /* 正文区上方的搜索框 */
+    .content-search-bar {
+      margin-bottom: 16px;
+    }
+    .content-search-bar .search-box {
+      max-width: 100%;
+    }
     /* 主体：左侧目录树 + 右侧文章列表 */
     .main {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 16px 32px;
       display: grid;
       grid-template-columns: 260px 1fr;
       gap: 20px;
@@ -388,13 +398,23 @@
   </style>
 </head>
 <body>
-  <!-- 顶部搜索栏（与首页一致） -->
+  <!-- 顶部 logo -->
   <div class="top-search-bar">
     <div class="top-search-inner">
       <div class="logo" onclick="location.href='index.html'">
         <div class="logo-icon">KB</div>
         <span>企业知识库</span>
       </div>
+    </div>
+  </div>
+
+  <!-- 正文区容器：包面包屑 + 搜索框 + main 主体 -->
+  <div class="container">
+    <!-- 面包屑 -->
+    <div class="breadcrumb" id="breadcrumb"></div>
+
+    <!-- 正文区上方的搜索框（与首页 hero 搜索框交互一致） -->
+    <div class="content-search-bar">
       <div class="search-box">
         <div class="search-input-wrap">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -404,15 +424,12 @@
         <div class="autocomplete" id="autocomplete"></div>
       </div>
     </div>
-  </div>
 
-  <!-- 面包屑 -->
-  <div class="breadcrumb" id="breadcrumb"></div>
-
-  <!-- 主体：左侧目录树 + 右侧文章列表 -->
-  <div class="main">
-    <aside class="sidebar" id="sidebar"></aside>
+    <!-- 主体：左侧目录树 + 右侧文章列表 -->
+    <div class="main">
+      <aside class="sidebar" id="sidebar"></aside>
     <main class="content" id="content"></main>
+  </div>
   </div>
 
   <script>
