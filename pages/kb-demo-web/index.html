@@ -374,6 +374,7 @@
       padding-left: 4px;
       border-left: 3px solid var(--primary);
       line-height: 1.2;
+      text-align: left;
     }
     /* 二级卡片 grid */
     .grid-3col {
@@ -1542,9 +1543,9 @@
       // 第一行：5 个 tab（无返回按钮，通过 tab 自身切换层级）
       html += `<div class="tab-row-top">`;
       const activeL1 = currentPath[0];
-      html += `<div class="tab ${isAll ? 'active' : ''}" onclick="goToList('')">全部</div>`;
+      html += `<div class="tab ${isAll ? 'active' : ''}" onclick="expandTab('全部')">全部</div>`;
       Object.keys(catalogData).forEach(name => {
-        html += `<div class="tab ${activeL1 === name ? 'active' : ''}" onclick="goToList('${name}')">${name}</div>`;
+        html += `<div class="tab ${activeL1 === name ? 'active' : ''}" onclick="expandTab('${name}')">${name}</div>`;
       });
       html += `</div>`;
 
@@ -1591,7 +1592,7 @@
           html += `<div class="all-group">
             <div class="all-group-title">${l1}</div>
             <div class="grid-3col">${secs.map(s => `
-              <div class="card-l2" onclick="goToList('${l1}','${s.name}')">
+              <div class="card-l2" onclick="expandCard('${l1}','${s.name}')">
                 <div class="name">${s.name}</div>
                 <div class="count">${s.count} 篇 · ${s.tertiaries.length} 个三级目录</div>
               </div>
@@ -1626,9 +1627,21 @@
     }
 
     function goToList(l1, l2) {
-      // 跳详情页 list.html（参数：?path=一级/二级）
+      // 跳详情页 list.html（参数：?path=一级/二级）—— 仅末级点击触发
       const path = [l1, l2].filter(Boolean).map(s => encodeURIComponent(s)).join('/');
       location.href = 'list.html?path=' + (path ? path : '');
+    }
+
+    function expandTab(name) {
+      // 1 级 tab 点击：在原区域展开对应 1 级的 2 级卡（不跳 list.html）
+      currentPath = [name];
+      renderCatalog();
+    }
+
+    function expandCard(l1, l2) {
+      // 2 级卡片点击：在原区域展开对应 2 级的 3 级 chip（不跳 list.html）
+      currentPath = [l1, l2];
+      renderCatalog();
     }
 
     function navToLevel(idx) {
