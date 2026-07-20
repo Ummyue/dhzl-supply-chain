@@ -143,8 +143,8 @@
     /* 面包屑 */
     .breadcrumb {
       max-width: 1400px;
-      margin: 16px auto 0;
-      padding: 0 32px;
+      margin: 16px auto;
+      padding: 4px 32px;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -697,8 +697,9 @@
             ${pageList.map(a => {
               const isHighlight = highlightId === a.id;
               const rowStyle = isHighlight ? 'style="background:#fef3c7"' : '';
+              const fullPath = [...a.path].map(s => encodeURIComponent(s)).join('/');
               return `<tr ${rowStyle}>
-                <td class="title-cell" onclick="alert('查看：${a.title}')">${a.title}</td>
+                <td class="title-cell" onclick="location.href='article.html?path=${fullPath}&id=${a.id}'">${a.title}</td>
                 <td>${a.path[0]} / ${a.path[1]}</td>
                 <td>${a.org}</td>
                 <td>${a.date}</td>

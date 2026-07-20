@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文章详情 · 企业知识库</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    :root {
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --primary-hover: #1d4ed8;
+      --text: #0f172a;
+      --text-secondary: #475569;
+      --text-tertiary: #94a3b8;
+      --border: #e2e8f0;
+      --bg: #f8fafc;
+      --white: #ffffff;
+    }
+    /* 顶部 logo + 搜索框（与 list.html 一致） */
+    .top-search-bar {
+      background: #fff;
+      padding: 16px 32px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .top-search-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      flex: 0 0 auto;
+      cursor: pointer;
+    }
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: var(--primary); color: #fff;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+    }
+    .search-box {
+      flex: 1;
+      max-width: 720px;
+      position: relative;
+    }
+    .search-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0 12px;
+      height: 40px;
+      transition: all 0.2s;
+    }
+    .search-input-wrap:focus-within {
+      background: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .search-input-wrap input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 14px;
+    }
+    .search-input-wrap button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 18px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .search-input-wrap button:hover { background: var(--primary-hover); }
+    .autocomplete {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      max-height: 360px;
+      overflow-y: auto;
+      z-index: 20;
+      display: none;
+    }
+    .autocomplete.show { display: block; }
+    .autocomplete .ac-item {
+      padding: 10px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+    }
+    .autocomplete .ac-item:last-child { border-bottom: none; }
+    .autocomplete .ac-item:hover { background: var(--primary-light); }
+    .autocomplete .ac-item .ac-title {
+      font-size: 13px;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    .autocomplete .ac-item .ac-path {
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+    .autocomplete .ac-empty {
+      padding: 24px 16px;
+      text-align: center;
+      color: var(--text-tertiary);
+      font-size: 13px;
+    }
+    .autocomplete mark {
+      background: #fef3c7;
+      color: #92400e;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+    /* 面包屑（搜索框下方） */
+    .container {
+      max-width: 1400px;
+      margin: 16px auto;
+      padding: 0 32px 32px;
+    }
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-tertiary);
+      margin-bottom: 16px;
+    }
+    .breadcrumb .crumb-link { cursor: pointer; color: var(--text-secondary); transition: color 0.15s; }
+    .breadcrumb .crumb-link:hover { color: var(--primary); }
+    .breadcrumb .crumb-current { color: var(--text); font-weight: 500; }
+    .breadcrumb .sep { color: var(--text-tertiary); }
+    /* 返回按钮行 */
+    .back-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 14px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .back-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: var(--primary-light);
+    }
+    .back-btn::before {
+      content: '←';
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .back-row .meta-info {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+    /* 文章详情卡片 */
+    .article-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 32px 40px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .article-head {
+      border-left: 4px solid var(--primary);
+      padding-left: 16px;
+      margin-bottom: 16px;
+    }
+    .article-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.4;
+      margin-bottom: 12px;
+    }
+    .article-meta {
+      display: flex;
+      gap: 16px;
+      font-size: 13px;
+      color: var(--text-tertiary);
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .article-meta .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .article-meta .actions {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+    }
+    .article-meta .actions span {
+      cursor: pointer;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+    .article-meta .actions span:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: var(--primary-light);
+    }
+    .article-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 24px 0;
+    }
+    .article-content {
+      font-size: 15px;
+      line-height: 1.8;
+      color: var(--text);
+    }
+    .article-content h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 24px 0 12px;
+      color: var(--text);
+    }
+    .article-content h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 20px 0 10px;
+      color: var(--text);
+    }
+    .article-content p {
+      margin-bottom: 14px;
+      color: var(--text-secondary);
+    }
+    .article-content ul, .article-content ol {
+      margin: 0 0 14px 24px;
+      color: var(--text-secondary);
+    }
+    .article-content li {
+      margin-bottom: 6px;
+    }
+    .article-content blockquote {
+      border-left: 3px solid var(--primary-light);
+      padding: 8px 16px;
+      margin: 14px 0;
+      background: var(--primary-light);
+      color: var(--text-secondary);
+      border-radius: 0 6px 6px 0;
+    }
+    .article-content code {
+      background: #f1f5f9;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 13px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .attachment-list {
+      margin-top: 24px;
+      padding: 16px;
+      background: #f8fafc;
+      border-radius: 8px;
+    }
+    .attachment-title {
+      font-size: 13px;
+      color: var(--text-tertiary);
+      margin-bottom: 8px;
+    }
+    .attachment-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .attachment-item:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .attachment-item:last-child { margin-bottom: 0; }
+    /* 相关推荐 */
+    .related-section {
+      margin-top: 20px;
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px 32px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .related-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 12px;
+      padding-left: 10px;
+      border-left: 3px solid var(--primary);
+    }
+    .related-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 24px;
+    }
+    .related-item {
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 4px 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .related-item:hover { color: var(--primary); }
+    .related-item::before {
+      content: '📄';
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 顶部 logo + 搜索框 -->
+  <div class="top-search-bar">
+    <div class="top-search-inner">
+      <div class="logo" onclick="location.href='index.html'">
+        <div class="logo-icon">KB</div>
+        <span>企业知识库</span>
+      </div>
+      <div class="search-box">
+        <div class="search-input-wrap">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="topSearchInput" placeholder="搜索你需要的文档、指南、规范等问题解决方案..." />
+          <button onclick="onSearch()">搜索</button>
+        </div>
+        <div class="autocomplete" id="autocomplete"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- 面包屑 -->
+    <div class="breadcrumb" id="breadcrumb"></div>
+
+    <!-- 返回按钮 + 文章 meta -->
+    <div class="back-row">
+      <div class="back-btn" onclick="goBack()">返回</div>
+      <div class="meta-info" id="metaInfo"></div>
+    </div>
+
+    <!-- 文章详情 -->
+    <div class="article-card" id="articleCard"></div>
+
+    <!-- 相关推荐 -->
+    <div class="related-section" id="relatedSection"></div>
+  </div>
+
+  <script>
+    // ====== URL 参数 ======
+    const params = new URLSearchParams(location.search);
+    const rawPath = params.get('path') || '';
+    const pathParts = rawPath.split('/').filter(Boolean);
+    const articleId = params.get('id') || 'a1000';
+
+    // ====== Mock 文章库（与 list.html 共享） ======
+    const allArticles = [];
+    const titles = [
+      '2024 年度 XX 管理办法实施细则', '关于 XX 工作流程优化的通知', 'XX 制度修订说明（2025 版）',
+      'XX 工作常见问题 FAQ', 'XX 工作操作手册（图文版）', '员工入职流程完整指引',
+      '新员工入职培训手册（2025 修订）', '入职手续办理 checklist', '试用期考核管理办法',
+      '劳动合同签订与变更操作规范', '员工离职交接流程指引', '关于 2026 年春节放假安排的通知',
+      '2025 年度人力资源数据报表', '招聘渠道效果分析报告', '员工满意度调研报告（Q4）',
+      '人事档案管理操作指引', '职称评审申报流程说明', '薪酬调整方案（2026 版）',
+      '社保公积金缴纳基数调整通知', '智慧人力系统 V2.0 上线公告', '集团年度人力资源工作会议纪要',
+      '板块人力资源管理优秀案例汇编', '员工心理健康关怀方案', '远程办公管理办法（暂行）',
+      '内部调动操作指引', '考勤异常处理流程', '绩效面谈操作手册',
+      '培训需求调研报告（2025）', '部门职责梳理指引', '年度培训计划模板',
+      '中华人民共和国国民法典（2025 修订版）', '关于加强网络安全管理的若干规定', '河南省科技创新促进条例（实施细则）',
+      '企业会计准则解释第 18 号', '税收政策调整通知（2026）', 'XX 工作表彰决定',
+      '员工行为规范管理办法', '集团招聘流程 V3.0', '干部任免审批流程',
+      '薪酬调整审批操作规范', '绩效管理办法实施细则', '员工培训管理制度',
+      '职称评审申报操作指引', '电子合同管理办法', '考勤休假管理制度（2025 修订）',
+      '人事档案管理办法', '员工关怀基金使用办法', '入职体检管理规范',
+      '劳动合同续签操作指引', '离职结算管理办法', '工伤认定申报流程'
+    ];
+    const orgs = ['人力资源部', '集团办公室', '党群工作部', '战略发展部', '财务部', '信息技术部', '全国人大', '网信办', '河南省政府', '财政部'];
+    const l1List = ['政策法规库', '制度规范库', '系统操作指引', '会议与知识沉淀库'];
+    const l2Map = {
+      '政策法规库': ['国家常用法律', '国家关键行政法规与规定', '河南省各地市法规与政策', '党内法规制度', '行业专项法规', '国际公约与条约', '地方性法规与规章'],
+      '制度规范库': ['集团人力资源制度', '板块/企业制度'],
+      '系统操作指引': ['操作指引库（员工版）', '操作指引库（企业版）', '操作指引库（SSC 版）'],
+      '会议与知识沉淀库': ['专项会议材料', '专业知识库']
+    };
+    const today = new Date('2026-07-17');
+    for (let i = 0; i < titles.length; i++) {
+      const l1 = l1List[i % l1List.length];
+      const l2 = l2Map[l1][i % l2Map[l1].length].name;
+      const daysAgo = (i * 7 + 3) % 365;
+      const date = new Date(today.getTime() - daysAgo * 86400000);
+      allArticles.push({
+        id: 'a' + (1000 + i),
+        title: titles[i],
+        path: [l1, l2],
+        org: orgs[i % orgs.length],
+        date: date.toISOString().slice(0, 10),
+        views: 100 + (i * 37) % 2000
+      });
+    }
+
+    // 当前文章
+    const article = allArticles.find(a => a.id === articleId) || allArticles[0];
+
+    // ====== 返回 ======
+    function goBack() {
+      // 优先 history.back，回退到 list.html
+      if (document.referrer && document.referrer.includes('list.html')) {
+        history.back();
+      } else {
+        // 没有 referrer 时，按 path 跳回
+        const path = pathParts.length > 0
+          ? pathParts.map(s => encodeURIComponent(s)).join('/')
+          : '';
+        location.href = 'list.html' + (path ? '?path=' + path : '');
+      }
+    }
+
+    // ====== 搜索框交互 ======
+    function onSearch() {
+      const kw = document.getElementById('topSearchInput').value.trim();
+      if (kw) {
+        location.href = `search.html?q=${encodeURIComponent(kw)}`;
+      } else {
+        location.href = 'list.html';
+      }
+    }
+    const searchInput = document.getElementById('topSearchInput');
+    const acEl = document.getElementById('autocomplete');
+    searchInput.addEventListener('input', updateAutocomplete);
+    searchInput.addEventListener('focus', updateAutocomplete);
+    searchInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') onSearch();
+    });
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.search-box')) acEl.classList.remove('show');
+    });
+    function highlightKw(text, kw) {
+      if (!kw) return text;
+      const re = new RegExp('(' + kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      return text.replace(re, '<mark>$1</mark>');
+    }
+    function updateAutocomplete() {
+      const kw = searchInput.value.trim();
+      if (!kw) { acEl.classList.remove('show'); return; }
+      const matched = allArticles.filter(a => a.title.toLowerCase().includes(kw.toLowerCase())).slice(0, 8);
+      if (matched.length === 0) {
+        acEl.innerHTML = '<div class="ac-empty">没有匹配的文章，试试别的关键词</div>';
+      } else {
+        acEl.innerHTML = matched.map(a => `
+          <div class="ac-item" data-id="${a.id}">
+            <div class="ac-title">${highlightKw(a.title, kw)}</div>
+            <div class="ac-path">${a.path[0]} / ${a.path[1]} · ${a.org} · ${a.date}</div>
+          </div>
+        `).join('');
+        acEl.querySelectorAll('.ac-item').forEach(item => {
+          item.addEventListener('click', () => {
+            const id = item.dataset.id;
+            const art = allArticles.find(a => a.id === id);
+            if (art) {
+              const path = art.path.map(s => encodeURIComponent(s)).join('/');
+              location.href = `article.html?path=${path}&id=${art.id}`;
+            }
+          });
+        });
+      }
+      acEl.classList.add('show');
+    }
+
+    // ====== 面包屑 ======
+    function renderBreadcrumb() {
+      const el = document.getElementById('breadcrumb');
+      let html = `<span class="crumb-link" onclick="location.href='list.html'">首页</span>`;
+      html += `<span class="sep">/</span>`;
+      html += `<span class="crumb-link" onclick="location.href='list.html'">知识库目录</span>`;
+      pathParts.forEach((p, i) => {
+        html += `<span class="sep">/</span>`;
+        const isLast = i === pathParts.length - 1;
+        if (isLast) {
+          html += `<span class="crumb-link" onclick="goBack()">${p}</span>`;
+        } else {
+          const subPath = pathParts.slice(0, i + 1).map(s => encodeURIComponent(s)).join('/');
+          html += `<span class="crumb-link" onclick="location.href='list.html?path=${subPath}'">${p}</span>`;
+        }
+      });
+      html += `<span class="sep">/</span>`;
+      html += `<span class="crumb-current">${article.title}</span>`;
+      el.innerHTML = html;
+    }
+
+    // ====== 文章详情 ======
+    function renderArticle() {
+      const card = document.getElementById('articleCard');
+      const meta = document.getElementById('metaInfo');
+      meta.textContent = `文章 ID: ${article.id}`;
+
+      card.innerHTML = `
+        <div class="article-head">
+          <div class="article-title">${article.title}</div>
+          <div class="article-meta">
+            <span class="meta-item">📁 ${article.path[0]} / ${article.path[1]}</span>
+            <span class="meta-item">🏢 ${article.org}</span>
+            <span class="meta-item">📅 ${article.date}</span>
+            <span class="meta-item">👁 ${article.views.toLocaleString()} 浏览</span>
+            <div class="actions">
+              <span onclick="alert('已加入收藏')">⭐ 收藏</span>
+              <span onclick="alert('开始下载')">⬇ 下载</span>
+              <span onclick="alert('已复制链接')">🔗 分享</span>
+            </div>
+          </div>
+        </div>
+        <hr class="article-divider" />
+        <div class="article-content">
+          <h2>一、背景与目的</h2>
+          <p>为进一步规范企业内部管理工作流程，提升制度执行的效率与质量，根据 <code>《XX 管理总则》</code> 第十五条相关规定，结合集团 2025 年度经营目标，特制定本实施细则。</p>
+          <p>本细则适用于集团总部及下属各板块/企业，覆盖<strong>组织管理、招聘配置、薪酬福利、绩效管理、培训发展、档案管理</strong>六大业务模块。</p>
+
+          <h2>二、适用范围</h2>
+          <ul>
+            <li>集团总部各职能部门</li>
+            <li>各板块/企业人力资源部</li>
+            <li>各级 SSC（共享服务中心）</li>
+            <li>全体正式员工及试用期员工</li>
+          </ul>
+
+          <h2>三、核心要点</h2>
+          <h3>3.1 组织管理</h3>
+          <blockquote>组织架构调整须经集团办公会审批，并在调整生效后 5 个工作日内完成系统更新。</blockquote>
+          <p>各部门应根据业务发展需要，动态调整组织架构，确保人岗匹配。原则上每年度进行一次组织架构审视，特殊情况可临时调整。</p>
+
+          <h3>3.2 招聘配置</h3>
+          <p>招聘需求由用人部门提出，HRBP 审核后报分管领导审批。年度招聘计划须在每年 12 月 31 日前完成编制。</p>
+          <ol>
+            <li>需求提报：用人部门填写《招聘需求表》</li>
+            <li>审批流程：HRBP → 分管领导 → 人力资源部负责人</li>
+            <li>招聘执行：渠道选择、简历筛选、面试评估</li>
+            <li>录用决策：综合面试结果 + 背景调查</li>
+          </ol>
+
+          <h3>3.3 薪酬福利</h3>
+          <p>薪酬调整原则上每年进行一次，调整幅度根据公司经营业绩、个人绩效表现、市场薪酬水平等因素综合确定。</p>
+
+          <h2>四、附则</h2>
+          <p>本细则由集团人力资源部负责解释，自发布之日起执行。原相关制度同时废止。</p>
+          <p>如有任何疑问，请联系集团人力资源部，电话：<code>010-XXXXXXXX</code>，邮箱：<code>hr@group.com</code>。</p>
+        </div>
+        <div class="attachment-list">
+          <div class="attachment-title">📎 相关附件（2 个）</div>
+          <div class="attachment-item" onclick="alert('下载附件 1')">📄 ${article.title} - 附件 1.docx (256 KB)</div>
+          <div class="attachment-item" onclick="alert('下载附件 2')">📄 ${article.title} - 附件 2.pdf (1.2 MB)</div>
+        </div>
+      `;
+    }
+
+    // ====== 相关推荐 ======
+    function renderRelated() {
+      const el = document.getElementById('relatedSection');
+      // 找同一 1 级的其他文章（不包含当前）
+      const related = allArticles
+        .filter(a => a.id !== article.id && a.path[0] === article.path[0])
+        .slice(0, 6);
+      if (related.length === 0) return;
+      el.innerHTML = `
+        <div class="related-title">相关推荐</div>
+        <div class="related-list">
+          ${related.map(a => {
+            const path = a.path.map(s => encodeURIComponent(s)).join('/');
+            return `<div class="related-item" onclick="location.href='article.html?path=${path}&id=${a.id}'">${a.title}</div>`;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    // ====== Init ======
+    renderBreadcrumb();
+    renderArticle();
+    renderRelated();
+  </script>
+</body>
+</html>
