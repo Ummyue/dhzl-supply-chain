@@ -425,7 +425,7 @@
     const today = new Date('2026-07-17');
     for (let i = 0; i < titles.length; i++) {
       const l1 = l1List[i % l1List.length];
-      const l2 = l2Map[l1][i % l2Map[l1].length].name;
+      const l2 = l2Map[l1][i % l2Map[l1].length];
       const daysAgo = (i * 7 + 3) % 365;
       const date = new Date(today.getTime() - daysAgo * 86400000);
       allArticles.push({
