@@ -20,90 +20,136 @@
       --text-secondary: #475569;
       --text-tertiary: #94a3b8;
       --border: #e2e8f0;
-      --bg: #f1f5f9;
+      --bg: #f8fafc;
       --white: #ffffff;
     }
-    .demo-banner {
-      background: #1e3a8a;
-      color: #fff;
-      padding: 6px 20px;
-      font-size: 12px;
-      text-align: center;
-    }
-    /* Top nav (与首页一致) */
-    .top-nav {
+    /* 顶部搜索栏（与首页一致） */
+    .top-search-bar {
       background: #fff;
-      height: 56px;
-      padding: 0 32px;
-      display: flex;
-      align-items: center;
-      gap: 32px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      padding: 16px 32px;
+      border-bottom: 1px solid var(--border);
       position: sticky;
       top: 0;
       z-index: 10;
     }
-    .nav-logo { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; }
-    .logo-icon {
-      width: 32px; height: 32px;
-      background: var(--primary);
-      color: #fff;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-      font-weight: 700;
-    }
-    .nav-links { display: flex; gap: 28px; flex: 1; margin-left: 16px; }
-    .nav-link {
-      font-size: 14px;
-      color: var(--text-secondary);
-      cursor: pointer;
-      padding: 4px 0;
-      position: relative;
-    }
-    .nav-link:hover { color: var(--text); }
-    .nav-link.active { color: var(--primary); font-weight: 500; }
-    .nav-link.active::after {
-      content: ''; position: absolute; bottom: -18px; left: 0; right: 0;
-      height: 2px; background: var(--primary);
-    }
-    .nav-search {
-      display: flex; align-items: center; gap: 8px;
-      background: #f1f5f9; border: 1px solid var(--border);
-      border-radius: 8px; padding: 0 12px; height: 36px; width: 260px;
-      cursor: pointer;
-    }
-    .nav-search input { flex: 1; border: none; background: transparent; outline: none; font-size: 13px; cursor: pointer; }
-    .nav-actions { display: flex; align-items: center; gap: 16px; }
-    .nav-icon-btn { position: relative; cursor: pointer; color: var(--text-secondary); }
-    .nav-icon-btn .dot {
-      position: absolute; top: 0; right: 0;
-      width: 8px; height: 8px; background: #ef4444; border-radius: 50%;
-    }
-    .nav-avatar {
-      width: 32px; height: 32px;
-      background: var(--primary); color: #fff;
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 13px; font-weight: 500;
-      cursor: pointer;
-    }
-    /* Main container */
-    .container {
+    .top-search-inner {
       max-width: 1400px;
       margin: 0 auto;
-      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
     }
-    /* Breadcrumb */
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      flex: 0 0 auto;
+      cursor: pointer;
+    }
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: var(--primary); color: #fff;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+    }
+    .search-box {
+      flex: 1;
+      max-width: 720px;
+      position: relative;
+    }
+    .search-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0 12px;
+      height: 40px;
+      transition: all 0.2s;
+    }
+    .search-input-wrap:focus-within {
+      background: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .search-input-wrap input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 14px;
+    }
+    .search-input-wrap button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 18px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .search-input-wrap button:hover { background: var(--primary-hover); }
+    /* Auto-complete 下拉 */
+    .autocomplete {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      max-height: 360px;
+      overflow-y: auto;
+      z-index: 20;
+      display: none;
+    }
+    .autocomplete.show { display: block; }
+    .autocomplete .ac-item {
+      padding: 10px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    .autocomplete .ac-item:last-child { border-bottom: none; }
+    .autocomplete .ac-item:hover,
+    .autocomplete .ac-item.active {
+      background: var(--primary-light);
+    }
+    .autocomplete .ac-item .ac-title {
+      font-size: 13px;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    .autocomplete .ac-item .ac-path {
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+    .autocomplete .ac-empty {
+      padding: 24px 16px;
+      text-align: center;
+      color: var(--text-tertiary);
+      font-size: 13px;
+    }
+    .autocomplete mark {
+      background: #fef3c7;
+      color: #92400e;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+    /* 面包屑 */
     .breadcrumb {
+      max-width: 1400px;
+      margin: 16px auto 0;
+      padding: 0 32px;
       display: flex;
       align-items: center;
       gap: 8px;
       font-size: 13px;
       color: var(--text-tertiary);
-      margin-bottom: 16px;
     }
     .breadcrumb .crumb-link {
       cursor: pointer;
@@ -114,176 +160,169 @@
     .breadcrumb .crumb-current { color: var(--text); font-weight: 500; }
     .breadcrumb .sep { color: var(--text-tertiary); }
 
-    /* Page title */
-    .page-head {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      margin-bottom: 20px;
+    /* 主体：左侧目录树 + 右侧文章列表 */
+    .main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 16px 32px;
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 20px;
     }
-    .page-head h1 {
-      font-size: 22px;
-      font-weight: 600;
-      color: var(--text);
-      border-left: 4px solid var(--primary);
-      padding-left: 12px;
-      line-height: 1.2;
-    }
-    .page-head .meta {
-      font-size: 13px;
-      color: var(--text-tertiary);
-    }
-
-    /* 二次筛选条（list / search 共享） */
-    .filter-bar {
+    /* 左侧目录树 */
+    .sidebar {
       background: #fff;
       border-radius: 12px;
-      padding: 16px 20px;
+      padding: 8px 0;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-      margin-bottom: 16px;
+      align-self: start;
+      position: sticky;
+      top: 88px;
     }
-    .filter-row {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .filter-row + .filter-row { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
-    .filter-label {
-      font-size: 13px;
-      color: var(--text-tertiary);
-      flex: 0 0 60px;
-    }
-    .filter-pills { display: flex; gap: 8px; flex-wrap: wrap; }
-    .filter-pill {
-      padding: 5px 14px;
-      font-size: 13px;
-      background: #f1f5f9;
+    .tree-all {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 500;
       color: var(--text-secondary);
-      border-radius: 16px;
       cursor: pointer;
       transition: all 0.15s;
-      user-select: none;
+      border-left: 3px solid transparent;
     }
-    .filter-pill:hover { background: #e2e8f0; }
-    .filter-pill.active {
-      background: var(--primary);
-      color: #fff;
-      font-weight: 500;
-    }
-    .filter-search {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: #f1f5f9;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0 12px;
-      height: 34px;
-      min-width: 220px;
-    }
-    .filter-search input {
-      flex: 1;
-      border: none;
-      background: transparent;
-      outline: none;
-      font-size: 13px;
-    }
-    .filter-search button {
-      background: var(--primary);
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      padding: 4px 14px;
-      font-size: 12px;
-      cursor: pointer;
-    }
-    .filter-search button:hover { background: var(--primary-hover); }
-    .filter-actions {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    .filter-reset {
-      font-size: 12px;
-      color: var(--text-tertiary);
-      cursor: pointer;
-      padding: 4px 8px;
-    }
-    .filter-reset:hover { color: var(--primary); }
-
-    /* Article list */
-    .article-list-wrap {
-      background: #fff;
-      border-radius: 12px;
-      padding: 4px 0;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-    .article-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 16px;
-      padding: 20px 24px;
-      border-bottom: 1px solid var(--border);
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .article-item:hover { background: var(--primary-light); }
-    .article-item:last-child { border-bottom: none; }
-    .article-num {
-      flex: 0 0 32px;
-      width: 28px; height: 28px;
-      background: #f1f5f9;
-      color: var(--text-tertiary);
-      border-radius: 6px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 12px;
-      font-weight: 500;
-    }
-    .article-item:nth-child(1) .article-num { background: #fee2e2; color: #dc2626; }
-    .article-item:nth-child(2) .article-num { background: #ffedd5; color: #ea580c; }
-    .article-item:nth-child(3) .article-num { background: #fef3c7; color: #ca8a04; }
-    .article-body { flex: 1; min-width: 0; }
-    .article-title {
-      font-size: 15px;
-      font-weight: 500;
-      color: var(--text);
-      margin-bottom: 6px;
-      line-height: 1.5;
-    }
-    .article-meta {
-      display: flex;
-      gap: 12px;
-      font-size: 12px;
-      color: var(--text-tertiary);
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .article-meta .tag {
-      padding: 2px 8px;
+    .tree-all:hover { background: var(--primary-light); color: var(--primary); }
+    .tree-all.active {
       background: var(--primary-light);
       color: var(--primary);
-      border-radius: 4px;
-      font-size: 11px;
+      font-weight: 500;
+      border-left-color: var(--primary);
     }
-    .article-stats {
+    .tree-l1 {
+      padding: 10px 20px 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s;
+      border-left: 3px solid transparent;
       display: flex;
-      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .tree-l1:hover { background: #f1f5f9; }
+    .tree-l1.active {
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 500;
+      border-left-color: var(--primary);
+    }
+    .tree-l1 .count {
       font-size: 12px;
       color: var(--text-tertiary);
-      flex: 0 0 auto;
-      align-items: center;
+      font-weight: 400;
     }
-    .article-stats span { display: flex; align-items: center; gap: 4px; }
+    .tree-l1.active .count { color: var(--primary); }
+    .tree-l2 {
+      padding: 8px 20px 8px 36px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .tree-l2:hover { background: #f1f5f9; color: var(--text); }
+    .tree-l2.active {
+      background: var(--primary);
+      color: #fff;
+      font-weight: 500;
+    }
+    .tree-l2 .count {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+    .tree-l2.active .count { color: #fff; }
 
-    /* Pagination */
+    /* 右侧文章列表 */
+    .content {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .content-head {
+      border-left: 4px solid var(--primary);
+      padding-left: 12px;
+      margin-bottom: 4px;
+    }
+    .content-head h1 {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.2;
+    }
+    .content-head .meta {
+      font-size: 13px;
+      color: var(--text-tertiary);
+      margin-top: 4px;
+    }
+    /* 文章表格 */
+    .article-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+    .article-table thead {
+      background: #f8fafc;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .article-table th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+    }
+    .article-table th:nth-child(1) { width: 30%; }
+    .article-table th:nth-child(2) { width: 28%; }
+    .article-table th:nth-child(3) { width: 12%; }
+    .article-table th:nth-child(4) { width: 12%; }
+    .article-table th:nth-child(5) { width: 8%; }
+    .article-table th:nth-child(6) { width: 10%; text-align: center; }
+    .article-table td {
+      padding: 14px 16px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+    .article-table tbody tr:hover { background: #f8fafc; }
+    .article-table .title-cell {
+      color: var(--primary);
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .article-table .title-cell:hover { text-decoration: underline; }
+    .article-table .action-cell {
+      text-align: center;
+      color: var(--text-tertiary);
+    }
+    .article-table .action-cell span {
+      cursor: pointer;
+      margin: 0 4px;
+      display: inline-block;
+      transition: color 0.15s;
+    }
+    .article-table .action-cell span:hover { color: var(--primary); }
+
+    /* 分页 */
     .pagination {
       display: flex;
-      justify-content: center;
+      align-items: center;
+      justify-content: flex-end;
       gap: 6px;
-      margin-top: 20px;
-      padding: 16px;
+      margin-top: 24px;
+      font-size: 13px;
+      color: var(--text-tertiary);
     }
     .page-btn {
       min-width: 32px;
@@ -296,7 +335,7 @@
       font-size: 13px;
       cursor: pointer;
       transition: all 0.15s;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
     }
@@ -311,128 +350,69 @@
       font-weight: 500;
     }
     .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .page-info {
-      font-size: 13px;
-      color: var(--text-tertiary);
-      align-self: center;
+    .page-jump {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       margin-left: 8px;
     }
-
-    /* Empty state */
-    .empty-state {
-      background: #fff;
-      border-radius: 12px;
-      padding: 60px 24px;
-      text-align: center;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-    .empty-state .icon {
-      font-size: 56px;
-      margin-bottom: 16px;
-      opacity: 0.5;
-    }
-    .empty-state .title {
-      font-size: 16px;
-      color: var(--text-secondary);
-      margin-bottom: 8px;
-    }
-    .empty-state .desc {
-      font-size: 13px;
-      color: var(--text-tertiary);
-      margin-bottom: 20px;
-    }
-    .empty-state .btn {
-      display: inline-block;
-      padding: 8px 20px;
-      background: var(--primary);
-      color: #fff;
+    .page-jump input {
+      width: 48px;
+      height: 32px;
+      border: 1px solid var(--border);
       border-radius: 6px;
+      padding: 0 6px;
       font-size: 13px;
-      cursor: pointer;
-      text-decoration: none;
+      text-align: center;
+      outline: none;
     }
+    .page-jump input:focus { border-color: var(--primary); }
+    .page-size-select {
+      height: 32px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0 6px;
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* 空状态 */
+    .empty-state {
+      padding: 80px 24px;
+      text-align: center;
+    }
+    .empty-state .icon { font-size: 64px; margin-bottom: 16px; opacity: 0.5; }
+    .empty-state .title { font-size: 16px; color: var(--text-secondary); margin-bottom: 8px; }
+    .empty-state .desc { font-size: 13px; color: var(--text-tertiary); }
   </style>
 </head>
 <body>
-  <div class="demo-banner">
-    🖥️ 智慧人力 · 知识库 PC Web Demo · 浏览器打开后建议窗口宽度 ≥ 1280px
-  </div>
-
-  <!-- Top nav -->
-  <div class="top-nav">
-    <div class="nav-logo">
-      <div class="logo-icon">KB</div>
-      <span>企业知识库</span>
-    </div>
-    <div class="nav-links">
-      <div class="nav-link active" onclick="location.href='index.html'">首页</div>
-      <div class="nav-link" onclick="alert('工作台（demo 不含）')">工作台</div>
-      <div class="nav-link" onclick="alert('我的收藏（demo 不含）')">我的收藏</div>
-      <div class="nav-link" onclick="alert('后台管理（demo 不含）')">后台管理</div>
-    </div>
-    <div class="nav-search">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="topSearchInput" placeholder="搜索知识库..." />
-    </div>
-    <div class="nav-actions">
-      <div class="nav-icon-btn" onclick="alert('🔔 通知中心')">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        <div class="dot"></div>
+  <!-- 顶部搜索栏（与首页一致） -->
+  <div class="top-search-bar">
+    <div class="top-search-inner">
+      <div class="logo" onclick="location.href='index.html'">
+        <div class="logo-icon">KB</div>
+        <span>企业知识库</span>
       </div>
-      <div class="nav-avatar" onclick="alert('张伟 · 人力资源部')">张</div>
+      <div class="search-box">
+        <div class="search-input-wrap">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="topSearchInput" placeholder="搜索你需要的文档、指南、规范等问题解决方案..." />
+          <button onclick="onSearch()">搜索</button>
+        </div>
+        <div class="autocomplete" id="autocomplete"></div>
+      </div>
     </div>
   </div>
 
-  <div class="container">
-    <!-- Breadcrumb -->
-    <div class="breadcrumb" id="breadcrumb"></div>
+  <!-- 面包屑 -->
+  <div class="breadcrumb" id="breadcrumb"></div>
 
-    <!-- Page head -->
-    <div class="page-head">
-      <h1 id="pageTitle">知识库列表</h1>
-      <div class="meta" id="resultMeta">共 0 篇文章</div>
-    </div>
-
-    <!-- 二次筛选条 -->
-    <div class="filter-bar" id="filterBar">
-      <div class="filter-row">
-        <span class="filter-label">时间</span>
-        <div class="filter-pills" data-group="time">
-          <div class="filter-pill active" data-value="">全部</div>
-          <div class="filter-pill" data-value="7">最近一周</div>
-          <div class="filter-pill" data-value="30">最近一月</div>
-          <div class="filter-pill" data-value="90">最近三月</div>
-        </div>
-      </div>
-      <div class="filter-row">
-        <span class="filter-label">分类</span>
-        <div class="filter-pills" data-group="cat">
-          <div class="filter-pill active" data-value="">全部</div>
-          <div class="filter-pill" data-value="政策法规库">政策法规库</div>
-          <div class="filter-pill" data-value="制度规范库">制度规范库</div>
-          <div class="filter-pill" data-value="系统操作指引">系统操作指引</div>
-          <div class="filter-pill" data-value="会议与知识沉淀库">会议与知识沉淀库</div>
-        </div>
-      </div>
-      <div class="filter-row">
-        <span class="filter-label">标签</span>
-        <div class="filter-pills" data-group="tag">
-          <div class="filter-pill active" data-value="">全部</div>
-          <div class="filter-pill" data-value="hot">🔥 热门</div>
-          <div class="filter-pill" data-value="new">🆕 最新</div>
-          <div class="filter-pill" data-value="essence">⭐ 精华</div>
-        </div>
-        <div class="filter-actions">
-          <div class="filter-reset" onclick="resetFilters()">↺ 重置</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Article list / empty state -->
-    <div id="content"></div>
-
-    <!-- Pagination -->
-    <div class="pagination" id="pagination"></div>
+  <!-- 主体：左侧目录树 + 右侧文章列表 -->
+  <div class="main">
+    <aside class="sidebar" id="sidebar"></aside>
+    <main class="content" id="content"></main>
   </div>
 
   <script>
@@ -440,10 +420,43 @@
     const params = new URLSearchParams(location.search);
     const rawPath = params.get('path') || '';
     const pathParts = rawPath.split('/').filter(Boolean);
-    const initialKeyword = params.get('kw') || '';
-    const inPageSearchInput = null;  // 已移除页内搜索框
+    const highlightId = params.get('article') || null;  // 高亮指定文章
 
-    // ====== Mock 文章数据 ======
+    // ====== 目录数据（与首页共享） ======
+    const catalogData = {
+      '政策法规库': {
+        secondaries: [
+          { name: '国家常用法律', count: 3 },
+          { name: '国家关键行政法规与规定', count: 1 },
+          { name: '河南省各地市法规与政策', count: 0 },
+          { name: '党内法规制度', count: 2 },
+          { name: '行业专项法规', count: 3 },
+          { name: '国际公约与条约', count: 1 },
+          { name: '地方性法规与规章', count: 5 }
+        ]
+      },
+      '制度规范库': {
+        secondaries: [
+          { name: '集团人力资源制度', count: 1 },
+          { name: '板块/企业制度', count: 0 }
+        ]
+      },
+      '系统操作指引': {
+        secondaries: [
+          { name: '操作指引库（员工版）', count: 0 },
+          { name: '操作指引库（企业版）', count: 0 },
+          { name: '操作指引库（SSC 版）', count: 0 }
+        ]
+      },
+      '会议与知识沉淀库': {
+        secondaries: [
+          { name: '专项会议材料', count: 0 },
+          { name: '专业知识库', count: 0 }
+        ]
+      }
+    };
+
+    // ====== Mock 文章数据（80 条，覆盖所有路径） ======
     const allArticles = [];
     const titles = [
       '2024 年度 XX 管理办法实施细则', '关于 XX 工作流程优化的通知', 'XX 制度修订说明（2025 版）',
@@ -455,49 +468,50 @@
       '社保公积金缴纳基数调整通知', '智慧人力系统 V2.0 上线公告', '集团年度人力资源工作会议纪要',
       '板块人力资源管理优秀案例汇编', '员工心理健康关怀方案', '远程办公管理办法（暂行）',
       '内部调动操作指引', '考勤异常处理流程', '绩效面谈操作手册',
-      '培训需求调研报告（2025）', '部门职责梳理指引', '年度培训计划模板'
+      '培训需求调研报告（2025）', '部门职责梳理指引', '年度培训计划模板',
+      '中华人民共和国国民法典（2025 修订版）', '关于加强网络安全管理的若干规定', '河南省科技创新促进条例（实施细则）',
+      '企业会计准则解释第 18 号', '税收政策调整通知（2026）', 'XX 工作表彰决定',
+      '员工行为规范管理办法', '集团招聘流程 V3.0', '干部任免审批流程',
+      '薪酬调整审批操作规范', '绩效管理办法实施细则', '员工培训管理制度',
+      '职称评审申报操作指引', '电子合同管理办法', '考勤休假管理制度（2025 修订）',
+      '人事档案管理办法', '员工关怀基金使用办法', '入职体检管理规范',
+      '劳动合同续签操作指引', '离职结算管理办法', '工伤认定申报流程'
     ];
-    const orgs = ['人力资源部', '集团办公室', '党群工作部', '战略发展部', '财务部', '信息技术部'];
-    const tags = ['入职', '离职', '薪酬', '绩效', '培训', '招聘', '社保', '公积金', '档案', '职称', '考勤', '合同'];
-    const l1List = ['政策法规库', '制度规范库', '系统操作指引', '会议与知识沉淀库'];
-    const l2Map = {
-      '政策法规库': ['国家常用法律', '国家关键行政法规与规定', '河南省各地市法规与政策', '党内法规制度', '行业专项法规', '国际公约与条约', '地方性法规与规章'],
-      '制度规范库': ['集团人力资源制度', '板块/企业制度'],
-      '系统操作指引': ['操作指引库（员工版）', '操作指引库（企业版）', '操作指引库（SSC 版）'],
-      '会议与知识沉淀库': ['专项会议材料', '专业知识库']
-    };
+    const orgs = ['人力资源部', '集团办公室', '党群工作部', '战略发展部', '财务部', '信息技术部', '全国人大', '网信办', '河南省政府', '财政部'];
+    const l1List = Object.keys(catalogData);
     const today = new Date('2026-07-17');
-    for (let i = 0; i < 80; i++) {
+    for (let i = 0; i < titles.length; i++) {
       const l1 = l1List[i % l1List.length];
-      const l2 = l2Map[l1][i % l2Map[l1].length];
-      const l3 = tags[i % tags.length];
+      const l2 = catalogData[l1].secondaries[i % catalogData[l1].secondaries.length].name;
       const daysAgo = (i * 7 + 3) % 365;
       const date = new Date(today.getTime() - daysAgo * 86400000);
       allArticles.push({
         id: 'a' + (1000 + i),
-        title: titles[i % titles.length],
-        path: [l1, l2, l3],
+        title: titles[i],
+        path: [l1, l2],
         org: orgs[i % orgs.length],
         date: date.toISOString().slice(0, 10),
-        views: 100 + (i * 37) % 2000,
-        tag: i % 5 === 0 ? 'hot' : (i % 7 === 0 ? 'new' : (i % 11 === 0 ? 'essence' : '')),
-        fixedL3: l3
+        views: 100 + (i * 37) % 2000
       });
     }
 
     // ====== 状态 ======
-    const filters = { time: '', cat: '', tag: '', kw: initialKeyword };
-    const pagination = { page: 1, size: 8 };
+    const filters = { time: '', cat: '', tag: '', kw: '' };
+    const pagination = { page: 1, size: 10 };
 
     // ====== 工具 ======
-    function goSearch(kw) {
-      if (kw) location.href = `search.html?q=${encodeURIComponent(kw)}`;
-      else location.href = `search.html`;
+    function onSearch() {
+      const kw = document.getElementById('topSearchInput').value.trim();
+      if (kw) {
+        location.href = `search.html?q=${encodeURIComponent(kw)}`;
+      } else {
+        // 空搜索 → 跳到顶级目录
+        location.href = 'list.html';
+      }
     }
     function resetFilters() {
       filters.time = ''; filters.cat = ''; filters.tag = ''; filters.kw = '';
       pagination.page = 1;
-      // 重置 UI
       document.querySelectorAll('.filter-pills').forEach(group => {
         const first = group.querySelector('.filter-pill');
         group.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
@@ -506,183 +520,226 @@
       render();
     }
 
-    // ====== 筛选 pill 交互 ======
-    document.querySelectorAll('.filter-pills').forEach(group => {
-      group.addEventListener('click', e => {
-        const pill = e.target.closest('.filter-pill');
-        if (!pill) return;
-        const groupName = group.dataset.group;
-        const value = pill.dataset.value;
-        // 互斥：取消其他 active
-        group.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
-        pill.classList.add('active');
-        filters[groupName] = value;
-        pagination.page = 1;
-        render();
-      });
+    // ====== Auto-complete ======
+    const searchInput = document.getElementById('topSearchInput');
+    const acEl = document.getElementById('autocomplete');
+    searchInput.addEventListener('input', updateAutocomplete);
+    searchInput.addEventListener('focus', updateAutocomplete);
+    searchInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') onSearch();
     });
-
-    // 输入回车搜索（顶部 nav 搜索框）
-    document.getElementById('topSearchInput').addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
-        const kw = e.target.value.trim();
-        if (kw) goSearch(kw);
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.search-box')) acEl.classList.remove('show');
+    });
+    function highlightKw(text, kw) {
+      if (!kw) return text;
+      const re = new RegExp('(' + kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      return text.replace(re, '<mark>$1</mark>');
+    }
+    function updateAutocomplete() {
+      const kw = searchInput.value.trim();
+      if (!kw) { acEl.classList.remove('show'); return; }
+      const matched = allArticles.filter(a => a.title.toLowerCase().includes(kw.toLowerCase())).slice(0, 8);
+      if (matched.length === 0) {
+        acEl.innerHTML = '<div class="ac-empty">没有匹配的文章，试试别的关键词</div>';
+      } else {
+        acEl.innerHTML = matched.map(a => `
+          <div class="ac-item" data-id="${a.id}">
+            <div class="ac-title">${highlightKw(a.title, kw)}</div>
+            <div class="ac-path">${a.path[0]} / ${a.path[1]} · ${a.org} · ${a.date}</div>
+          </div>
+        `).join('');
+        acEl.querySelectorAll('.ac-item').forEach(item => {
+          item.addEventListener('click', () => {
+            const id = item.dataset.id;
+            const art = allArticles.find(a => a.id === id);
+            if (art) {
+              const path = art.path.map(s => encodeURIComponent(s)).join('/');
+              location.href = `list.html?path=${path}&article=${art.id}`;
+            }
+          });
+        });
       }
-    });
+      acEl.classList.add('show');
+    }
 
-    // ====== 渲染面包屑 ======
+    // ====== 面包屑 ======
     function renderBreadcrumb() {
       const el = document.getElementById('breadcrumb');
-      let html = `<span class="crumb-link" onclick="location.href='index.html'">首页</span>`;
-      if (pathParts.length === 0) {
-        html += `<span class="sep">/</span><span class="crumb-current">知识库列表</span>`;
-        el.innerHTML = html;
-        return;
-      }
-      pathParts.forEach((p, i) => {
+      let html = `<span class="crumb-link" onclick="location.href='list.html'">首页</span>`;
+      html += `<span class="sep">/</span>`;
+      html += `<span class="crumb-link" onclick="location.href='list.html'">知识库目录</span>`;
+      if (pathParts.length >= 1) {
         html += `<span class="sep">/</span>`;
-        const isLast = i === pathParts.length - 1;
+        const isLast = pathParts.length === 1;
         if (isLast) {
-          html += `<span class="crumb-current">${p}</span>`;
+          html += `<span class="crumb-current">${pathParts[0]}</span>`;
         } else {
-          // 中间可点
-          const subPath = pathParts.slice(0, i + 1).map(s => encodeURIComponent(s)).join('/');
-          html += `<span class="crumb-link" onclick="location.href='list.html?path=${subPath}'">${p}</span>`;
+          const subPath = encodeURIComponent(pathParts[0]);
+          html += `<span class="crumb-link" onclick="location.href='list.html?path=${subPath}'">${pathParts[0]}</span>`;
         }
+      }
+      if (pathParts.length >= 2) {
+        html += `<span class="sep">/</span>`;
+        html += `<span class="crumb-current">${pathParts[1]}</span>`;
+      }
+      el.innerHTML = html;
+    }
+
+    // ====== 左侧目录树 ======
+    function renderSidebar() {
+      const el = document.getElementById('sidebar');
+      // 顶级"全部目录"
+      const isAllActive = pathParts.length === 0;
+      const totalCount = allArticles.length;
+      let html = `<div class="tree-all ${isAllActive ? 'active' : ''}" onclick="navigateTo('')">全部目录</div>`;
+      // 各 1 级 + 2 级
+      Object.keys(catalogData).forEach(l1 => {
+        const isL1Active = pathParts.length === 1 && pathParts[0] === l1;
+        const l1Count = catalogData[l1].secondaries.reduce((s, x) => s + x.count, 0);
+        html += `<div class="tree-l1 ${isL1Active ? 'active' : ''}" onclick="navigateTo('${l1}')">
+          <span>${l1}</span><span class="count">${l1Count}</span>
+        </div>`;
+        // 2 级（缩进）
+        catalogData[l1].secondaries.forEach(s => {
+          const isL2Active = pathParts.length >= 2 && pathParts[0] === l1 && pathParts[1] === s.name;
+          html += `<div class="tree-l2 ${isL2Active ? 'active' : ''}" onclick="navigateTo('${l1}','${s.name}')">
+            <span>${s.name}</span><span class="count">${s.count}</span>
+          </div>`;
+        });
       });
       el.innerHTML = html;
     }
 
-    // ====== 渲染标题 ======
-    function renderTitle() {
-      const titleEl = document.getElementById('pageTitle');
-      if (pathParts.length === 0) {
-        titleEl.textContent = '全部文章';
-      } else {
-        titleEl.textContent = pathParts[pathParts.length - 1];
-      }
+    function navigateTo(l1, l2) {
+      const path = [l1, l2].filter(Boolean).map(s => encodeURIComponent(s)).join('/');
+      location.href = 'list.html?path=' + (path ? path : '');
     }
 
-    // ====== 筛选 & 渲染列表 ======
+    // ====== 筛选 ======
     function getFilteredArticles() {
       let list = allArticles;
-      // 路径匹配：L3 路径只匹配 L1+L2（L3 模糊匹配，因为 L3 chip 是抽象分类）
-      if (pathParts.length >= 3) {
-        list = list.filter(a => a.path[0] === pathParts[0] && a.path[1] === pathParts[1]);
-      } else if (pathParts.length === 2) {
+      if (pathParts.length >= 2) {
         list = list.filter(a => a.path[0] === pathParts[0] && a.path[1] === pathParts[1]);
       } else if (pathParts.length === 1) {
         list = list.filter(a => a.path[0] === pathParts[0]);
       }
-      // 时间
-      if (filters.time) {
-        const days = parseInt(filters.time);
-        const cutoff = new Date(today.getTime() - days * 86400000);
-        list = list.filter(a => new Date(a.date) >= cutoff);
-      }
-      // 分类
-      if (filters.cat) {
-        list = list.filter(a => a.path[0] === filters.cat);
-      }
-      // 标签
-      if (filters.tag) {
-        list = list.filter(a => a.tag === filters.tag);
-      }
-      // 关键词
-      if (filters.kw) {
-        const kw = filters.kw.toLowerCase();
-        list = list.filter(a => a.title.toLowerCase().includes(kw) || a.fixedL3.includes(kw));
-      }
       return list;
     }
 
-    function render() {
+    // ====== 右侧文章表格 ======
+    function renderContent() {
       const filtered = getFilteredArticles();
       const total = filtered.length;
       const start = (pagination.page - 1) * pagination.size;
       const pageList = filtered.slice(start, start + pagination.size);
 
-      // 结果统计
-      const metaEl = document.getElementById('resultMeta');
-      const totalAll = allArticles.length;
-      if (pathParts.length === 0) {
-        metaEl.textContent = `共 ${total} 篇文章（全部 ${totalAll} 篇）`;
-      } else {
-        metaEl.textContent = `共 ${total} 篇文章`;
+      // 标题
+      let title = '全部目录';
+      let sub = `共 ${total} 篇文章`;
+      if (pathParts.length === 1) {
+        title = pathParts[0];
+        sub = `共 ${total} 篇文章`;
+      } else if (pathParts.length >= 2) {
+        title = pathParts[1];
+        sub = `共 ${total} 篇文章 · ${pathParts[0]}`;
       }
 
       const contentEl = document.getElementById('content');
       if (pageList.length === 0) {
         contentEl.innerHTML = `
+          <div class="content-head">
+            <h1>${title}</h1>
+            <div class="meta">${sub}</div>
+          </div>
           <div class="empty-state">
             <div class="icon">📭</div>
-            <div class="title">没有找到匹配的文章</div>
-            <div class="desc">试试调整筛选条件，或在搜索框换个关键词</div>
-            <a class="btn" onclick="resetFilters()">重置筛选</a>
+            <div class="title">该目录下暂无文章</div>
+            <div class="desc">请尝试切换其他分类</div>
           </div>`;
-        document.getElementById('pagination').innerHTML = '';
         return;
       }
 
-      contentEl.innerHTML = `<div class="article-list-wrap">${pageList.map((a, idx) => {
-        const num = start + idx + 1;
-        const tagLabel = a.tag === 'hot' ? '🔥 热门' : a.tag === 'new' ? '🆕 最新' : a.tag === 'essence' ? '⭐ 精华' : '';
-        return `<div class="article-item" onclick="alert('查看文章：${a.title}')">
-          <div class="article-num">${num}</div>
-          <div class="article-body">
-            <div class="article-title">${highlight(a.title, filters.kw)}</div>
-            <div class="article-meta">
-              <span class="tag">${a.path[0]}</span>
-              <span>${a.path[1]} / ${a.path[2]}</span>
-              <span>·</span>
-              <span>${a.org}</span>
-              <span>·</span>
-              <span>${a.date}</span>
-            </div>
-          </div>
-          <div class="article-stats">
-            ${tagLabel ? `<span>${tagLabel}</span>` : ''}
-            <span>👁 ${a.views}</span>
-          </div>
-        </div>`;
-      }).join('')}</div>`;
+      let html = `
+        <div class="content-head">
+          <h1>${title}</h1>
+          <div class="meta">${sub}</div>
+        </div>
+        <table class="article-table">
+          <thead>
+            <tr>
+              <th>文章标题</th>
+              <th>文章目录</th>
+              <th>发布单位</th>
+              <th>更新日期</th>
+              <th>浏览量</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${pageList.map(a => {
+              const isHighlight = highlightId === a.id;
+              const rowStyle = isHighlight ? 'style="background:#fef3c7"' : '';
+              return `<tr ${rowStyle}>
+                <td class="title-cell" onclick="alert('查看：${a.title}')">${a.title}</td>
+                <td>${a.path[0]} / ${a.path[1]}</td>
+                <td>${a.org}</td>
+                <td>${a.date}</td>
+                <td>${a.views.toLocaleString()}</td>
+                <td class="action-cell">
+                  <span title="收藏" onclick="event.stopPropagation()">⭐</span>
+                  <span title="下载" onclick="event.stopPropagation()">⬇</span>
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
 
-      renderPagination(total);
-    }
-
-    function highlight(text, kw) {
-      if (!kw) return text;
-      const re = new RegExp('(' + kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-      return text.replace(re, '<mark style="background:#fef3c7;color:#92400e;padding:0 2px;border-radius:2px">$1</mark>');
-    }
-
-    function renderPagination(total) {
+      // 分页
       const totalPages = Math.max(1, Math.ceil(total / pagination.size));
-      if (totalPages === 1) { document.getElementById('pagination').innerHTML = ''; return; }
-      let html = '';
+      html += `<div class="pagination">`;
+      html += `<span>共 ${total} 条</span>`;
+      html += `<select class="page-size-select" onchange="changePageSize(this.value)">
+        <option value="10" ${pagination.size === 10 ? 'selected' : ''}>10 条/页</option>
+        <option value="20" ${pagination.size === 20 ? 'selected' : ''}>20 条/页</option>
+        <option value="50" ${pagination.size === 50 ? 'selected' : ''}>50 条/页</option>
+      </select>`;
       html += `<button class="page-btn" ${pagination.page === 1 ? 'disabled' : ''} onclick="gotoPage(${pagination.page - 1})">‹</button>`;
       for (let p = 1; p <= totalPages; p++) {
         if (p === 1 || p === totalPages || Math.abs(p - pagination.page) <= 1) {
           html += `<button class="page-btn ${p === pagination.page ? 'active' : ''}" onclick="gotoPage(${p})">${p}</button>`;
         } else if (Math.abs(p - pagination.page) === 2) {
-          html += `<span class="page-info">…</span>`;
+          html += `<span style="padding:0 4px">…</span>`;
         }
       }
       html += `<button class="page-btn" ${pagination.page === totalPages ? 'disabled' : ''} onclick="gotoPage(${pagination.page + 1})">›</button>`;
-      html += `<span class="page-info">共 ${total} 条</span>`;
-      document.getElementById('pagination').innerHTML = html;
+      html += `<div class="page-jump">前往 <input type="number" min="1" max="${totalPages}" value="${pagination.page}" onchange="jumpToPage(this.value)" /> 页</div>`;
+      html += `</div>`;
+
+      contentEl.innerHTML = html;
     }
 
     function gotoPage(p) {
-      pagination.page = p;
-      render();
+      const total = getFilteredArticles().length;
+      const totalPages = Math.max(1, Math.ceil(total / pagination.size));
+      pagination.page = Math.max(1, Math.min(totalPages, p));
+      renderContent();
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    function changePageSize(size) {
+      pagination.size = parseInt(size);
+      pagination.page = 1;
+      renderContent();
+    }
+    function jumpToPage(v) {
+      gotoPage(parseInt(v));
     }
 
     // ====== Init ======
     renderBreadcrumb();
-    renderTitle();
-    render();
+    renderSidebar();
+    renderContent();
   </script>
 </body>
 </html>

@@ -151,9 +151,12 @@
     }
     .hero h1 { font-size: 36px; margin: 0 0 12px; font-weight: 700; letter-spacing: 1px; }
     .hero p { font-size: 15px; margin: 0 0 28px; opacity: 0.9; }
-    .hero-search {
+    .hero-search-wrap {
+      position: relative;
       max-width: 720px;
       margin: 0 auto;
+    }
+    .hero-search {
       height: 52px;
       background: #fff;
       border-radius: 8px;
@@ -179,6 +182,53 @@
       padding: 8px 18px;
       font-size: 14px;
       cursor: pointer;
+    }
+    .hero-search button:hover { background: var(--primary-hover); }
+    /* Auto-complete 下拉（首页 + 详情页通用） */
+    .autocomplete {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      max-height: 360px;
+      overflow-y: auto;
+      z-index: 20;
+      display: none;
+    }
+    .autocomplete.show { display: block; }
+    .autocomplete .ac-item {
+      padding: 10px 20px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    .autocomplete .ac-item:last-child { border-bottom: none; }
+    .autocomplete .ac-item:hover,
+    .autocomplete .ac-item.active {
+      background: var(--primary-light);
+    }
+    .autocomplete .ac-item .ac-title {
+      font-size: 13px;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    .autocomplete .ac-item .ac-path {
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+    .autocomplete .ac-empty {
+      padding: 24px 16px;
+      text-align: center;
+      color: var(--text-tertiary);
+      font-size: 13px;
+    }
+    .autocomplete mark {
+      background: #fef3c7;
+      color: #92400e;
+      padding: 0 2px;
+      border-radius: 2px;
     }
     .hot-tags {
       display: flex;
@@ -841,53 +891,30 @@
   </style>
 </head>
 <body>
-  <div class="demo-banner">
-    🖥️ 智慧人力 · 知识库 PC Web Demo · 浏览器打开后建议窗口宽度 ≥ 1280px · 右下角可切换 4 屏
-  </div>
-
   <!-- ============ 屏 1: 首页 ============ -->
   <div class="screen active" id="screen-home">
-    <!-- 顶部 nav -->
-    <div class="top-nav">
-      <div class="nav-logo">
-        <div class="logo-icon">KB</div>
-        <span>企业知识库</span>
-      </div>
-      <div class="nav-links">
-        <div class="nav-link active" onclick="goTo('home')">首页</div>
-        <div class="nav-link" onclick="showToast('📊 工作台（demo 不含）')">工作台</div>
-        <div class="nav-link" onclick="showToast('⭐ 我的收藏（demo 不含）')">我的收藏</div>
-        <div class="nav-link" onclick="showToast('📋 目录管理（demo 不含）')">后台管理</div>
-      </div>
-      <div class="nav-search" onclick="goTo('search')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input placeholder="搜索知识库..." readonly style="cursor:pointer" />
-      </div>
-      <div class="nav-actions">
-        <div class="nav-icon-btn" onclick="showToast('🔔 通知中心')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          <div class="dot"></div>
-        </div>
-        <div class="nav-avatar" onclick="showToast('张伟 · 人力资源部')">张</div>
-      </div>
-    </div>
+    <!-- 蓝 hero -->
+    <div class="hero">
 
     <!-- 蓝 hero -->
     <div class="hero">
       <h1>欢迎使用知识库</h1>
       <p>在这里你可以查找公司制度、产品资料、技术文档、运营指南等所有知识资源</p>
-      <div class="hero-search">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input placeholder="搜索你需要的文档、指南、规范等问题解决方案..." onclick="goTo('search')" />
-        <button onclick="goTo('search')">搜索</button>
+      <div class="hero-search-wrap">
+        <div class="hero-search">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="heroSearchInput" placeholder="搜索你需要的文档、指南、规范等问题解决方案..." />
+          <button onclick="onHeroSearch()">搜索</button>
+        </div>
+        <div class="autocomplete" id="autocomplete"></div>
       </div>
       <div class="hot-tags">
         <span class="label">热门搜索：</span>
-        <span class="hot-tag" onclick="goTo('search')">文章</span>
-        <span class="hot-tag" onclick="goTo('search')">公积金</span>
-        <span class="hot-tag" onclick="goTo('search')">水电费</span>
-        <span class="hot-tag" onclick="goTo('search')">社保</span>
-        <span class="hot-tag" onclick="goTo('search')">简历</span>
+        <span class="hot-tag" onclick="quickSearch('文章')">文章</span>
+        <span class="hot-tag" onclick="quickSearch('公积金')">公积金</span>
+        <span class="hot-tag" onclick="quickSearch('水电费')">水电费</span>
+        <span class="hot-tag" onclick="quickSearch('社保')">社保</span>
+        <span class="hot-tag" onclick="quickSearch('简历')">简历</span>
       </div>
     </div>
 
@@ -905,27 +932,27 @@
         <div class="tab-content" id="tab-content"></div>
       </div>
 
-      <!-- 三联卡片 -->
+      <!-- 三联卡片（点 item 跳详情页 list.html） -->
       <div class="tri-cards">
         <div class="tri-card">
           <div class="title">🔥 大家在看</div>
           <div class="rank-list">
-            <div class="item" onclick="goTo('detail')">
+            <div class="item" onclick="goDetail('文章123')">
               <div class="rank-badge red">1</div>
               <div class="text">文章123</div>
               <div class="right">🔥 23</div>
             </div>
-            <div class="item" onclick="goTo('detail')">
+            <div class="item" onclick="goDetail('智慧人力_人事模块_证明管理')">
               <div class="rank-badge red">2</div>
               <div class="text">智慧人力_人事模块_证明管理</div>
               <div class="right">🔥 9</div>
             </div>
-            <div class="item" onclick="goTo('detail')">
+            <div class="item" onclick="goDetail('智慧人力_社保_公积金汇缴2.0')">
               <div class="rank-badge orange">3</div>
               <div class="text">智慧人力_社保_公积金汇缴2.0</div>
               <div class="right">🔥 3</div>
             </div>
-            <div class="item" onclick="goTo('detail')">
+            <div class="item" onclick="goDetail('测试新增文章目录变化')">
               <div class="rank-badge gray">4</div>
               <div class="text">测试新增文章目录变化</div>
               <div class="right">🔥 1</div>
@@ -935,22 +962,22 @@
         <div class="tri-card">
           <div class="title">🕐 最近浏览</div>
           <div class="rank-list">
-            <div class="item" onclick="goTo('detail')">
+            <div class="item" onclick="goDetail('测试新增文章目录变化')">
               <div class="rank-badge gray">1</div>
               <div class="text">测试新增文章目录变化</div>
               <div class="right">2026-07-14</div>
             </div>
-            <div class="item" onclick="goTo('detail')">
+            <div class="item" onclick="goDetail('智慧人力_社保_公积金汇缴2.0')">
               <div class="rank-badge gray">2</div>
               <div class="text">智慧人力_社保_公积金汇缴2.0</div>
               <div class="right">2026-07-14</div>
             </div>
-            <div class="item" onclick="goTo('detail')">
+            <div class="item" onclick="goDetail('智慧人力_人事模块_证明管理')">
               <div class="rank-badge gray">3</div>
               <div class="text">智慧人力_人事模块_证明管理</div>
               <div class="right">2026-07-14</div>
             </div>
-            <div class="item" onclick="goTo('detail')">
+            <div class="item" onclick="goDetail('文章123')">
               <div class="rank-badge gray">4</div>
               <div class="text">文章123</div>
               <div class="right">2026-07-14</div>
@@ -960,12 +987,12 @@
         <div class="tri-card">
           <div class="title">⭐ 我的收藏</div>
           <div class="rank-list">
-            <div class="item" onclick="goTo('detail')">
+            <div class="item" onclick="goDetail('智慧人力_社保_公积金汇缴2.0')">
               <div class="rank-badge orange">1</div>
               <div class="text">智慧人力_社保_公积金汇缴2.0</div>
               <div class="right star-icon">★</div>
             </div>
-            <div class="item" onclick="goTo('detail')">
+            <div class="item" onclick="goDetail('文章123')">
               <div class="rank-badge orange">2</div>
               <div class="text">文章123</div>
               <div class="right star-icon">★</div>
@@ -1511,9 +1538,9 @@
       // 第一行：5 个 tab（无返回按钮，通过 tab 自身切换层级）
       html += `<div class="tab-row-top">`;
       const activeL1 = currentPath[0];
-      html += `<div class="tab ${isAll ? 'active' : ''}" onclick="switchTab('全部')">全部</div>`;
+      html += `<div class="tab ${isAll ? 'active' : ''}" onclick="goToList('')">全部</div>`;
       Object.keys(catalogData).forEach(name => {
-        html += `<div class="tab ${activeL1 === name ? 'active' : ''}" onclick="switchTab('${name}')">${name}</div>`;
+        html += `<div class="tab ${activeL1 === name ? 'active' : ''}" onclick="goToList('${name}')">${name}</div>`;
       });
       html += `</div>`;
 
@@ -1560,7 +1587,7 @@
           html += `<div class="all-group">
             <div class="all-group-title">${l1}</div>
             <div class="grid-3col">${secs.map(s => `
-              <div class="card-l2" onclick="navToCard('${l1}','${s.name}')">
+              <div class="card-l2" onclick="goToList('${l1}','${s.name}')">
                 <div class="name">${s.name}</div>
                 <div class="count">${s.count} 篇 · ${s.tertiaries.length} 个三级目录</div>
               </div>
@@ -1574,7 +1601,7 @@
         const l1 = currentPath[0];
         const secs = catalogData[l1].secondaries;
         content.innerHTML = `<div class="grid-3col">${secs.map(s => `
-          <div class="card-l2" onclick="navToCard('${l1}','${s.name}')">
+          <div class="card-l2" onclick="goToList('${l1}','${s.name}')">
             <div class="name">${s.name}</div>
             <div class="count">${s.count} 篇 · ${s.tertiaries.length} 个三级目录</div>
           </div>
@@ -1594,24 +1621,10 @@
       }
     }
 
-    function switchTab(name) {
-      // 点击顶部 5 tab 中的任一个：重置为该 tab 的根级别
-      currentPath = [name];
-      renderCatalog();
-    }
-
-    function navToCard(l1, l2, t) {
-      // 点击卡片进入更深层级
-      // 1) L1 → L2：from 二级卡片 (l1, l2)
-      // 2) L2 → L3：from 三级 chip (l1, l2, t)
-      if (t) {
-        // L3：l1 + l2 + t
-        currentPath = [l1, l2, t];
-      } else {
-        // L2：l1 + l2
-        currentPath = [l1, l2];
-      }
-      renderCatalog();
+    function goToList(l1, l2) {
+      // 跳详情页 list.html（参数：?path=一级/二级）
+      const path = [l1, l2].filter(Boolean).map(s => encodeURIComponent(s)).join('/');
+      location.href = 'list.html?path=' + (path ? path : '');
     }
 
     function navToLevel(idx) {
@@ -1646,6 +1659,89 @@
         renderCatalog();
       }
     })();
+
+    // ====== 首页 hero 搜索框交互（与详情页一致） ======
+    // 1) Mock 文章库（与 list.html 共享）
+    const mockAllArticles = [
+      { id: 'a1000', title: '员工入职流程完整指引', path: ['制度规范库', '集团人力资源制度'] },
+      { id: 'a1001', title: '新员工入职培训手册（2025 修订）', path: ['系统操作指引', '操作指引库（员工版）'] },
+      { id: 'a1002', title: '入职手续办理 checklist', path: ['制度规范库', '集团人力资源制度'] },
+      { id: 'a1003', title: '试用期考核管理办法', path: ['制度规范库', '集团人力资源制度'] },
+      { id: 'a1004', title: '中华人民共和国国民法典（2025 修订版）', path: ['政策法规库', '国家常用法律'] },
+      { id: 'a1005', title: '社保公积金缴纳基数调整通知', path: ['制度规范库', '集团人力资源制度'] },
+      { id: 'a1006', title: '河南省科技创新促进条例（实施细则）', path: ['政策法规库', '河南省各地市法规与政策'] },
+      { id: 'a1007', title: '薪酬调整方案（2026 版）', path: ['制度规范库', '集团人力资源制度'] },
+      { id: 'a1008', title: '智慧人力系统 V2.0 上线公告', path: ['系统操作指引', '操作指引库（SSC 版）'] }
+    ];
+
+    // 2) 搜索按钮：空 → list.html(顶级目录)；有内容 → search.html
+    function onHeroSearch() {
+      const kw = document.getElementById('heroSearchInput').value.trim();
+      if (kw) {
+        location.href = `search.html?q=${encodeURIComponent(kw)}`;
+      } else {
+        // 未输入直接点搜索 → 跳详情页顶级目录
+        location.href = 'list.html';
+      }
+    }
+    // 3) 热门搜索标签：直接搜索
+    function quickSearch(kw) {
+      location.href = `search.html?q=${encodeURIComponent(kw)}`;
+    }
+    // 4) 三联卡片 item：跳详情页
+    function goDetail(title) {
+      // 找到该标题对应的文章，找不到就跳顶级
+      const art = mockAllArticles.find(a => a.title === title);
+      if (art) {
+        const path = art.path.map(s => encodeURIComponent(s)).join('/');
+        location.href = `list.html?path=${path}&article=${art.id}`;
+      } else {
+        location.href = 'list.html';
+      }
+    }
+
+    // 5) Auto-complete（输入时显示）
+    const heroInput = document.getElementById('heroSearchInput');
+    const acEl = document.getElementById('autocomplete');
+    heroInput.addEventListener('input', updateHeroAutocomplete);
+    heroInput.addEventListener('focus', updateHeroAutocomplete);
+    heroInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') onHeroSearch();
+    });
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.hero-search-wrap')) acEl.classList.remove('show');
+    });
+    function highlightKw(text, kw) {
+      if (!kw) return text;
+      const re = new RegExp('(' + kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      return text.replace(re, '<mark>$1</mark>');
+    }
+    function updateHeroAutocomplete() {
+      const kw = heroInput.value.trim();
+      if (!kw) { acEl.classList.remove('show'); return; }
+      const matched = mockAllArticles.filter(a => a.title.toLowerCase().includes(kw.toLowerCase())).slice(0, 8);
+      if (matched.length === 0) {
+        acEl.innerHTML = '<div class="ac-empty">没有匹配的文章，试试别的关键词</div>';
+      } else {
+        acEl.innerHTML = matched.map(a => `
+          <div class="ac-item" data-id="${a.id}">
+            <div class="ac-title">${highlightKw(a.title, kw)}</div>
+            <div class="ac-path">${a.path[0]} / ${a.path[1]}</div>
+          </div>
+        `).join('');
+        acEl.querySelectorAll('.ac-item').forEach(item => {
+          item.addEventListener('click', () => {
+            const id = item.dataset.id;
+            const art = mockAllArticles.find(a => a.id === id);
+            if (art) {
+              const path = art.path.map(s => encodeURIComponent(s)).join('/');
+              location.href = `list.html?path=${path}&article=${art.id}`;
+            }
+          });
+        });
+      }
+      acEl.classList.add('show');
+    }
 
     // ====== 屏幕切换（保留） ======
     function goTo(screen) {
