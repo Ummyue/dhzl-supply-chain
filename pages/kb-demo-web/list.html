@@ -476,11 +476,11 @@
       border-color: #f59e0b;
       background: #fffbeb;
     }
-    .card-top {
+    .card-head {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
+      align-items: flex-start;
+      gap: 10px;
+      min-height: 48px;
     }
     .card-icon {
       width: 32px;
@@ -493,6 +493,18 @@
       flex-shrink: 0;
       color: var(--primary);
     }
+    .card-title {
+      flex: 1;
+      min-width: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
     .card-tag {
       display: inline-block;
       padding: 3px 10px;
@@ -502,20 +514,10 @@
       font-size: 11px;
       font-weight: 500;
       white-space: nowrap;
-      max-width: 60%;
+      max-width: 50%;
       overflow: hidden;
       text-overflow: ellipsis;
-    }
-    .card-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text);
-      line-height: 1.5;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      min-height: 42px;
+      flex-shrink: 0;
     }
     .card-snippet {
       font-size: 12px;
@@ -1209,11 +1211,11 @@
             const starred = a.id.charCodeAt(a.id.length - 1) % 2 === 0;
             return `
               <div class="article-card ${isHighlight ? 'is-highlight' : ''}" onclick="location.href='article.html?path=${fullPath}&id=${a.id}'">
-                <div class="card-top">
+                <div class="card-head">
                   <div class="card-icon">${icon.file}</div>
+                  <div class="card-title">${highlightKw(a.title, kw)}</div>
                   <span class="card-tag" title="${l2}">${l2}</span>
                 </div>
-                <div class="card-title">${highlightKw(a.title, kw)}</div>
                 ${snippet ? `<div class="card-snippet">${snippet}</div>` : '<div class="card-snippet" style="visibility:hidden">占位</div>'}
                 <div class="card-meta">
                   <span class="card-meta-item">${icon.org}<span>${a.org}</span></span>
