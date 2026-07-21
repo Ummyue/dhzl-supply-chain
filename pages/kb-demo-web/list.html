@@ -59,38 +59,60 @@
       flex: 1;
       max-width: 720px;
       position: relative;
+      margin: 0 auto;
     }
     .search-input-wrap {
       display: flex;
       align-items: center;
-      gap: 8px;
-      background: #f1f5f9;
+      gap: 12px;
+      background: #fff;
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 0 12px;
-      height: 40px;
+      padding: 0 20px;
+      height: 52px;
       transition: all 0.2s;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
     }
     .search-input-wrap:focus-within {
-      background: #fff;
       border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12), 0 2px 8px rgba(15, 23, 42, 0.04);
     }
     .search-input-wrap input {
       flex: 1;
       border: none;
       background: transparent;
       outline: none;
-      font-size: 14px;
+      font-size: 15px;
+      color: var(--text);
     }
+    .search-input-wrap input::placeholder { color: var(--text-tertiary); }
+    .search-clear {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #cbd5e1;
+      color: #fff;
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .search-clear:hover { background: #94a3b8; }
+    .search-input-wrap.has-value .search-clear { display: flex; }
     .search-input-wrap button {
       background: var(--primary);
       color: #fff;
       border: none;
       border-radius: 6px;
-      padding: 6px 18px;
-      font-size: 13px;
+      padding: 8px 22px;
+      font-size: 14px;
       cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s;
     }
     .search-input-wrap button:hover { background: var(--primary-hover); }
     /* Auto-complete 下拉 */
@@ -263,18 +285,27 @@
       border-left: 4px solid var(--primary);
       padding-left: 12px;
       margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
     }
     .content-head h1 {
       font-size: 20px;
       font-weight: 600;
       color: var(--text);
       line-height: 1.2;
+      flex: 0 0 auto;
     }
+    .head-left { flex: 1; min-width: 0; }
     .content-head .meta {
       font-size: 13px;
       color: var(--text-tertiary);
       margin-top: 4px;
+      flex: 1;
+      min-width: 0;
     }
+    .content-head .head-right { margin-top: 4px; }
     /* 文章表格 */
     .article-table {
       width: 100%;
@@ -323,6 +354,202 @@
       transition: color 0.15s;
     }
     .article-table .action-cell span:hover { color: var(--primary); }
+
+    /* 展开摘要按钮 */
+    .expand-toggle {
+      display: inline-block;
+      margin-left: 8px;
+      font-size: 12px;
+      color: var(--primary);
+      cursor: pointer;
+      user-select: none;
+    }
+    .expand-toggle:hover { text-decoration: underline; }
+    .expand-toggle.content-hit { color: #f59e0b; }
+    .expand-toggle.title-hit { color: var(--primary); }
+    .expand-row td.expand-cell {
+      background: #f8fafc;
+      padding: 16px 20px 20px;
+      border-bottom: 2px solid var(--primary-light);
+    }
+    .expand-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+    .hit-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .hit-badge.content {
+      background: #fef3c7;
+      color: #b45309;
+    }
+    .hit-badge.title {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+    .expand-path {
+      color: var(--text-tertiary);
+    }
+    .expand-snippet {
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text-secondary);
+      background: #fff;
+      padding: 12px 14px;
+      border-radius: 6px;
+      border-left: 3px solid var(--primary);
+    }
+
+    /* 视图切换按钮 */
+    .head-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 0 0 auto;
+    }
+    .view-toggle {
+      display: flex;
+      gap: 4px;
+      background: #f1f5f9;
+      padding: 3px;
+      border-radius: 8px;
+    }
+    .vt-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 12px;
+      font-size: 13px;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .vt-btn:hover { color: var(--primary); }
+    .vt-btn.active {
+      background: #fff;
+      color: var(--primary);
+      font-weight: 500;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .kw-tag {
+      display: inline-block;
+      padding: 1px 8px;
+      background: #fef3c7;
+      color: #b45309;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    /* 卡片视图 */
+    .article-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .article-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .article-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 4px 16px rgba(37, 99, 235, 0.12);
+      transform: translateY(-1px);
+    }
+    .article-card.is-highlight {
+      border-color: #f59e0b;
+      background: #fffbeb;
+    }
+    .card-icon {
+      font-size: 24px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--primary-light);
+      border-radius: 8px;
+      flex-shrink: 0;
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .card-path { display: flex; align-items: center; }
+    .card-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      background: var(--primary-light);
+      color: var(--primary);
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .card-snippet {
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--text-tertiary);
+      background: #f8fafc;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border-left: 2px solid var(--primary);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .card-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 10px;
+      border-top: 1px dashed var(--border);
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+    .card-views { color: var(--text-tertiary); }
+    .card-actions { display: flex; gap: 10px; cursor: pointer; }
+    .card-actions span { transition: color 0.15s; }
+    .card-actions span:hover { color: var(--primary); }
+
+    /* 目录 section title（搜索状态） */
+    .tree-section-title {
+      padding: 8px 20px 4px;
+      font-size: 11px;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
 
     /* 分页 */
     .pagination {
@@ -413,9 +640,10 @@
     <!-- 正文区上方的搜索框（与首页 hero 搜索框交互一致） -->
     <div class="content-search-bar">
       <div class="search-box">
-        <div class="search-input-wrap">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <div class="search-input-wrap" id="searchInputWrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input id="topSearchInput" placeholder="搜索你需要的文档、指南、规范等问题解决方案..." />
+          <span class="search-clear" id="searchClear" onclick="clearSearch()">×</span>
           <button onclick="onSearch()">搜索</button>
         </div>
         <div class="autocomplete" id="autocomplete"></div>
@@ -438,6 +666,7 @@
     const rawPath = params.get('path') || '';
     const pathParts = rawPath.split('/').filter(Boolean);
     const highlightId = params.get('article') || null;  // 高亮指定文章
+    const initKw = params.get('kw') || '';  // 初始搜索词（chrome headless 截图用）
 
     // ====== 目录数据（与首页共享） ======
     const catalogData = {
@@ -471,6 +700,38 @@
           { name: '专业知识库', count: 0 }
         ]
       }
+    };
+
+    // ====== 内容模板（按 L1 分类） ======
+    const contentTpl = (l1, idx, title) => {
+      const t = title.replace(/[（(][^）)]+[)）]/g, '').replace(/关于|XX/g, m => ({ '关于': '本事项', 'XX': '相关业务' }[m])).trim().slice(0, 18) || '本事项';
+      const templates = {
+        '政策法规库': [
+          '本文依据国家相关法律法规制定，明确了${t}的基本原则与适用范围。',
+          '本规定自发布之日起执行，原有相关文件同时废止。各单位应认真组织学习，确保规范执行。',
+          '如对本文内容有疑问，请咨询法务合规部，联系电话详见集团内部通讯录。',
+          '本条款适用于集团总部及下属各板块/企业的相关业务活动。'
+        ],
+        '制度规范库': [
+          '本制度明确了${t}的标准流程与责任分工，适用于集团全体员工。',
+          '人力资源部负责本制度的解释与修订工作，请各单位严格执行。',
+          '本制度自发布之日起生效，原有相关管理办法同时废止。',
+          '如有特殊情况需突破本制度规定的，应按程序报集团分管领导审批。'
+        ],
+        '系统操作指引': [
+          '本指引详细说明了${t}的操作步骤与注意事项，适用于所有系统用户。',
+          '如遇系统异常，请先检查网络环境，确认无误后联系信息技术部支持。',
+          '系统操作过程中请严格按照本指引的步骤执行，避免数据异常。',
+          '本指引将根据系统版本升级持续更新，请关注最新版本。'
+        ],
+        '会议与知识沉淀库': [
+          '本资料整理自集团专项工作会议，全面总结了${t}的关键要点。',
+          '会议形成多项决议，各相关部门应按职责分工抓好落实。',
+          '本资料供集团内部学习参考，请勿外传。',
+          '如有疑问请联系会议组织部门，获取更多详细信息。'
+        ]
+      };
+      return (templates[l1] || templates['制度规范库'])[idx].replace('${t}', t);
     };
 
     // ====== Mock 文章数据（80 条，覆盖所有路径） ======
@@ -508,13 +769,20 @@
         path: [l1, l2],
         org: orgs[i % orgs.length],
         date: date.toISOString().slice(0, 10),
-        views: 100 + (i * 37) % 2000
+        views: 100 + (i * 37) % 2000,
+        content: [
+          contentTpl(l1, 0, titles[i]),
+          contentTpl(l1, 1, titles[i]),
+          contentTpl(l1, 2, titles[i]),
+          contentTpl(l1, 3, titles[i])
+        ].join('\n')
       });
     }
 
     // ====== 状态 ======
     const filters = { time: '', cat: '', tag: '', kw: '' };
     const pagination = { page: 1, size: 10 };
+    const viewState = { mode: 'list' };  // 'list' | 'card'
 
     // ====== 工具 ======
     function onSearch() {
@@ -525,6 +793,25 @@
         // 空搜索 → 跳到顶级目录
         location.href = 'list.html';
       }
+    }
+    function clearSearch() {
+      const input = document.getElementById('topSearchInput');
+      input.value = '';
+      input.focus();
+      toggleClearBtn();
+      applyKwFilter();
+    }
+    function toggleClearBtn() {
+      const wrap = document.getElementById('searchInputWrap');
+      const v = document.getElementById('topSearchInput').value.trim();
+      if (v) wrap.classList.add('has-value');
+      else wrap.classList.remove('has-value');
+    }
+    function applyKwFilter() {
+      filters.kw = document.getElementById('topSearchInput').value.trim();
+      pagination.page = 1;
+      renderSidebar();
+      renderContent();
     }
     function resetFilters() {
       filters.time = ''; filters.cat = ''; filters.tag = ''; filters.kw = '';
@@ -540,8 +827,23 @@
     // ====== Auto-complete ======
     const searchInput = document.getElementById('topSearchInput');
     const acEl = document.getElementById('autocomplete');
-    searchInput.addEventListener('input', updateAutocomplete);
-    searchInput.addEventListener('focus', updateAutocomplete);
+    searchInput.addEventListener('input', () => {
+      updateAutocomplete();
+      toggleClearBtn();
+      applyKwFilter();
+    });
+    searchInput.addEventListener('focus', () => {
+      updateAutocomplete();
+      toggleClearBtn();
+    });
+    searchInput.addEventListener('blur', () => {
+      // 失焦延迟，让 X 按钮点击能触发
+      setTimeout(() => {
+        if (!document.getElementById('topSearchInput').value.trim()) {
+          document.getElementById('searchInputWrap').classList.remove('has-value');
+        }
+      }, 150);
+    });
     searchInput.addEventListener('keydown', e => {
       if (e.key === 'Enter') onSearch();
     });
@@ -606,26 +908,54 @@
     // ====== 左侧目录树 ======
     function renderSidebar() {
       const el = document.getElementById('sidebar');
+      const kw = filters.kw;
+      // 搜索时：计算每个 L1/L2 实际命中的文章数
+      const hitL1 = new Set();
+      const hitL2 = new Map();  // key: l1|l2, value: count
+      if (kw) {
+        allArticles.forEach(a => {
+          if (aMatchesKw(a, kw)) {
+            hitL1.add(a.path[0]);
+            const k = a.path[0] + '|' + a.path[1];
+            hitL2.set(k, (hitL2.get(k) || 0) + 1);
+          }
+        });
+      }
       // 顶级"全部目录"
       const isAllActive = pathParts.length === 0;
-      const totalCount = allArticles.length;
-      let html = `<div class="tree-all ${isAllActive ? 'active' : ''}" onclick="navigateTo('')">全部目录</div>`;
+      const totalCount = kw ? Array.from(hitL2.values()).reduce((s, v) => s + v, 0) : allArticles.length;
+      let html = `<div class="tree-all ${isAllActive ? 'active' : ''}" onclick="navigateTo('')">全部目录${kw ? ` <span class="count">${totalCount}</span>` : ''}</div>`;
+      if (kw) {
+        html += `<div class="tree-section-title">命中目录</div>`;
+      }
       // 各 1 级 + 2 级
       Object.keys(catalogData).forEach(l1 => {
         const isL1Active = pathParts.length === 1 && pathParts[0] === l1;
-        const l1Count = catalogData[l1].secondaries.reduce((s, x) => s + x.count, 0);
+        const l1Count = kw ? (Array.from(hitL2.entries()).filter(([k]) => k.startsWith(l1 + '|')).reduce((s, [, v]) => s + v, 0)) : catalogData[l1].secondaries.reduce((s, x) => s + x.count, 0);
+        // 搜索时无命中的 L1 隐藏
+        if (kw && l1Count === 0) return;
         html += `<div class="tree-l1 ${isL1Active ? 'active' : ''}" onclick="navigateTo('${l1}')">
           <span>${l1}</span><span class="count">${l1Count}</span>
         </div>`;
         // 2 级（缩进）
         catalogData[l1].secondaries.forEach(s => {
           const isL2Active = pathParts.length >= 2 && pathParts[0] === l1 && pathParts[1] === s.name;
+          const l2Key = l1 + '|' + s.name;
+          const l2Count = kw ? (hitL2.get(l2Key) || 0) : s.count;
+          if (kw && l2Count === 0) return;
           html += `<div class="tree-l2 ${isL2Active ? 'active' : ''}" onclick="navigateTo('${l1}','${s.name}')">
-            <span>${s.name}</span><span class="count">${s.count}</span>
+            <span>${s.name}</span><span class="count">${l2Count}</span>
           </div>`;
         });
       });
       el.innerHTML = html;
+    }
+    function aMatchesKw(a, kw) {
+      const k = kw.toLowerCase();
+      if (a.title.toLowerCase().includes(k)) return true;
+      if (a.path.join(' ').toLowerCase().includes(k)) return true;
+      if (a.content && a.content.toLowerCase().includes(k)) return true;
+      return false;
     }
 
     function navigateTo(l1, l2) {
@@ -640,6 +970,9 @@
         list = list.filter(a => a.path[0] === pathParts[0] && a.path[1] === pathParts[1]);
       } else if (pathParts.length === 1) {
         list = list.filter(a => a.path[0] === pathParts[0]);
+      }
+      if (filters.kw) {
+        list = list.filter(a => aMatchesKw(a, filters.kw));
       }
       return list;
     }
@@ -661,6 +994,9 @@
         title = pathParts[1];
         sub = `共 ${total} 篇文章 · ${pathParts[0]}`;
       }
+      if (filters.kw) {
+        sub += ` · 搜索：<span class="kw-tag">"${filters.kw}"</span>`;
+      }
 
       const contentEl = document.getElementById('content');
       if (pageList.length === 0) {
@@ -672,47 +1008,40 @@
           <div class="empty-state">
             <div class="icon">📭</div>
             <div class="title">该目录下暂无文章</div>
-            <div class="desc">请尝试切换其他分类</div>
+            <div class="desc">请尝试切换其他分类或修改搜索关键词</div>
           </div>`;
         return;
       }
 
+      // 视图切换按钮
+      const viewToggle = `
+        <div class="view-toggle">
+          <button class="vt-btn ${viewState.mode === 'list' ? 'active' : ''}" onclick="switchView('list')" title="列表视图">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            列表
+          </button>
+          <button class="vt-btn ${viewState.mode === 'card' ? 'active' : ''}" onclick="switchView('card')" title="卡片视图">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            卡片
+          </button>
+        </div>
+      `;
+
       let html = `
         <div class="content-head">
-          <h1>${title}</h1>
-          <div class="meta">${sub}</div>
+          <div class="head-left">
+            <h1>${title}</h1>
+            <div class="meta">${sub}</div>
+          </div>
+          ${viewToggle}
         </div>
-        <table class="article-table">
-          <thead>
-            <tr>
-              <th>文章标题</th>
-              <th>文章目录</th>
-              <th>发布单位</th>
-              <th>更新日期</th>
-              <th>浏览量</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${pageList.map(a => {
-              const isHighlight = highlightId === a.id;
-              const rowStyle = isHighlight ? 'style="background:#fef3c7"' : '';
-              const fullPath = [...a.path].map(s => encodeURIComponent(s)).join('/');
-              return `<tr ${rowStyle}>
-                <td class="title-cell" onclick="location.href='article.html?path=${fullPath}&id=${a.id}'">${a.title}</td>
-                <td>${a.path[0]} / ${a.path[1]}</td>
-                <td>${a.org}</td>
-                <td>${a.date}</td>
-                <td>${a.views.toLocaleString()}</td>
-                <td class="action-cell">
-                  <span title="收藏" onclick="event.stopPropagation()">⭐</span>
-                  <span title="下载" onclick="event.stopPropagation()">⬇</span>
-                </td>
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
       `;
+
+      if (viewState.mode === 'card') {
+        html += renderCardList(pageList);
+      } else {
+        html += renderTableList(pageList);
+      }
 
       // 分页
       const totalPages = Math.max(1, Math.ceil(total / pagination.size));
@@ -738,6 +1067,136 @@
       contentEl.innerHTML = html;
     }
 
+    // 列表视图
+    function renderTableList(pageList) {
+      const kw = filters.kw;
+      return `
+        <table class="article-table">
+          <thead>
+            <tr>
+              <th>文章标题</th>
+              <th>文章目录</th>
+              <th>发布单位</th>
+              <th>更新日期</th>
+              <th>浏览量</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${pageList.map(a => {
+              const isHighlight = highlightId === a.id;
+              const rowStyle = isHighlight ? 'style="background:#fef3c7"' : '';
+              const fullPath = [...a.path].map(s => encodeURIComponent(s)).join('/');
+              // 判断正文是否命中
+              const titleHit = kw && a.title.toLowerCase().includes(kw.toLowerCase());
+              const contentHit = kw && a.content && a.content.toLowerCase().includes(kw.toLowerCase());
+              const showExpand = !!kw && (titleHit || contentHit);
+              const expandId = `expand-${a.id}`;
+              // 抽取正文摘要（包含 kw 前后各 30 字）
+              let snippet = '';
+              if (contentHit) {
+                const idx = a.content.toLowerCase().indexOf(kw.toLowerCase());
+                const start = Math.max(0, idx - 30);
+                const end = Math.min(a.content.length, idx + kw.length + 60);
+                snippet = (start > 0 ? '…' : '') + a.content.slice(start, end) + (end < a.content.length ? '…' : '');
+                snippet = highlightKw(snippet.replace(/\n/g, ' '), kw);
+              }
+              return `
+                <tr ${rowStyle} class="article-row ${showExpand ? 'has-expand' : ''}">
+                  <td class="title-cell" onclick="location.href='article.html?path=${fullPath}&id=${a.id}'">
+                    ${highlightKw(a.title, kw)}
+                    ${showExpand ? `<span class="expand-toggle ${contentHit ? 'content-hit' : 'title-hit'}" onclick="event.stopPropagation();toggleExpand('${expandId}', this)">▾ 展开摘要</span>` : ''}
+                  </td>
+                  <td>${a.path[0]} / ${a.path[1]}</td>
+                  <td>${a.org}</td>
+                  <td>${a.date}</td>
+                  <td>${a.views.toLocaleString()}</td>
+                  <td class="action-cell">
+                    <span title="收藏" onclick="event.stopPropagation()">⭐</span>
+                    <span title="下载" onclick="event.stopPropagation()">⬇</span>
+                  </td>
+                </tr>
+                ${showExpand ? `
+                <tr class="expand-row" id="${expandId}" style="display:none">
+                  <td colspan="6" class="expand-cell">
+                    <div class="expand-meta">
+                      <span class="hit-badge ${contentHit ? 'content' : 'title'}">${contentHit ? '正文命中' : '标题命中'}</span>
+                      <span class="expand-path">${a.path[0]} / ${a.path[1]}</span>
+                    </div>
+                    <div class="expand-snippet">${snippet || highlightKw(a.content ? a.content.slice(0, 120).replace(/\n/g, ' ') + '…' : '', kw)}</div>
+                  </td>
+                </tr>
+                ` : ''}
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // 卡片视图
+    function renderCardList(pageList) {
+      const kw = filters.kw;
+      return `
+        <div class="article-cards">
+          ${pageList.map(a => {
+            const isHighlight = highlightId === a.id;
+            const fullPath = [...a.path].map(s => encodeURIComponent(s)).join('/');
+            const contentHit = kw && a.content && a.content.toLowerCase().includes(kw.toLowerCase());
+            // 卡片只显示最后一级目录
+            const l2 = a.path[a.path.length - 1];
+            // 命中摘要（最多 60 字）
+            let snippet = '';
+            if (kw) {
+              const tHit = a.title.toLowerCase().includes(kw.toLowerCase());
+              if (contentHit) {
+                const idx = a.content.toLowerCase().indexOf(kw.toLowerCase());
+                const start = Math.max(0, idx - 20);
+                const end = Math.min(a.content.length, idx + kw.length + 50);
+                snippet = (start > 0 ? '…' : '') + a.content.slice(start, end).replace(/\n/g, ' ') + (end < a.content.length ? '…' : '');
+                snippet = highlightKw(snippet, kw);
+              } else if (tHit) {
+                snippet = highlightKw(a.content ? a.content.slice(0, 80).replace(/\n/g, ' ') + '…' : '', kw);
+              }
+            }
+            return `
+              <div class="article-card ${isHighlight ? 'is-highlight' : ''}" onclick="location.href='article.html?path=${fullPath}&id=${a.id}'">
+                <div class="card-icon">📄</div>
+                <div class="card-title">${highlightKw(a.title, kw)}</div>
+                <div class="card-path">
+                  <span class="card-tag">${l2}</span>
+                </div>
+                ${snippet ? `<div class="card-snippet">${snippet}</div>` : ''}
+                <div class="card-meta">
+                  <span class="card-org">${a.org}</span>
+                  <span class="card-date">${a.date}</span>
+                </div>
+                <div class="card-footer">
+                  <span class="card-views">👁 ${a.views.toLocaleString()}</span>
+                  <span class="card-actions" onclick="event.stopPropagation()">
+                    <span title="收藏">⭐</span>
+                    <span title="下载">⬇</span>
+                  </span>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    function switchView(mode) {
+      viewState.mode = mode;
+      renderContent();
+    }
+    function toggleExpand(expandId, btn) {
+      const row = document.getElementById(expandId);
+      if (!row) return;
+      const show = row.style.display === 'none';
+      row.style.display = show ? 'table-row' : 'none';
+      if (btn) btn.textContent = show ? '▴ 收起' : '▾ 展开摘要';
+    }
+
     function gotoPage(p) {
       const total = getFilteredArticles().length;
       const totalPages = Math.max(1, Math.ceil(total / pagination.size));
@@ -755,9 +1214,22 @@
     }
 
     // ====== Init ======
+    const initView = params.get('view');  // 'list' | 'card'
+    if (initView) viewState.mode = initView;
+    if (initKw) {
+      const input = document.getElementById('topSearchInput');
+      input.value = initKw;
+      filters.kw = initKw;
+      toggleClearBtn();
+    }
     renderBreadcrumb();
     renderSidebar();
     renderContent();
+    // URL ?expand=1 触发首行自动展开（chrome headless 截图用）
+    if (params.get('expand') === '1') {
+      const btn = document.querySelector('.expand-toggle');
+      if (btn) btn.click();
+    }
   </script>
 </body>
 </html>
