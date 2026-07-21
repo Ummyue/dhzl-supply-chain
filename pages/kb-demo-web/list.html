@@ -532,13 +532,23 @@
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
+    .card-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--bg);
+      font-size: 12px;
+      color: var(--text-tertiary);
+      min-height: 40px;
+    }
     .card-meta {
       display: flex;
       align-items: center;
       gap: 12px;
-      font-size: 12px;
-      color: var(--text-tertiary);
-      min-height: 16px;
+      min-width: 0;
+      flex: 1;
     }
     .card-meta-item {
       display: flex;
@@ -549,22 +559,21 @@
       text-overflow: ellipsis;
     }
     .card-meta-item svg { flex-shrink: 0; opacity: 0.7; }
-    .card-footer {
+    .card-actions {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding-top: 10px;
-      border-top: 1px solid var(--bg);
-      font-size: 12px;
-      color: var(--text-tertiary);
+      gap: 2px;
+      flex-shrink: 0;
     }
-    .card-views {
+    .card-actions .views {
       display: flex;
       align-items: center;
       gap: 4px;
+      padding: 0 6px;
+      color: var(--text-tertiary);
+      font-size: 12px;
     }
-    .card-views svg { opacity: 0.7; }
-    .card-actions { display: flex; gap: 4px; }
+    .card-actions .views svg { opacity: 0.7; }
     .icon-btn {
       width: 28px;
       height: 28px;
@@ -1112,6 +1121,7 @@
         star: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
         download: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
       };
+      const kwLower = (kw || '').toLowerCase();
       return `
         <table class="article-table">
           <thead>
@@ -1129,13 +1139,16 @@
               const isHighlight = highlightId === a.id;
               const rowStyle = isHighlight ? 'style="background:#fef3c7"' : '';
               const fullPath = [...a.path].map(s => encodeURIComponent(s)).join('/');
-              const titleHit = kw && a.title.toLowerCase().includes(kw.toLowerCase());
-              const contentHit = kw && a.content && a.content.toLowerCase().includes(kw.toLowerCase());
+              const titleHit = kw && a.title.toLowerCase().includes(kwLower);
+              const contentHit = kw && a.content && a.content.toLowerCase().includes(kwLower);
+              // 仅显示展开按钮（标题命中 OR 正文命中都显示）
               const showExpand = !!kw && (titleHit || contentHit);
+              // 仅正文命中时自动展开
+              const autoExpand = !!contentHit;
               const expandId = `expand-${a.id}`;
               let snippet = '';
               if (contentHit) {
-                const idx = a.content.toLowerCase().indexOf(kw.toLowerCase());
+                const idx = a.content.toLowerCase().indexOf(kwLower);
                 const start = Math.max(0, idx - 30);
                 const end = Math.min(a.content.length, idx + kw.length + 60);
                 snippet = (start > 0 ? '…' : '') + a.content.slice(start, end) + (end < a.content.length ? '…' : '');
@@ -1146,7 +1159,7 @@
                 <tr ${rowStyle} class="article-row ${showExpand ? 'has-expand' : ''}">
                   <td class="title-cell" onclick="location.href='article.html?path=${fullPath}&id=${a.id}'">
                     ${highlightKw(a.title, kw)}
-                    ${showExpand ? `<span class="expand-toggle ${contentHit ? 'content-hit' : 'title-hit'}" onclick="event.stopPropagation();toggleExpand('${expandId}', this)">▾ 展开摘要</span>` : ''}
+                    ${showExpand ? `<span class="expand-toggle ${contentHit ? 'content-hit' : 'title-hit'}" onclick="event.stopPropagation();toggleExpand('${expandId}', this)">${autoExpand ? '▴ 收起' : '▾ 展开摘要'}</span>` : ''}
                   </td>
                   <td>${a.path[0]} / ${a.path[1]}</td>
                   <td>${a.org}</td>
@@ -1158,13 +1171,13 @@
                   </td>
                 </tr>
                 ${showExpand ? `
-                <tr class="expand-row" id="${expandId}" style="display:none">
+                <tr class="expand-row" id="${expandId}" style="display:${autoExpand ? 'table-row' : 'none'}">
                   <td colspan="6" class="expand-cell">
                     <div class="expand-meta">
                       <span class="hit-badge ${contentHit ? 'content' : 'title'}">${contentHit ? '正文命中' : '标题命中'}</span>
                       <span class="expand-path">${a.path[0]} / ${a.path[1]}</span>
                     </div>
-                    <div class="expand-snippet">${snippet || highlightKw(a.content ? a.content.slice(0, 120).replace(/\n/g, ' ') + '…' : '', kw)}</div>
+                    <div class="expand-snippet">${contentHit ? snippet : highlightKw(a.content ? a.content.slice(0, 120).replace(/\n/g, ' ') + '…' : '', kw)}</div>
                   </td>
                 </tr>
                 ` : ''}
@@ -1183,7 +1196,7 @@
         file: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
         org: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01"/><path d="M9 12v.01"/><path d="M9 15v.01"/><path d="M9 18v.01"/></svg>',
         date: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
-        eye: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+        eye: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
         star: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
         download: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
       };
@@ -1192,20 +1205,19 @@
           ${pageList.map(a => {
             const isHighlight = highlightId === a.id;
             const fullPath = [...a.path].map(s => encodeURIComponent(s)).join('/');
-            const contentHit = kw && a.content && a.content.toLowerCase().includes(kw.toLowerCase());
+            // 只在正文命中时显示摘要（标题命中仅高亮标题）
+            const kwLower = kw && kw.toLowerCase();
+            const titleHit = kw && a.title.toLowerCase().includes(kwLower);
+            const contentHit = kw && a.content && a.content.toLowerCase().includes(kwLower);
+            const showSnippet = !!contentHit;
             const l2 = a.path[a.path.length - 1];
             let snippet = '';
-            if (kw) {
-              const tHit = a.title.toLowerCase().includes(kw.toLowerCase());
-              if (contentHit) {
-                const idx = a.content.toLowerCase().indexOf(kw.toLowerCase());
-                const start = Math.max(0, idx - 20);
-                const end = Math.min(a.content.length, idx + kw.length + 50);
-                snippet = (start > 0 ? '…' : '') + a.content.slice(start, end).replace(/\n/g, ' ') + (end < a.content.length ? '…' : '');
-                snippet = highlightKw(snippet, kw);
-              } else if (tHit) {
-                snippet = highlightKw(a.content ? a.content.slice(0, 80).replace(/\n/g, ' ') + '…' : '', kw);
-              }
+            if (showSnippet) {
+              const idx = a.content.toLowerCase().indexOf(kwLower);
+              const start = Math.max(0, idx - 20);
+              const end = Math.min(a.content.length, idx + kw.length + 50);
+              snippet = (start > 0 ? '…' : '') + a.content.slice(start, end).replace(/\n/g, ' ') + (end < a.content.length ? '…' : '');
+              snippet = highlightKw(snippet, kw);
             }
             // 标记已收藏（mock：根据 i 偶数收藏）
             const starred = a.id.charCodeAt(a.id.length - 1) % 2 === 0;
@@ -1216,17 +1228,17 @@
                   <div class="card-title">${highlightKw(a.title, kw)}</div>
                   <span class="card-tag" title="${l2}">${l2}</span>
                 </div>
-                ${snippet ? `<div class="card-snippet">${snippet}</div>` : '<div class="card-snippet" style="visibility:hidden">占位</div>'}
-                <div class="card-meta">
-                  <span class="card-meta-item">${icon.org}<span>${a.org}</span></span>
-                  <span class="card-meta-item">${icon.date}<span>${a.date}</span></span>
-                </div>
-                <div class="card-footer">
-                  <span class="card-views">${icon.eye}<span>${a.views.toLocaleString()}</span></span>
-                  <span class="card-actions" onclick="event.stopPropagation()">
+                ${showSnippet ? `<div class="card-snippet">${snippet}</div>` : ''}
+                <div class="card-bottom">
+                  <div class="card-meta">
+                    <span class="card-meta-item">${icon.org}<span>${a.org}</span></span>
+                    <span class="card-meta-item">${icon.date}<span>${a.date}</span></span>
+                  </div>
+                  <div class="card-actions" onclick="event.stopPropagation()">
+                    <span class="views" title="浏览次数">${icon.eye}<span>${a.views.toLocaleString()}</span></span>
                     <span class="icon-btn ${starred ? 'starred' : ''}" title="收藏">${icon.star}</span>
                     <span class="icon-btn" title="下载">${icon.download}</span>
-                  </span>
+                  </div>
                 </div>
               </div>
             `;
@@ -1242,9 +1254,9 @@
     function toggleExpand(expandId, btn) {
       const row = document.getElementById(expandId);
       if (!row) return;
-      const show = row.style.display === 'none';
-      row.style.display = show ? 'table-row' : 'none';
-      if (btn) btn.textContent = show ? '▴ 收起' : '▾ 展开摘要';
+      const isHidden = row.style.display === 'none';
+      row.style.display = isHidden ? 'table-row' : 'none';
+      if (btn) btn.textContent = isHidden ? '▴ 收起' : '▾ 展开摘要';
     }
 
     function gotoPage(p) {
