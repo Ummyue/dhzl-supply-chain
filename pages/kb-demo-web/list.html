@@ -66,16 +66,15 @@
       align-items: center;
       gap: 12px;
       background: #fff;
-      border: 1px solid var(--border);
+      border: none;
       border-radius: 8px;
       padding: 0 20px;
       height: 52px;
       transition: all 0.2s;
-      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
     }
     .search-input-wrap:focus-within {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12), 0 2px 8px rgba(15, 23, 42, 0.04);
+      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
     }
     .search-input-wrap input {
       flex: 1;
@@ -460,62 +459,72 @@
     .article-card {
       background: #fff;
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 18px 20px;
+      border-radius: 12px;
+      padding: 16px 18px 14px;
       cursor: pointer;
       transition: all 0.2s;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
     }
     .article-card:hover {
       border-color: var(--primary);
-      box-shadow: 0 4px 16px rgba(37, 99, 235, 0.12);
-      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.1);
+      transform: translateY(-2px);
     }
     .article-card.is-highlight {
       border-color: #f59e0b;
       background: #fffbeb;
     }
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
     .card-icon {
-      font-size: 24px;
-      width: 40px;
-      height: 40px;
+      width: 32px;
+      height: 32px;
       display: flex;
       align-items: center;
       justify-content: center;
       background: var(--primary-light);
       border-radius: 8px;
       flex-shrink: 0;
+      color: var(--primary);
+    }
+    .card-tag {
+      display: inline-block;
+      padding: 3px 10px;
+      background: var(--primary-light);
+      color: var(--primary);
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+      white-space: nowrap;
+      max-width: 60%;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .card-title {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 600;
       color: var(--text);
-      line-height: 1.4;
+      line-height: 1.5;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
-    }
-    .card-path { display: flex; align-items: center; }
-    .card-tag {
-      display: inline-block;
-      padding: 2px 8px;
-      background: var(--primary-light);
-      color: var(--primary);
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: 500;
+      min-height: 42px;
     }
     .card-snippet {
       font-size: 12px;
       line-height: 1.6;
-      color: var(--text-tertiary);
+      color: var(--text-secondary);
       background: #f8fafc;
-      padding: 8px 10px;
+      padding: 8px 10px 8px 12px;
       border-radius: 6px;
-      border-left: 2px solid var(--primary);
+      border-left: 3px solid var(--primary);
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
@@ -524,23 +533,49 @@
     .card-meta {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 12px;
       font-size: 12px;
       color: var(--text-tertiary);
+      min-height: 16px;
     }
+    .card-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-meta-item svg { flex-shrink: 0; opacity: 0.7; }
     .card-footer {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding-top: 10px;
-      border-top: 1px dashed var(--border);
+      border-top: 1px solid var(--bg);
       font-size: 12px;
       color: var(--text-tertiary);
     }
-    .card-views { color: var(--text-tertiary); }
-    .card-actions { display: flex; gap: 10px; cursor: pointer; }
-    .card-actions span { transition: color 0.15s; }
-    .card-actions span:hover { color: var(--primary); }
+    .card-views {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .card-views svg { opacity: 0.7; }
+    .card-actions { display: flex; gap: 4px; }
+    .icon-btn {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-tertiary);
+      transition: all 0.15s;
+    }
+    .icon-btn:hover { background: var(--primary-light); color: var(--primary); }
+    .icon-btn.starred { color: #f59e0b; }
 
     /* 目录 section title（搜索状态） */
     .tree-section-title {
@@ -1070,6 +1105,11 @@
     // 列表视图
     function renderTableList(pageList) {
       const kw = filters.kw;
+      // SVG line icon 库（与卡片一致）
+      const icon = {
+        star: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+        download: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
+      };
       return `
         <table class="article-table">
           <thead>
@@ -1087,12 +1127,10 @@
               const isHighlight = highlightId === a.id;
               const rowStyle = isHighlight ? 'style="background:#fef3c7"' : '';
               const fullPath = [...a.path].map(s => encodeURIComponent(s)).join('/');
-              // 判断正文是否命中
               const titleHit = kw && a.title.toLowerCase().includes(kw.toLowerCase());
               const contentHit = kw && a.content && a.content.toLowerCase().includes(kw.toLowerCase());
               const showExpand = !!kw && (titleHit || contentHit);
               const expandId = `expand-${a.id}`;
-              // 抽取正文摘要（包含 kw 前后各 30 字）
               let snippet = '';
               if (contentHit) {
                 const idx = a.content.toLowerCase().indexOf(kw.toLowerCase());
@@ -1101,6 +1139,7 @@
                 snippet = (start > 0 ? '…' : '') + a.content.slice(start, end) + (end < a.content.length ? '…' : '');
                 snippet = highlightKw(snippet.replace(/\n/g, ' '), kw);
               }
+              const starred = a.id.charCodeAt(a.id.length - 1) % 2 === 0;
               return `
                 <tr ${rowStyle} class="article-row ${showExpand ? 'has-expand' : ''}">
                   <td class="title-cell" onclick="location.href='article.html?path=${fullPath}&id=${a.id}'">
@@ -1112,8 +1151,8 @@
                   <td>${a.date}</td>
                   <td>${a.views.toLocaleString()}</td>
                   <td class="action-cell">
-                    <span title="收藏" onclick="event.stopPropagation()">⭐</span>
-                    <span title="下载" onclick="event.stopPropagation()">⬇</span>
+                    <span class="icon-btn ${starred ? 'starred' : ''}" title="收藏" onclick="event.stopPropagation()">${icon.star}</span>
+                    <span class="icon-btn" title="下载" onclick="event.stopPropagation()">${icon.download}</span>
                   </td>
                 </tr>
                 ${showExpand ? `
@@ -1137,15 +1176,22 @@
     // 卡片视图
     function renderCardList(pageList) {
       const kw = filters.kw;
+      // SVG line icon 库（统一风格）
+      const icon = {
+        file: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+        org: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01"/><path d="M9 12v.01"/><path d="M9 15v.01"/><path d="M9 18v.01"/></svg>',
+        date: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+        eye: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+        star: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+        download: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
+      };
       return `
         <div class="article-cards">
           ${pageList.map(a => {
             const isHighlight = highlightId === a.id;
             const fullPath = [...a.path].map(s => encodeURIComponent(s)).join('/');
             const contentHit = kw && a.content && a.content.toLowerCase().includes(kw.toLowerCase());
-            // 卡片只显示最后一级目录
             const l2 = a.path[a.path.length - 1];
-            // 命中摘要（最多 60 字）
             let snippet = '';
             if (kw) {
               const tHit = a.title.toLowerCase().includes(kw.toLowerCase());
@@ -1159,23 +1205,25 @@
                 snippet = highlightKw(a.content ? a.content.slice(0, 80).replace(/\n/g, ' ') + '…' : '', kw);
               }
             }
+            // 标记已收藏（mock：根据 i 偶数收藏）
+            const starred = a.id.charCodeAt(a.id.length - 1) % 2 === 0;
             return `
               <div class="article-card ${isHighlight ? 'is-highlight' : ''}" onclick="location.href='article.html?path=${fullPath}&id=${a.id}'">
-                <div class="card-icon">📄</div>
-                <div class="card-title">${highlightKw(a.title, kw)}</div>
-                <div class="card-path">
-                  <span class="card-tag">${l2}</span>
+                <div class="card-top">
+                  <div class="card-icon">${icon.file}</div>
+                  <span class="card-tag" title="${l2}">${l2}</span>
                 </div>
-                ${snippet ? `<div class="card-snippet">${snippet}</div>` : ''}
+                <div class="card-title">${highlightKw(a.title, kw)}</div>
+                ${snippet ? `<div class="card-snippet">${snippet}</div>` : '<div class="card-snippet" style="visibility:hidden">占位</div>'}
                 <div class="card-meta">
-                  <span class="card-org">${a.org}</span>
-                  <span class="card-date">${a.date}</span>
+                  <span class="card-meta-item">${icon.org}<span>${a.org}</span></span>
+                  <span class="card-meta-item">${icon.date}<span>${a.date}</span></span>
                 </div>
                 <div class="card-footer">
-                  <span class="card-views">👁 ${a.views.toLocaleString()}</span>
+                  <span class="card-views">${icon.eye}<span>${a.views.toLocaleString()}</span></span>
                   <span class="card-actions" onclick="event.stopPropagation()">
-                    <span title="收藏">⭐</span>
-                    <span title="下载">⬇</span>
+                    <span class="icon-btn ${starred ? 'starred' : ''}" title="收藏">${icon.star}</span>
+                    <span class="icon-btn" title="下载">${icon.download}</span>
                   </span>
                 </div>
               </div>
