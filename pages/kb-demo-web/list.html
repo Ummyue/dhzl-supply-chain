@@ -343,13 +343,14 @@
     }
     .article-table .title-cell:hover { text-decoration: underline; }
     .article-table .action-cell {
-      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
       color: var(--text-tertiary);
     }
     .article-table .action-cell span {
       cursor: pointer;
-      margin: 0 4px;
-      display: inline-block;
       transition: color 0.15s;
     }
     .article-table .action-cell span:hover { color: var(--primary); }
@@ -1137,7 +1138,7 @@
           <tbody>
             ${pageList.map(a => {
               const isHighlight = highlightId === a.id;
-              const rowStyle = isHighlight ? 'style="background:#fef3c7"' : '';
+              const rowStyle = isHighlight ? 'style="background:rgba(254, 243, 199, 0.35)"' : '';
               const fullPath = [...a.path].map(s => encodeURIComponent(s)).join('/');
               const titleHit = kw && a.title.toLowerCase().includes(kwLower);
               const contentHit = kw && a.content && a.content.toLowerCase().includes(kwLower);
