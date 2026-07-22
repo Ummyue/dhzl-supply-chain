@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <script>
+(function() {
+  var p = window.location.pathname;
+  var base = p.indexOf('/dhzl-supply-chain/') === 0 ? '/dhzl-supply-chain/' : '/';
+  document.write('<base href="' + base + '">');
+})();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>库存台账-方案2 - 大河智链</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['PingFang SC', 'Microsoft YaHei', 'sans-serif'] } } } }</script>
+  <link rel="stylesheet" href="/shared/css/style.css">
+  <style>
+    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+    .timeline-line { position: absolute; left: 11px; top: 28px; bottom: -8px; width: 2px; background: #e2e8f0; }
+    .timeline-line:last-child { display: none; }
+    .drawer-mask { background: rgba(0,0,0,0.4); position: fixed; inset: 0; z-index: 40; }
+    .drawer-panel { background: #fff; position: fixed; right: 0; top: 0; bottom: 0; width: 480px; z-index: 50; box-shadow: -4px 0 12px rgba(0,0,0,0.1); overflow-y: auto; }
+  </style>
+</head>
+<body class="bg-slate-50">
+<div id="app"></div>
+<script src="/shared/js/utils.js"></script>
+<script src="/shared/js/mockData.js"></script>
+<script src="/shared/js/components.js"></script>
+<script>
+  Components.bindGlobalClose();
+
+  // ============ v1.7.95 库存台账-方案2 ============
+  // 4 状态 tab + 19 列表格 + 时间轴抽屉 + SVG 折线图
+  // 数据源:MockData.warehouseInventory + inboundList + pledgeList + stocktakeRecords + priceTracking + lifecycleEvents
+
+  const inv = MockData.warehouseInventory || [];
+  const TAB_ORDER = ['all', '在库', '质押中', '已出库'];
+  const TAB_LABEL = { all: '全部', '在库': '在库', '质押中': '质押中', '已出库': '已出库' };
+  const TAB_COUNT = (tab) => tab === 'all' ? inv.length : inv.filter(r => calcStatus(r) === tab).length;
+  let currentTab = 'all';
+  let drawerOpen = false;
+  let currentBatchNo = null;
+
+  // ============ 核心逻辑 1: 4 状态自动计算 ============
+  function calcStatus(r) {
+    // 优先级:已出库 > 质押中 > 在库
+    const inbound = (MockData.inboundList || []).find(x => x.batchNo === r.batchNo);
+    if (inbound && inbound.bizNo && inbound.bizNo.startsWith('OUT')) return '已出库';
+    const pledge = (MockData.pledgeList || []).find(p => p.inventoryAssetNo === r.batchNo);
+    if (pledge && pledge.status !== '已结清' && pledge.status !== 'completed') return '质押中';
+    return '在库';
+  }
+
+  // ============ 核心逻辑 2: 跨单据关联 ============
+  function getRelations(r) {
+    return {
+      inbound: (MockData.inboundList || []).find(x => x.batchNo === r.batchNo),
+      pledge: (MockData.pledgeList || []).find(p => p.inventoryAssetNo === r.batchNo),
+      stocktake: (MockData.stocktakeRecords || []).filter(s => s.batchNo === r.batchNo),
+    };
+  }
+
+  // ============ 核心逻辑 3: 盘库差异 ============
+  function getLatestStocktake(r) {
+    const records = (MockData.stocktakeRecords || []).filter(s => s.batchNo === r.batchNo);
+    if (!records.length) return null;
+    return records.sort((a, b) => b.stocktakeTime.localeCompare(a.stocktakeTime))[0];
+  }
+
+  // ============ 核心逻辑 4: 盯市轨迹 ============
+  function getPriceTracking(batchNo) {
+    return (MockData.priceTracking || {})[batchNo] || null;
+  }
+
+  // ============ 渲染主页面 ============
+  function render() {
+    const filtered = currentTab === 'all' ? inv : inv.filter(r => calcStatus(r) === r && calcStatus(r) === currentTab);
+    // 状态过滤(防止 r === r 永真)
+    const list = currentTab === 'all' ? inv : inv.filter(r => calcStatus(r) === currentTab);
+
+    return `
+      <!-- 顶部说明 -->
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 text-sm text-blue-800">
+        <div class="font-medium mb-1">📦 库存台账-方案2 (v1.7.95 二期)</div>
+        <div>基于批次号(${inv.length} 批次)展示完整台账视图:4 状态机 + 跨单据关联 + 盘库差异 + 盯市轨迹。点击行末【时间轴】查看完整生命周期。</div>
+      </div>
+
+      <!-- 4 状态 tab + 顶部 tag 行 -->
+      <div class="bg-white border border-slate-200 rounded-xl mb-3">
+        <div class="flex items-center justify-between px-2 pt-1">
+          <div class="flex items-center gap-1">
+            ${TAB_ORDER.map(t => `
+              <button onclick="switchTab('${t}')" class="px-5 py-2.5 text-sm font-medium border-b-2 transition ${currentTab === t ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'}">
+                ${TAB_LABEL[t]} <span class="text-xs text-slate-400">(${TAB_COUNT(t)})</span>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+
+      <!-- 19 列表格 -->
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm min-w-[1500px]">
+            <thead class="bg-slate-50 text-slate-600 text-xs uppercase">
+              <tr>
+                <th class="text-left px-3 py-3 whitespace-nowrap">批次号</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">库点</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">仓房-货位</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">货物名称</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">库存数量</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">库存重量</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">库存货值</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">质押数量</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">质押重量</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">质押货值</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">冻结数量</th>
+                <th class="text-right px-3 py-3 whitespace-nowrap">冻结重量</th>
+                <th class="text-center px-3 py-3 whitespace-nowrap">单位</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">关联入库单</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">关联融资单</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">盯市变化率</th>
+                <th class="text-left px-3 py-3 whitespace-nowrap">最近盘库</th>
+                <th class="text-center px-3 py-3 whitespace-nowrap">状态</th>
+                <th class="text-center px-3 py-3 whitespace-nowrap">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${list.length === 0 ? `<tr><td colspan="19" class="py-12 text-center text-slate-400 text-sm">📭 当前 tab 无库存台账记录</td></tr>` : list.map(r => {
+                const status = calcStatus(r);
+                const rel = getRelations(r);
+                const stocktake = getLatestStocktake(r);
+                const price = getPriceTracking(r.batchNo);
+                const pledgeNo = rel.pledge ? rel.pledge.pledgeFinancingNo : '-';
+                const inboundNo = rel.inbound ? rel.inbound.bizNo : '-';
+                const changeRate = price ? price.changeRate : null;
+                const changeRateColor = changeRate === null ? 'text-slate-300' : Math.abs(changeRate) > 10 ? 'text-rose-600 font-bold' : Math.abs(changeRate) > 5 ? 'text-amber-600' : 'text-emerald-600';
+                const stocktakeColor = !stocktake ? 'text-slate-300' : stocktake.status === '异常' ? 'text-rose-600 font-bold' : stocktake.status === '预警' ? 'text-amber-600' : 'text-emerald-600';
+                return `
+                  <tr class="border-t border-slate-100 hover:bg-blue-50/30">
+                    <td class="px-3 py-2.5 font-mono text-xs text-slate-700">${r.batchNo || '-'}</td>
+                    <td class="px-3 py-2.5 text-xs">${r.warehouseName || '-'}</td>
+                    <td class="px-3 py-2.5 text-xs">${r.location || '-'}</td>
+                    <td class="px-3 py-2.5 text-xs">${r.productName || '-'}</td>
+                    <td class="px-3 py-2.5 text-right num-focus">${Utils.fmtNum(r.stockPieces || 0)}</td>
+                    <td class="px-3 py-2.5 text-right num-focus">${Utils.fmtNum(r.stockWeight || 0)}</td>
+                    <td class="px-3 py-2.5 text-right num-focus">¥${Utils.fmtNum((r.stockWeight || 0) * 0.025, false)}</td>
+                    <td class="px-3 py-2.5 text-right num-focus">${Utils.fmtNum(r.pledgePieces || 0)}</td>
+                    <td class="px-3 py-2.5 text-right num-focus">${Utils.fmtNum(r.pledgeWeight || 0)}</td>
+                    <td class="px-3 py-2.5 text-right num-focus">¥${Utils.fmtNum((r.pledgeWeight || 0) * 0.025, false)}</td>
+                    <td class="px-3 py-2.5 text-right num-focus">${Utils.fmtNum(r.frozenPieces || 0)}</td>
+                    <td class="px-3 py-2.5 text-right num-focus">${Utils.fmtNum(r.frozenWeight || 0)}</td>
+                    <td class="px-3 py-2.5 text-center text-slate-500 text-xs">${r.piecesUnit || '-'}</td>
+                    <td class="px-3 py-2.5 text-xs font-mono text-blue-600">${inboundNo}</td>
+                    <td class="px-3 py-2.5 text-xs font-mono ${pledgeNo !== '-' ? 'text-blue-600' : 'text-slate-300'}">${pledgeNo}</td>
+                    <td class="px-3 py-2.5 text-xs ${changeRateColor}">${changeRate === null ? '-' : (changeRate > 0 ? '+' : '') + changeRate.toFixed(2) + '%'}</td>
+                    <td class="px-3 py-2.5 text-xs ${stocktakeColor}">${stocktake ? stocktake.diffRate.toFixed(2) + '%' : '-'}</td>
+                    <td class="px-3 py-2.5 text-center">${renderStatusBadge(status)}</td>
+                    <td class="px-3 py-2.5 text-center whitespace-nowrap">
+                      <button onclick="openDrawer('${r.batchNo}')" class="text-blue-600 hover:underline text-xs font-medium">时间轴</button>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+        <div class="px-4 py-3 border-t border-slate-100 text-xs text-slate-500">
+          共 ${list.length} 条记录
+        </div>
+      </div>
+    `;
+  }
+
+  function renderStatusBadge(status) {
+    if (status === '在库') return '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-emerald-100 text-emerald-700"><span class="status-dot bg-emerald-500"></span>在库</span>';
+    if (status === '质押中') return '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-amber-100 text-amber-700"><span class="status-dot bg-amber-500"></span>质押中</span>';
+    if (status === '已出库') return '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-500"><span class="status-dot bg-slate-400"></span>已出库</span>';
+    return status;
+  }
+
+  // ============ 时间轴抽屉 ============
+  function renderDrawer() {
+    if (!drawerOpen || !currentBatchNo) return '';
+    const r = inv.find(x => x.batchNo === currentBatchNo);
+    if (!r) return '';
+    const rel = getRelations(r);
+    const stocktakeList = rel.stocktake;
+    const price = getPriceTracking(currentBatchNo);
+    const events = (MockData.lifecycleEvents || []).filter(e => e.batchNo === currentBatchNo).sort((a, b) => a.time.localeCompare(b.time));
+    const status = calcStatus(r);
+
+    return `
+      <div class="drawer-mask" onclick="closeDrawer()"></div>
+      <div class="drawer-panel">
+        <div class="p-5 border-b border-slate-200 sticky top-0 bg-white z-10 flex items-center justify-between">
+          <div>
+            <h3 class="font-semibold text-slate-800 text-lg">生命周期时间轴</h3>
+            <div class="text-xs text-slate-500 mt-1">${r.batchNo} · ${r.productName}</div>
+          </div>
+          <button onclick="closeDrawer()" class="text-slate-400 hover:text-slate-600 text-xl">×</button>
+        </div>
+
+        <div class="p-5 space-y-5">
+          <!-- 货物基本信息 -->
+          <div class="bg-slate-50 rounded-lg p-3 text-sm space-y-1">
+            <div class="flex justify-between"><span class="text-slate-500">库点:</span><span class="text-slate-800">${r.warehouseName}</span></div>
+            <div class="flex justify-between"><span class="text-slate-500">仓房-货位:</span><span class="text-slate-800">${r.location}</span></div>
+            <div class="flex justify-between"><span class="text-slate-500">当前状态:</span>${renderStatusBadge(status)}</div>
+            <div class="flex justify-between"><span class="text-slate-500">库存数量:</span><span class="text-slate-800">${Utils.fmtNum(r.stockPieces || 0)} ${r.piecesUnit || ''}</span></div>
+            <div class="flex justify-between"><span class="text-slate-500">库存重量:</span><span class="text-slate-800">${Utils.fmtNum(r.stockWeight || 0)} ${r.weightUnit || ''}</span></div>
+          </div>
+
+          <!-- 盯市轨迹(折线图,质押中才显示) -->
+          ${price ? `
+            <div>
+              <h4 class="text-sm font-semibold text-slate-700 mb-2">盯市轨迹</h4>
+              <div class="text-xs text-slate-500 mb-1">评估单价 ¥${price.evalPrice.toFixed(2)} → 最新价 ¥${price.latestPrice.toFixed(2)} <span class="${Math.abs(price.changeRate) > 5 ? 'text-amber-600 font-bold' : 'text-emerald-600'}">(${price.changeRate > 0 ? '+' : ''}${price.changeRate.toFixed(2)}%)</span></div>
+              <div class="bg-white border border-slate-200 rounded p-2">
+                ${renderLineChart(price.history)}
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- 关联单据 -->
+          <div>
+            <h4 class="text-sm font-semibold text-slate-700 mb-2">关联单据</h4>
+            <div class="space-y-1 text-xs">
+              ${rel.inbound ? `<div class="flex justify-between p-2 bg-blue-50 rounded"><span class="text-slate-600">入库单:</span><a href="${Utils.nav('/customer/inbound-detail')}?id=${rel.inbound.id}" target="_blank" class="text-blue-600 font-mono hover:underline">${rel.inbound.bizNo}</a></div>` : ''}
+              ${rel.pledge ? `<div class="flex justify-between p-2 bg-amber-50 rounded"><span class="text-slate-600">融资单:</span><a href="${Utils.nav('/customer/financing-detail')}?id=${rel.pledge.id}" target="_blank" class="text-blue-600 font-mono hover:underline">${rel.pledge.pledgeFinancingNo}</a></div>` : ''}
+              <div class="flex justify-between p-2 bg-slate-50 rounded"><span class="text-slate-600">盘库记录:</span><span class="text-slate-800">${stocktakeList.length} 条</span></div>
+            </div>
+          </div>
+
+          <!-- 时间轴事件流 -->
+          <div>
+            <h4 class="text-sm font-semibold text-slate-700 mb-3">事件流 (${events.length} 条)</h4>
+            <div class="relative">
+              ${events.map((e, i) => `
+                <div class="relative pl-8 pb-4">
+                  <div class="timeline-line"></div>
+                  <div class="absolute left-0 top-0 w-6 h-6 rounded-full ${getEventColor(e.eventType)} flex items-center justify-center text-white text-xs font-bold">${getEventIcon(e.eventType)}</div>
+                  <div class="text-xs">
+                    <div class="flex items-center justify-between">
+                      <span class="font-medium text-slate-800">${e.eventType}</span>
+                      <span class="text-slate-400">${e.time}</span>
+                    </div>
+                    <div class="text-slate-600 mt-1">${e.remark || ''}</div>
+                    <div class="text-slate-400 mt-0.5">操作人: ${e.operator} · 单据: <span class="font-mono">${e.refDoc}</span></div>
+                    ${e.fromStatus && e.toStatus ? `<div class="text-slate-400 text-[10px] mt-0.5">${e.fromStatus} → <span class="${e.toStatus === '已出库' ? 'text-slate-500' : e.toStatus === '质押中' ? 'text-amber-600' : 'text-emerald-600'}">${e.toStatus}</span></div>` : ''}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function getEventColor(type) {
+    if (type === '入库') return 'bg-emerald-500';
+    if (type === '出库') return 'bg-slate-500';
+    if (type.includes('质押')) return 'bg-amber-500';
+    if (type === '盘库') return 'bg-blue-500';
+    return 'bg-slate-400';
+  }
+  function getEventIcon(type) {
+    if (type === '入库') return '↓';
+    if (type === '出库') return '↑';
+    if (type.includes('质押')) return '⌘';
+    if (type === '盘库') return '⊙';
+    return '·';
+  }
+
+  // ============ SVG 折线图(自绘) ============
+  function renderLineChart(history) {
+    if (!history || history.length === 0) return '<div class="text-xs text-slate-300 text-center py-4">无价格数据</div>';
+    const w = 420, h = 100, padding = 10;
+    const prices = history.map(d => d.price);
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    const range = max - min || 1;
+    const stepX = (w - padding * 2) / (history.length - 1);
+    const points = history.map((d, i) => {
+      const x = padding + i * stepX;
+      const y = h - padding - ((d.price - min) / range) * (h - padding * 2);
+      return `${x},${y}`;
+    }).join(' ');
+    const lastY = h - padding - ((history[history.length-1].price - min) / range) * (h - padding * 2);
+    return `
+      <svg viewBox="0 0 ${w} ${h}" class="w-full" style="height: 100px;">
+        <line x1="${padding}" y1="${h - padding}" x2="${w - padding}" y2="${h - padding}" stroke="#cbd5e1" stroke-width="1" />
+        ${history.map((d, i) => {
+          const x = padding + i * stepX;
+          return `<text x="${x}" y="${h - 1}" font-size="9" fill="#94a3b8" text-anchor="middle">${d.time.slice(5, 10)}</text>`;
+        }).join('')}
+        <polyline points="${points}" fill="none" stroke="#3b82f6" stroke-width="2" />
+        ${history.map((d, i) => {
+          const x = padding + i * stepX;
+          const y = h - padding - ((d.price - min) / range) * (h - padding * 2);
+          return `<circle cx="${x}" cy="${y}" r="3" fill="#3b82f6" />`;
+        }).join('')}
+        <text x="${w - padding}" y="${lastY - 6}" font-size="11" fill="#dc2626" text-anchor="end" font-weight="bold">¥${history[history.length-1].price.toFixed(2)}</text>
+      </svg>
+    `;
+  }
+
+  // ============ 全局方法 ============
+  window.switchTab = function(tab) {
+    currentTab = tab;
+    refresh();
+  };
+  window.openDrawer = function(batchNo) {
+    currentBatchNo = batchNo;
+    drawerOpen = true;
+    refresh();
+  };
+  window.closeDrawer = function() {
+    drawerOpen = false;
+    currentBatchNo = null;
+    refresh();
+  };
+
+  function refresh() {
+    document.getElementById('app').innerHTML = Components.pageShell({
+      title: '库存台账-方案2',
+      subtitle: '货主方视角 - 完整台账视图(时间轴+盯市+盘库)',
+      currentPath: '/customer/inventory-ledger-v2',
+      breadcrumb: [
+        { label: '库存管理', path: '/customer/inventory-ledger' },
+        { label: '库存台账-方案2', path: '/customer/inventory-ledger-v2' },
+      ],
+      content: render() + renderDrawer(),
+    });
+  }
+
+  document.getElementById('app').innerHTML = Components.pageShell({
+    title: '库存台账-方案2',
+    subtitle: '货主方视角 - 完整台账视图(时间轴+盯市+盘库)',
+    currentPath: '/customer/inventory-ledger-v2',
+    breadcrumb: [
+      { label: '库存管理', path: '/customer/inventory-ledger' },
+      { label: '库存台账-方案2', path: '/customer/inventory-ledger-v2' },
+    ],
+    content: render(),
+  });
+</script>
+</body>
+</html>

@@ -300,6 +300,7 @@ const MockData = {
         ]},
         { group: '库存管理', items: [
           { icon: 'list', label: '库存台账', path: '/customer/inventory-ledger' },
+          { icon: 'list', label: '库存台账-方案2', path: '/customer/inventory-ledger-v2' },
         ]},
         { group: '货物管理', items: [
           { icon: 'box', label: '入库申请', path: '/customer/inbound' },
@@ -3953,5 +3954,68 @@ MockData.updateMockInbound = function(id, fields, nextStatus) {
   return target;
 };
 // 暴露给 window（v1.7.67 详情页通过 window.MockData.updateMockInbound 调用）
+// ============ v1.7.95 库存台账-方案2 配套数据 ============
+MockData.stocktakeRecords = [
+  // 盘库记录(按 batchNo 关联,差异率自动计算)
+  { id: 'st_001', batchNo: 'BATCH-2026-001', warehouseId: 'wh_001', warehouseName: '物流港二期大河智链监管库', location: '1号仓-A区-01货位', actualQty: 138, systemQty: 140, qtyUnit: '箱', actualWeight: 2760, systemWeight: 2800, weightUnit: '千克', diffRate: 1.43, status: '正常', operator: '赵德昌', stocktakeTime: '2026-06-15 09:30:00', remark: '常规盘库' },
+  { id: 'st_002', batchNo: 'BATCH-2026-002', warehouseId: 'wh_001', warehouseName: '物流港二期大河智链监管库', location: '2号仓-B区-03货位', actualQty: 153, systemQty: 153, qtyUnit: '箱', actualWeight: 3230, systemWeight: 3230, weightUnit: '千克', diffRate: 0.00, status: '正常', operator: '赵德昌', stocktakeTime: '2026-06-15 10:15:00', remark: '正常' },
+  { id: 'st_003', batchNo: 'BATCH-2026-003', warehouseId: 'wh_002', warehouseName: '天津港国际冷链基地', location: '3号仓-C区-05货位', actualQty: 146, systemQty: 150, qtyUnit: '箱', actualWeight: 2920, systemWeight: 3000, weightUnit: '千克', diffRate: 2.67, status: '正常', operator: '李建国', stocktakeTime: '2026-06-20 14:00:00', remark: '正常' },
+  { id: 'st_004', batchNo: 'BATCH-2026-004', warehouseId: 'wh_002', warehouseName: '天津港国际冷链基地', location: '1号仓-A区-02货位', actualQty: 200, systemQty: 220, qtyUnit: '箱', actualWeight: 4000, systemWeight: 4400, weightUnit: '千克', diffRate: 9.09, status: '预警', operator: '李建国', stocktakeTime: '2026-06-20 14:30:00', remark: '部分货物破损' },
+  { id: 'st_005', batchNo: 'BATCH-2026-005', warehouseId: 'wh_001', warehouseName: '物流港二期大河智链监管库', location: '2号仓-B区-04货位', actualQty: 245, systemQty: 250, qtyUnit: '箱', actualWeight: 4900, systemWeight: 5000, weightUnit: '千克', diffRate: 2.00, status: '正常', operator: '赵德昌', stocktakeTime: '2026-06-25 09:00:00', remark: '正常' },
+  { id: 'st_006', batchNo: 'BATCH-2026-006', warehouseId: 'wh_001', warehouseName: '物流港二期大河智链监管库', location: '3号仓-C区-06货位', actualQty: 138, systemQty: 160, qtyUnit: '箱', actualWeight: 2760, systemWeight: 3200, weightUnit: '千克', diffRate: 13.75, status: '异常', operator: '赵德昌', stocktakeTime: '2026-06-25 10:00:00', remark: '严重差异，已上报监管' },
+];
+
+// 价格轨迹(盯市,质押中货物)
+MockData.priceTracking = {
+  'BATCH-2026-001': { evalPrice: 20.00, latestPrice: 19.50, changeRate: -2.50, history: [
+    { time: '2026-06-01 09:00', price: 20.00 }, { time: '2026-06-08 09:00', price: 19.80 },
+    { time: '2026-06-15 09:00', price: 19.50 }, { time: '2026-06-22 09:00', price: 19.50 },
+  ]},
+  'BATCH-2026-002': { evalPrice: 21.00, latestPrice: 21.00, changeRate: 0.00, history: [
+    { time: '2026-06-01 09:00', price: 21.00 }, { time: '2026-06-08 09:00', price: 21.00 },
+    { time: '2026-06-15 09:00', price: 21.00 }, { time: '2026-06-22 09:00', price: 21.00 },
+  ]},
+  'BATCH-2026-003': { evalPrice: 22.00, latestPrice: 23.50, changeRate: 6.82, history: [
+    { time: '2026-06-01 09:00', price: 22.00 }, { time: '2026-06-08 09:00', price: 22.50 },
+    { time: '2026-06-15 09:00', price: 23.00 }, { time: '2026-06-22 09:00', price: 23.50 },
+  ]},
+  'BATCH-2026-004': { evalPrice: 23.00, latestPrice: 24.80, changeRate: 7.83, history: [
+    { time: '2026-06-01 09:00', price: 23.00 }, { time: '2026-06-08 09:00', price: 23.50 },
+    { time: '2026-06-15 09:00', price: 24.20 }, { time: '2026-06-22 09:00', price: 24.80 },
+  ]},
+  'BATCH-2026-005': { evalPrice: 25.00, latestPrice: 23.00, changeRate: -8.00, history: [
+    { time: '2026-06-01 09:00', price: 25.00 }, { time: '2026-06-08 09:00', price: 24.50 },
+    { time: '2026-06-15 09:00', price: 23.80 }, { time: '2026-06-22 09:00', price: 23.00 },
+  ]},
+  'BATCH-2026-006': { evalPrice: 20.00, latestPrice: 19.20, changeRate: -4.00, history: [
+    { time: '2026-06-01 09:00', price: 20.00 }, { time: '2026-06-08 09:00', price: 19.80 },
+    { time: '2026-06-15 09:00', price: 19.50 }, { time: '2026-06-22 09:00', price: 19.20 },
+  ]},
+};
+
+// 生命周期事件(时间轴)
+MockData.lifecycleEvents = [
+  // BATCH-2026-001 已质押
+  { id: 'le_001', batchNo: 'BATCH-2026-001', eventType: '入库', time: '2026-05-20 14:30:00', operator: '货主方-陈志强', refDoc: 'IN20260520000001', fromStatus: null, toStatus: '在库', remark: '入库 140 箱 / 2800 千克' },
+  { id: 'le_002', batchNo: 'BATCH-2026-001', eventType: '质押申请', time: '2026-05-25 10:00:00', operator: '货主方-陈志强', refDoc: 'FN_2026052500001', fromStatus: '在库', toStatus: '在库', remark: '提交融资申请' },
+  { id: 'le_003', batchNo: 'BATCH-2026-001', eventType: '质押生效', time: '2026-06-01 09:00:00', operator: '系统', refDoc: 'PLG_2026060100001', fromStatus: '在库', toStatus: '质押中', remark: '融资审核通过,质押生效' },
+  { id: 'le_004', batchNo: 'BATCH-2026-001', eventType: '盘库', time: '2026-06-15 09:30:00', operator: '仓库方-赵德昌', refDoc: 'ST_2026061500001', fromStatus: '质押中', toStatus: '质押中', remark: '常规盘库,差异 1.43%' },
+  { id: 'le_005', batchNo: 'BATCH-2026-002', eventType: '入库', time: '2026-05-22 11:00:00', operator: '货主方-陈志强', refDoc: 'IN20260522000002', fromStatus: null, toStatus: '在库', remark: '入库 153 箱 / 3230 千克' },
+  { id: 'le_006', batchNo: 'BATCH-2026-002', eventType: '质押生效', time: '2026-06-05 10:00:00', operator: '系统', refDoc: 'PLG_2026060500001', fromStatus: '在库', toStatus: '质押中', remark: '质押生效' },
+  { id: 'le_007', batchNo: 'BATCH-2026-003', eventType: '入库', time: '2026-05-25 09:00:00', operator: '货主方-陈志强', refDoc: 'IN20260525000003', fromStatus: null, toStatus: '在库', remark: '入库 150 箱 / 3000 千克' },
+  { id: 'le_008', batchNo: 'BATCH-2026-003', eventType: '质押生效', time: '2026-06-08 10:00:00', operator: '系统', refDoc: 'PLG_2026060800001', fromStatus: '在库', toStatus: '质押中', remark: '质押生效' },
+  { id: 'le_009', batchNo: 'BATCH-2026-004', eventType: '入库', time: '2026-05-28 10:00:00', operator: '货主方-王建国', refDoc: 'IN20260528000001', fromStatus: null, toStatus: '在库', remark: '入库 220 箱 / 4400 千克' },
+  { id: 'le_010', batchNo: 'BATCH-2026-004', eventType: '质押生效', time: '2026-06-10 11:00:00', operator: '系统', refDoc: 'PLG_2026061000001', fromStatus: '在库', toStatus: '质押中', remark: '质押生效' },
+  { id: 'le_011', batchNo: 'BATCH-2026-004', eventType: '盘库', time: '2026-06-20 14:30:00', operator: '仓库方-李建国', refDoc: 'ST_2026062000002', fromStatus: '质押中', toStatus: '质押中', remark: '部分货物破损,差异 9.09%' },
+  { id: 'le_012', batchNo: 'BATCH-2026-005', eventType: '入库', time: '2026-06-01 14:00:00', operator: '货主方-王建国', refDoc: 'IN20260601000001', fromStatus: null, toStatus: '在库', remark: '入库 250 箱 / 5000 千克' },
+  { id: 'le_013', batchNo: 'BATCH-2026-005', eventType: '盘库', time: '2026-06-25 09:00:00', operator: '仓库方-赵德昌', refDoc: 'ST_2026062500001', fromStatus: '在库', toStatus: '在库', remark: '常规盘库,差异 2%' },
+  { id: 'le_014', batchNo: 'BATCH-2026-006', eventType: '入库', time: '2026-06-05 09:00:00', operator: '货主方-王建国', refDoc: 'IN20260605000001', fromStatus: null, toStatus: '在库', remark: '入库 160 箱 / 3200 千克' },
+  { id: 'le_015', batchNo: 'BATCH-2026-006', eventType: '盘库', time: '2026-06-25 10:00:00', operator: '仓库方-赵德昌', refDoc: 'ST_2026062500002', fromStatus: '在库', toStatus: '在库', remark: '严重差异 13.75%,已上报监管' },
+  { id: 'le_016', batchNo: 'BATCH-2026-007', eventType: '入库', time: '2026-05-15 10:00:00', operator: '货主方-陈志强', refDoc: 'IN20250515000001', fromStatus: null, toStatus: '在库', remark: '入库 100 箱 / 2000 千克' },
+  { id: 'le_017', batchNo: 'BATCH-2026-007', eventType: '质押生效', time: '2026-05-20 09:00:00', operator: '系统', refDoc: 'PLG_2025052000001', fromStatus: '在库', toStatus: '质押中', remark: '质押生效' },
+  { id: 'le_018', batchNo: 'BATCH-2026-007', eventType: '出库', time: '2026-06-15 14:00:00', operator: '货主方-陈志强', refDoc: 'OUT20260615000001', fromStatus: '质押中', toStatus: '已出库', remark: '解押出库 100 箱' },
+  { id: 'le_019', batchNo: 'BATCH-2026-008', eventType: '入库', time: '2026-04-20 10:00:00', operator: '货主方-王建国', refDoc: 'IN20250420000001', fromStatus: null, toStatus: '在库', remark: '入库 80 箱 / 1600 千克' },
+  { id: 'le_020', batchNo: 'BATCH-2026-008', eventType: '出库', time: '2026-05-10 14:00:00', operator: '货主方-王建国', refDoc: 'OUT20250510000001', fromStatus: '在库', toStatus: '已出库', remark: '出库 80 箱' },
+];
 window.MockData = MockData;
 window.MockData.updateMockInbound = MockData.updateMockInbound;
