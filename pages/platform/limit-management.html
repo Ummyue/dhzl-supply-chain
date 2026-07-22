@@ -94,7 +94,11 @@
         </div>
         <div class="bg-white rounded-xl p-4 border border-slate-200">
           <div class="text-xs text-slate-500">可用额度</div>
-                ${Components.filterBar({
+          <div class="text-2xl font-bold text-emerald-600 mt-1 num-focus">${Utils.fmtMoney(availAmount, false)}</div>
+        </div>
+      </div>
+
+      ${Components.filterBar({
         filters: filters,
         fields: [
           { label: '金融机构', key: 'bank', type: 'text', placeholder: '请输入金融机构' },
@@ -107,10 +111,6 @@
         hasExport: true,
         exportCSV: 'exportLimitsCSV',
       })}
-
-<div></div>
-        </div>
-      </div>
 
       <!-- 3 个 tab 状态筛选 + v1.7.71 监管方【新增额度】按钮（参考截图1右侧位置） -->
       <div class="bg-white border border-slate-200 rounded-xl mb-3 px-2 pt-1">
