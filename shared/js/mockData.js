@@ -3661,6 +3661,17 @@ const MockData = {
     const banks = ['中原银行', '工商银行', '中融信托·冷链金融部', '招商银行', '中国民生银行'];  // v1.7.52: 加"中国民生银行"供资金方 u_bank_001（刘敏）按 bank 过滤
     const records = [];
     let id = 1;
+    // v1.7.95.3 库存台账-方案2 配套数据(前 8 条) — 跟 stocktakeRecords / priceTracking / lifecycleEvents 对齐
+    const BATCH_FIXTURES = [
+      { stockPieces: 140, stockWeight: 2800, productName: '保乐肩-巴西-4490' },  // BATCH-2026-001
+      { stockPieces: 153, stockWeight: 3230, productName: '羔羊肉卷-新西兰' },   // BATCH-2026-002
+      { stockPieces: 150, stockWeight: 3000, productName: '牛腩-澳大利亚' },     // BATCH-2026-003
+      { stockPieces: 220, stockWeight: 4400, productName: '牛肋排-美国' },        // BATCH-2026-004
+      { stockPieces: 250, stockWeight: 5000, productName: '牛腱子-巴西' },        // BATCH-2026-005
+      { stockPieces: 160, stockWeight: 3200, productName: '牛胸肉-澳大利亚' },    // BATCH-2026-006
+      { stockPieces: 100, stockWeight: 2000, productName: '羊肋排-新西兰' },     // BATCH-2026-007
+      { stockPieces:  80, stockWeight: 1600, productName: '猪五花-美国' },        // BATCH-2026-008
+    ];
     // 生成 50 条覆盖多库点 / 多货品 / 多金融机构
     for (let i = 0; i < 50; i++) {
       const wh = warehouses[i % warehouses.length];
@@ -3669,8 +3680,18 @@ const MockData = {
       const partList = parts[cat];
       const part = partList[i % partList.length];
       const loc = wh.locations[i % wh.locations.length];
-      const stockPieces = 80 + (i * 7) % 350;
-      const stockWeight = +(stockPieces * 18 + (i % 13) * 50).toFixed(0);
+      // v1.7.95.3 前 8 条用 BATCH_FIXTURES 固定值,跟生命周期事件对齐
+      let stockPieces, stockWeight, productName;
+      if (i < 8) {
+        const f = BATCH_FIXTURES[i];
+        stockPieces = f.stockPieces;
+        stockWeight = f.stockWeight;
+        productName = f.productName;
+      } else {
+        stockPieces = 80 + (i * 7) % 350;
+        stockWeight = +(stockPieces * 18 + (i % 13) * 50).toFixed(0);
+        productName = `${country}-${cat.replace('类', '')}-${part}`;
+      }
       const unitValue = 50 + (i % 30) * 3.7;
       const stockValue = +(stockPieces * unitValue).toFixed(2);
       // 质押/冻结比例：前 40% 部分质押，前 20% 全部冻结
@@ -3687,7 +3708,8 @@ const MockData = {
         country,
         category: cat,
         part,
-        productFullName: `${country}-${cat.replace('类', '')}-${part}`,
+        productName: productName,
+        productFullName: productName,
         stockPieces, stockWeight, stockValue,
         pledgePieces, pledgeWeight, pledgeValue,
         frozenPieces, frozenWeight,
@@ -3699,6 +3721,9 @@ const MockData = {
         // u_guar_002：i%2===1 的记录
         guarantorId: i % 2 === 0 ? 'u_guar_001' : 'u_guar_002',
         state: i % 5 === 0 ? 'frozen' : (i % 4 === 0 ? 'pledged' : 'normal'),
+        // v1.7.95.3 库存台账-方案2 配套字段
+        batchNo: i < 8 ? `BATCH-2026-00${i + 1}` : null,  // 前 8 条匹配 stocktakeRecords / priceTracking / lifecycleEvents
+        inventoryAssetNo: i < 8 ? `CHZC2026${(20260520 + i).toString().slice(0)}.${(i + 1).toString().padStart(2, '0')}` : null,
       });
     }
     return records;
@@ -3963,6 +3988,8 @@ MockData.stocktakeRecords = [
   { id: 'st_004', batchNo: 'BATCH-2026-004', warehouseId: 'wh_002', warehouseName: '天津港国际冷链基地', location: '1号仓-A区-02货位', actualQty: 200, systemQty: 220, qtyUnit: '箱', actualWeight: 4000, systemWeight: 4400, weightUnit: '千克', diffRate: 9.09, status: '预警', operator: '李建国', stocktakeTime: '2026-06-20 14:30:00', remark: '部分货物破损' },
   { id: 'st_005', batchNo: 'BATCH-2026-005', warehouseId: 'wh_001', warehouseName: '物流港二期大河智链监管库', location: '2号仓-B区-04货位', actualQty: 245, systemQty: 250, qtyUnit: '箱', actualWeight: 4900, systemWeight: 5000, weightUnit: '千克', diffRate: 2.00, status: '正常', operator: '赵德昌', stocktakeTime: '2026-06-25 09:00:00', remark: '正常' },
   { id: 'st_006', batchNo: 'BATCH-2026-006', warehouseId: 'wh_001', warehouseName: '物流港二期大河智链监管库', location: '3号仓-C区-06货位', actualQty: 138, systemQty: 160, qtyUnit: '箱', actualWeight: 2760, systemWeight: 3200, weightUnit: '千克', diffRate: 13.75, status: '异常', operator: '赵德昌', stocktakeTime: '2026-06-25 10:00:00', remark: '严重差异，已上报监管' },
+  { id: 'st_007', batchNo: 'BATCH-2026-007', warehouseId: 'wh_002', warehouseName: '郑州融万冷链库', location: '2号仓-B区-09货位', actualQty: 100, systemQty: 100, qtyUnit: '箱', actualWeight: 2000, systemWeight: 2000, weightUnit: '千克', diffRate: 0.00, status: '正常', operator: '李建国', stocktakeTime: '2026-06-10 09:00:00', remark: '出库前盘库' },
+  { id: 'st_008', batchNo: 'BATCH-2026-008', warehouseId: 'wh_003', warehouseName: '天津港国际冷链基地', location: '1号仓-A区-04货位', actualQty: 79, systemQty: 80, qtyUnit: '箱', actualWeight: 1580, systemWeight: 1600, weightUnit: '千克', diffRate: 1.25, status: '正常', operator: '李建国', stocktakeTime: '2026-05-05 10:00:00', remark: '出库前盘库' },
 ];
 
 // 价格轨迹(盯市,质押中货物)
@@ -3990,6 +4017,14 @@ MockData.priceTracking = {
   'BATCH-2026-006': { evalPrice: 20.00, latestPrice: 19.20, changeRate: -4.00, history: [
     { time: '2026-06-01 09:00', price: 20.00 }, { time: '2026-06-08 09:00', price: 19.80 },
     { time: '2026-06-15 09:00', price: 19.50 }, { time: '2026-06-22 09:00', price: 19.20 },
+  ]},
+  'BATCH-2026-007': { evalPrice: 30.00, latestPrice: 29.50, changeRate: -1.67, history: [
+    { time: '2026-05-15 09:00', price: 30.00 }, { time: '2026-05-25 09:00', price: 29.80 },
+    { time: '2026-06-05 09:00', price: 29.50 }, { time: '2026-06-10 09:00', price: 29.50 },
+  ]},
+  'BATCH-2026-008': { evalPrice: 35.00, latestPrice: 36.50, changeRate: 4.29, history: [
+    { time: '2026-04-20 09:00', price: 35.00 }, { time: '2026-04-25 09:00', price: 35.50 },
+    { time: '2026-05-01 09:00', price: 36.00 }, { time: '2026-05-05 09:00', price: 36.50 },
   ]},
 };
 

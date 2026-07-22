@@ -42,22 +42,30 @@
   let drawerOpen = false;
   let currentBatchNo = null;
 
-  // ============ 核心逻辑 1: 4 状态自动计算 ============
+  // ============ 核心逻辑 1: 4 状态自动计算(v1.7.95.3 改用 lifecycleEvents 推算) ============
+  // 从 lifecycleEvents 取该 batchNo 最后一条事件的 toStatus 作为当前状态
   function calcStatus(r) {
-    // 优先级:已出库 > 质押中 > 在库
-    const inbound = (MockData.inboundList || []).find(x => x.batchNo === r.batchNo);
-    if (inbound && inbound.bizNo && inbound.bizNo.startsWith('OUT')) return '已出库';
-    const pledge = (MockData.pledgeList || []).find(p => p.inventoryAssetNo === r.batchNo);
-    if (pledge && pledge.status !== '已结清' && pledge.status !== 'completed') return '质押中';
-    return '在库';
+    if (!r || !r.batchNo) return '在库';
+    const events = (MockData.lifecycleEvents || []).filter(e => e.batchNo === r.batchNo);
+    if (!events.length) return '在库';
+    const sorted = events.slice().sort((a, b) => a.time.localeCompare(b.time));
+    const last = sorted[sorted.length - 1];
+    return last.toStatus || '在库';
   }
 
-  // ============ 核心逻辑 2: 跨单据关联 ============
+  // ============ 核心逻辑 2: 跨单据关联(v1.7.95.3 改用 lifecycleEvents 推算) ============
+  // inboundList / pledgeList 没有 batchNo 字段,直接从 lifecycleEvents 提取
   function getRelations(r) {
+    const events = (MockData.lifecycleEvents || []).filter(e => e.batchNo === r.batchNo);
+    const inboundEvent = events.find(e => e.eventType === '入库');
+    const pledgeEvent = events.find(e => e.eventType === '质押生效' || e.eventType === '质押申请');
+    const outboundEvent = events.find(e => e.eventType === '出库');
+    const stocktake = (MockData.stocktakeRecords || []).filter(s => s.batchNo === r.batchNo);
     return {
-      inbound: (MockData.inboundList || []).find(x => x.batchNo === r.batchNo),
-      pledge: (MockData.pledgeList || []).find(p => p.inventoryAssetNo === r.batchNo),
-      stocktake: (MockData.stocktakeRecords || []).filter(s => s.batchNo === r.batchNo),
+      inboundBizNo: inboundEvent ? inboundEvent.refDoc : null,
+      pledgeBizNo: pledgeEvent ? pledgeEvent.refDoc : null,
+      outboundBizNo: outboundEvent ? outboundEvent.refDoc : null,
+      stocktake: stocktake,
     };
   }
 
@@ -75,8 +83,7 @@
 
   // ============ 渲染主页面 ============
   function render() {
-    const filtered = currentTab === 'all' ? inv : inv.filter(r => calcStatus(r) === r && calcStatus(r) === currentTab);
-    // 状态过滤(防止 r === r 永真)
+    // 状态过滤(v1.7.95.3 修复:用 batchNo 关联 lifecycleEvents 推算)
     const list = currentTab === 'all' ? inv : inv.filter(r => calcStatus(r) === currentTab);
 
     return `
@@ -132,8 +139,8 @@
                 const rel = getRelations(r);
                 const stocktake = getLatestStocktake(r);
                 const price = getPriceTracking(r.batchNo);
-                const pledgeNo = rel.pledge ? rel.pledge.pledgeFinancingNo : '-';
-                const inboundNo = rel.inbound ? rel.inbound.bizNo : '-';
+                const pledgeNo = rel.pledgeBizNo || '-';
+                const inboundNo = rel.inboundBizNo || '-';
                 const changeRate = price ? price.changeRate : null;
                 const changeRateColor = changeRate === null ? 'text-slate-300' : Math.abs(changeRate) > 10 ? 'text-rose-600 font-bold' : Math.abs(changeRate) > 5 ? 'text-amber-600' : 'text-emerald-600';
                 const stocktakeColor = !stocktake ? 'text-slate-300' : stocktake.status === '异常' ? 'text-rose-600 font-bold' : stocktake.status === '预警' ? 'text-amber-600' : 'text-emerald-600';
@@ -227,8 +234,9 @@
           <div>
             <h4 class="text-sm font-semibold text-slate-700 mb-2">关联单据</h4>
             <div class="space-y-1 text-xs">
-              ${rel.inbound ? `<div class="flex justify-between p-2 bg-blue-50 rounded"><span class="text-slate-600">入库单:</span><a href="${Utils.nav('/customer/inbound-detail')}?id=${rel.inbound.id}" target="_blank" class="text-blue-600 font-mono hover:underline">${rel.inbound.bizNo}</a></div>` : ''}
-              ${rel.pledge ? `<div class="flex justify-between p-2 bg-amber-50 rounded"><span class="text-slate-600">融资单:</span><a href="${Utils.nav('/customer/financing-detail')}?id=${rel.pledge.id}" target="_blank" class="text-blue-600 font-mono hover:underline">${rel.pledge.pledgeFinancingNo}</a></div>` : ''}
+              ${rel.inboundBizNo ? `<div class="flex justify-between p-2 bg-blue-50 rounded"><span class="text-slate-600">入库单:</span><span class="text-blue-600 font-mono">${rel.inboundBizNo}</span></div>` : ''}
+              ${rel.pledgeBizNo ? `<div class="flex justify-between p-2 bg-amber-50 rounded"><span class="text-slate-600">融资单:</span><span class="text-blue-600 font-mono">${rel.pledgeBizNo}</span></div>` : ''}
+              ${rel.outboundBizNo ? `<div class="flex justify-between p-2 bg-slate-50 rounded"><span class="text-slate-600">出库单:</span><span class="text-blue-600 font-mono">${rel.outboundBizNo}</span></div>` : ''}
               <div class="flex justify-between p-2 bg-slate-50 rounded"><span class="text-slate-600">盘库记录:</span><span class="text-slate-800">${stocktakeList.length} 条</span></div>
             </div>
           </div>
